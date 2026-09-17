@@ -552,12 +552,21 @@ def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad, 
     return _inyectar_camara(texto, falta) if falta else texto
 
 
-# Las tres pestanas del nodo de prompt. El orden es el que se ve en la fila.
-MODELOS = ["MiniMax H3", "LTX-2.5", "Libre"]
+# Perfiles del nodo de prompt. Se agregan por nombre, no por posicion, para
+# que los workflows guardados sigan reconociendo la pestana que ya usaban.
+MODELOS = [
+    "MiniMax H3",
+    "LTX-2.5",
+    "Wan 2.2",
+    "Hunyuan 1.5",
+    "CogVideoX 1.5",
+    "Mochi 1",
+    "Libre",
+]
 
 
 class CinePrompt6:
-    """Arma el prompt en el formato de cada modelo: MiniMax H3, LTX-2.5 o libre."""
+    """Arma prompts editables para las principales familias locales de video."""
 
     SECCIONES = [
         ("subject_definitions", "Etiqueta cada elemento: <Subject 1> es..., <Picture 1> es el primer fotograma de [Shot 1]."),
@@ -622,13 +631,45 @@ class CinePrompt6:
         # que no esta activo, asi que TODO va en "optional". El orden se
         # conserva porque van en el mismo diccionario y en el mismo orden.
         req["extra"] = ("STRING", {"forceInput": True})
+
+        # --- Wan 2.2 -----------------------------------------------------
+        # Todo campo nuevo queda al final para no desplazar widgets_values
+        # de workflows anteriores. Las secciones son una ayuda de edicion:
+        # el modelo recibe un unico prompt continuo y un negativo separado.
+        req["wan_modo"] = (["image-to-video", "text-to-video"],
+                           {"default": "image-to-video"})
+        req["wan_sujeto"] = ("STRING", {"multiline": True, "default": ""})
+        req["wan_movimiento"] = ("STRING", {"multiline": True, "default": ""})
+        req["wan_escena"] = ("STRING", {"multiline": True, "default": ""})
+        req["wan_camara"] = ("STRING", {"multiline": True, "default": ""})
+        req["wan_estilo"] = ("STRING", {"multiline": True, "default": ""})
+        req["wan_negativo"] = ("STRING", {"multiline": True, "default": ""})
+
+        # --- HunyuanVideo 1.5 -------------------------------------------
+        req["hunyuan_modo"] = (["image-to-video", "text-to-video"],
+                                {"default": "image-to-video"})
+        for nombre in ("sujeto", "movimiento", "escena", "plano", "camara",
+                       "luz", "estilo", "atmosfera", "negativo"):
+            req["hunyuan_" + nombre] = ("STRING", {"multiline": True, "default": ""})
+
+        # --- CogVideoX 1.5 ----------------------------------------------
+        req["cog_modo"] = (["image-to-video", "text-to-video"],
+                            {"default": "image-to-video"})
+        for nombre in ("sujeto_escena", "accion_temporal", "camara_composicion",
+                       "luz_color", "estilo_atmosfera", "negativo"):
+            req["cog_" + nombre] = ("STRING", {"multiline": True, "default": ""})
+
+        # --- Mochi 1 -----------------------------------------------------
+        for nombre in ("sujeto", "accion", "entorno", "camara",
+                       "luz_estilo", "negativo"):
+            req["mochi_" + nombre] = ("STRING", {"multiline": True, "default": ""})
         return {"required": {}, "optional": req}
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("prompt",)
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("prompt", "negative")
     FUNCTION = "armar"
     CATEGORY = CATEGORY
-    DESCRIPTION = "El prompt en el formato que espera cada modelo. Una pestana por modelo, mas una libre para cualquier otro."
+    DESCRIPTION = "Perfiles de prompt para modelos locales de video, con positivo y negativo separados."
 
     def armar(self, omitir_vacias=True, reglas_de_oficio=True, extra=None,
               plano="sin especificar", angulo="sin especificar",
@@ -645,7 +686,7 @@ class CinePrompt6:
             salida = sep.join(partes)
             if extra and extra.strip():
                 salida = (salida + sep + extra.strip()) if salida else extra.strip()
-            return (salida,)
+            return (salida, "")
 
         # --- LTX-2.5: UN SOLO PARRAFO. Su guia lo dice expresamente, y el
         # orden que pide es plano, escena, accion, personajes, camara, audio.
@@ -661,7 +702,49 @@ class CinePrompt6:
             salida = _pulir(" ".join(t for t in trozos if t))
             if extra and extra.strip():
                 salida = (salida + " " + extra.strip()).strip()
-            return (salida,)
+            return (salida, "")
+
+        # Los cuatro perfiles siguientes se editan en bloques para que sea
+        # facil revisar lo que devolvio la IA, pero sus modelos reciben un
+        # unico texto continuo. El negativo sale por una conexion aparte.
+        perfiles = {
+            "Wan 2.2": (
+                ("wan_sujeto", "wan_movimiento", "wan_escena", "wan_camara", "wan_estilo"),
+                "wan_negativo",
+            ),
+            "Hunyuan 1.5": (
+                ("hunyuan_sujeto", "hunyuan_movimiento", "hunyuan_escena",
+                 "hunyuan_plano", "hunyuan_camara", "hunyuan_luz",
+                 "hunyuan_estilo", "hunyuan_atmosfera"),
+                "hunyuan_negativo",
+            ),
+            "CogVideoX 1.5": (
+                ("cog_sujeto_escena", "cog_accion_temporal",
+                 "cog_camara_composicion", "cog_luz_color",
+                 "cog_estilo_atmosfera"),
+                "cog_negativo",
+            ),
+            "Mochi 1": (
+                ("mochi_sujeto", "mochi_accion", "mochi_entorno",
+                 "mochi_camara", "mochi_luz_estilo"),
+                "mochi_negativo",
+            ),
+        }
+        if modelo in perfiles:
+            campos, campo_negativo = perfiles[modelo]
+            def valor(campo):
+                texto = str(kwargs.get(campo) or "").strip()
+                return "" if texto.lower() in {
+                    "n/a", "na", "none", "not applicable", "sin especificar"
+                } else texto
+
+            salida = _pulir(" ".join(
+                valor(c) for c in campos if valor(c)
+            ))
+            if extra and extra.strip():
+                salida = (salida + " " + extra.strip()).strip()
+            negativo = valor(campo_negativo)
+            return (salida, negativo)
 
         # --- MiniMax H3: el formato de seis secciones de siempre
         # La camara no es una seccion aparte del formato: H3 la quiere dentro
@@ -681,7 +764,7 @@ class CinePrompt6:
             salida = salida + "\n\n" + REGLAS_DE_OFICIO
         if extra and extra.strip():
             salida = salida + "\n\n" + extra.strip()
-        return (salida,)
+        return (salida, "")
 
 
 

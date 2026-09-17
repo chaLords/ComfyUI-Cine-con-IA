@@ -109,6 +109,22 @@ const ETIQUETAS = {
   lora_4: "LoRA 4", lora_fuerza_4: "Fuerza 4",
   modelo: "Modelo",
   ltx_prompt: "Prompt", ltx_audio: "Audio", ltx_negativo: "Negativo",
+  wan_modo: "Modalidad", wan_sujeto: "Sujeto", wan_movimiento: "Movimiento",
+  wan_escena: "Escena", wan_camara: "Cámara", wan_estilo: "Estética",
+  wan_negativo: "Prompt negativo",
+  hunyuan_modo: "Modalidad", hunyuan_sujeto: "Sujeto",
+  hunyuan_movimiento: "Movimiento", hunyuan_escena: "Escena",
+  hunyuan_plano: "Tipo de plano", hunyuan_camara: "Movimiento de cámara",
+  hunyuan_luz: "Iluminación", hunyuan_estilo: "Estilo",
+  hunyuan_atmosfera: "Atmósfera", hunyuan_negativo: "Prompt negativo",
+  cog_modo: "Modalidad", cog_sujeto_escena: "Sujeto y escena",
+  cog_accion_temporal: "Acción en el tiempo",
+  cog_camara_composicion: "Cámara y composición",
+  cog_luz_color: "Luz y color", cog_estilo_atmosfera: "Estilo y atmósfera",
+  cog_negativo: "Prompt negativo",
+  mochi_sujeto: "Sujeto", mochi_accion: "Acción",
+  mochi_entorno: "Entorno", mochi_camara: "Cámara",
+  mochi_luz_estilo: "Luz y estilo", mochi_negativo: "Prompt negativo",
   libre_prompt: "Prompt", libre_extra: "Segundo campo",
   libre_separador: "Separador", libre_instruccion: "Tu instrucción para la IA",
   vista_previa: "Vista previa en vivo",
@@ -454,6 +470,7 @@ function addTitulo(node, antesDe, texto, sub) {
  */
 function addPestanas(node, targetName, items) {
   const alto = 26, gap = 6, pad = 10;
+  const filasPara = (width) => width < 760 && items.length > 5 ? 2 : 1;
   const state = { rects: [] };
   const w = {
     type: "cineconia_pestanas",
@@ -461,7 +478,10 @@ function addPestanas(node, targetName, items) {
     value: null,
     options: { serialize: false },
     serialize: false,
-    computeSize(width) { return [width, alto + 18]; },
+    computeSize(width) {
+      const filas = filasPara(width);
+      return [width, filas * (alto + gap) + 12];
+    },
     draw(ctx, n, width, y) {
       const t = findWidget(n, targetName);
       if (!t) return;
@@ -471,19 +491,27 @@ function addPestanas(node, targetName, items) {
       ctx.textAlign = "center";
       state.rects = [];
 
-      const libre = width - pad * 2 - gap * (items.length - 1);
-      const ancho = Math.max(40, Math.floor(libre / items.length));
-      let x = pad;
-      for (const it of items) {
-        const activa = String(t.value) === String(it);
-        ctx.globalAlpha = activa ? 1 : 0.26;
-        ctx.fillStyle = ACCENT;
-        roundRect(ctx, x, y + 4, ancho, alto, 6);
-        ctx.fill();
-        ctx.fillStyle = CHIP_ON_FG;
-        ctx.fillText(String(it), x + ancho / 2, y + 4 + alto / 2 + 0.5);
-        state.rects.push({ x, y: y + 4, w: ancho, h: alto, value: it });
-        x += ancho + gap;
+      const filas = filasPara(width);
+      const porFila = filas === 1 ? items.length : Math.ceil(items.length / filas);
+      for (let fila = 0; fila < filas; fila++) {
+        const desde = fila * porFila;
+        const deFila = items.slice(desde, desde + porFila);
+        if (!deFila.length) continue;
+        const libre = width - pad * 2 - gap * (deFila.length - 1);
+        const ancho = Math.max(40, Math.floor(libre / deFila.length));
+        let x = pad;
+        const fy = y + 4 + fila * (alto + gap);
+        for (const it of deFila) {
+          const activa = String(t.value) === String(it);
+          ctx.globalAlpha = activa ? 1 : 0.26;
+          ctx.fillStyle = ACCENT;
+          roundRect(ctx, x, fy, ancho, alto, 6);
+          ctx.fill();
+          ctx.fillStyle = CHIP_ON_FG;
+          ctx.fillText(String(it), x + ancho / 2, fy + alto / 2 + 0.5);
+          state.rects.push({ x, y: fy, w: ancho, h: alto, value: it });
+          x += ancho + gap;
+        }
       }
 
       // la raya que cierra la fila y abre el cuerpo de la pestana
@@ -491,8 +519,9 @@ function addPestanas(node, targetName, items) {
       ctx.strokeStyle = "#394446";
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(pad, y + alto + 12.5);
-      ctx.lineTo(width - pad, y + alto + 12.5);
+      const rayaY = y + filas * (alto + gap) + 6.5;
+      ctx.moveTo(pad, rayaY);
+      ctx.lineTo(width - pad, rayaY);
       ctx.stroke();
       ctx.restore();
     },
@@ -569,7 +598,10 @@ const PROGRESO = {};          // id de nodo -> estado de su ultima ejecucion
 let RELOJ = null;             // repintado mientras algo corre
 
 function estadoProgreso(id) {
-  if (!PROGRESO[id]) PROGRESO[id] = { hecho: 0, total: 0, pasos: [], t: 0, ini: 0, vivo: false, fin: 0 };
+  if (!PROGRESO[id]) PROGRESO[id] = {
+    hecho: 0, total: 0, pasos: [], muestras: [], ultimo: 0,
+    t: 0, ini: 0, vivo: false, fin: 0,
+  };
   return PROGRESO[id];
 }
 
@@ -585,18 +617,29 @@ api.addEventListener("progress", (e) => {
   const s = estadoProgreso(id);
   const ahora = performance.now();
 
-  // un valor que retrocede significa que empezo otra pasada
-  if (d.value <= s.hecho || !s.vivo) {
+  // Un valor que retrocede, un total distinto o un nodo que ya termino
+  // significan que empezo otra pasada. Un valor repetido NO reinicia: hay
+  // extensiones que notifican dos veces el mismo paso.
+  const totalNuevo = Number(d.max || s.total || 0);
+  const reinicia = !s.vivo || Number(d.value) < s.hecho ||
+                   (s.total && totalNuevo && totalNuevo !== s.total);
+  if (reinicia) {
     s.pasos = [];
+    s.muestras = [];
+    s.ultimo = 0;
     s.ini = ahora;
     s.vivo = true;
     s.fin = 0;
-  } else if (s.t) {
-    s.pasos.push(ahora - s.t);
+    s.t = 0;
+  } else if (Number(d.value) > s.hecho && s.t) {
+    const duracion = ahora - s.t;
+    s.pasos.push(duracion);
+    s.ultimo = duracion;
   }
   s.t = ahora;
-  s.hecho = d.value;
-  s.total = d.max || s.total;
+  s.hecho = Number(d.value || 0);
+  s.total = totalNuevo;
+  s.muestras.push({ paso: s.hecho, ms: ahora - s.ini });
 
   if (!RELOJ) RELOJ = setInterval(repintarVivos, 1000);
   const nodo = (app.graph?._nodes || []).find((n) => n.id === id);
@@ -636,20 +679,16 @@ function reloj(ms) {
   return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
 }
 
-/**
- * Barras de progreso, una por paso, con su tiempo. La altura de cada barra
- * es lo que tardo ese paso comparado con el mas lento, asi se ve de un
- * vistazo si el segundo pase se esta arrastrando.
- */
+/** Panel estadistico real: curva de tiempo por paso + resumen/ETA. */
 function addProgreso(node, titulo) {
-  const alto = 30, pad = 10, cab = 15;
+  const alto = 78, pad = 10, cab = 17, gap = 8;
   const w = {
-    type: "cineconia_progreso",
+    type: "cineconia_estadisticas",
     name: "__prog",
     value: null,
     options: { serialize: false },
     serialize: false,
-    computeSize(width) { return [width, cab + alto + 20]; },
+    computeSize(width) { return [width, cab + alto + 18]; },
     draw(ctx, n, width, y) {
       const s = PROGRESO[n.id];
       ctx.save();
@@ -676,37 +715,89 @@ function addProgreso(node, titulo) {
         ctx.font = "11px 'IBM Plex Mono', Consolas, monospace";
         ctx.fillStyle = INFO_FG;
         ctx.globalAlpha = 0.5;
-        ctx.fillText("sin datos todavía  ·  se llena al renderizar", pad, base + alto / 2);
+        ctx.fillText("sin datos todavía  ·  se medirá al renderizar", pad, base + alto / 2);
         ctx.restore();
         return;
       }
 
-      // barras, una por paso
-      const hueco = 2;
-      const ancho = Math.max(2, (width - pad * 2 - hueco * (total - 1)) / total);
-      const lento = Math.max(1, ...s.pasos);
-      for (let i = 0; i < total; i++) {
-        const x = pad + i * (ancho + hueco);
-        const hecho = i < s.hecho;
-        const ms = s.pasos[i];
-        // sin tiempo medido aun (el primer paso) se dibuja a media altura
-        const h = hecho ? Math.max(4, alto * (ms ? ms / lento : 0.5)) : alto * 0.18;
-        ctx.globalAlpha = hecho ? 1 : 0.22;
-        ctx.fillStyle = hecho ? ACCENT : CHIP_BG;
-        roundRect(ctx, x, base + alto - h, ancho, h, Math.min(3, ancho / 2));
-        ctx.fill();
-      }
+      const disponible = width - pad * 2;
+      const izq = Math.max(150, Math.floor(disponible * 0.58));
+      const der = disponible - izq - gap;
+      const x1 = pad, x2 = pad + izq + gap;
 
-      // una linea con los numeros que de verdad importan
+      // dos tarjetas, como un pequeno monitor de rendimiento
       ctx.globalAlpha = 1;
-      ctx.font = "11px 'IBM Plex Mono', Consolas, monospace";
-      ctx.fillStyle = s.vivo ? INFO_FG : "#6f7d7e";
+      ctx.fillStyle = "#20282a";
+      ctx.strokeStyle = "#394446";
+      ctx.lineWidth = 1;
+      roundRect(ctx, x1, base, izq, alto, 6); ctx.fill(); ctx.stroke();
+      roundRect(ctx, x2, base, der, alto, 6); ctx.fill(); ctx.stroke();
+
+      // grafico real de duracion por paso (el primero no se puede medir con
+      // precision porque ComfyUI notifica cuando ya termino).
+      ctx.font = "8px 'IBM Plex Mono', Consolas, monospace";
+      ctx.fillStyle = "#6f7d7e";
+      ctx.fillText("TIEMPO POR PASO", x1 + 8, base + 10);
+      const gx = x1 + 8, gy = base + 17, gw = izq - 16, gh = alto - 33;
+      ctx.strokeStyle = "#303a3c";
+      ctx.beginPath();
+      ctx.moveTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh);
+      ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh);
+      ctx.stroke();
+
+      const datos = (s.pasos || []).slice(-Math.max(2, total));
+      const lento = Math.max(1, ...datos);
+      if (datos.length) {
+        ctx.beginPath();
+        datos.forEach((ms, i) => {
+          const px = gx + (datos.length === 1 ? gw : (i / (datos.length - 1)) * gw);
+          const py = gy + gh - (ms / lento) * (gh - 3);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.strokeStyle = ACCENT;
+        ctx.lineWidth = 1.7;
+        ctx.stroke();
+        ctx.lineTo(gx + gw, gy + gh);
+        ctx.lineTo(gx, gy + gh);
+        ctx.closePath();
+        ctx.globalAlpha = 0.16;
+        ctx.fillStyle = ACCENT;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = "#566164";
+        ctx.beginPath(); ctx.moveTo(gx, gy + gh / 2); ctx.lineTo(gx + gw, gy + gh / 2); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.font = "8px 'IBM Plex Mono', Consolas, monospace";
+      ctx.fillStyle = "#6f7d7e";
+      ctx.fillText(datos.length ? `máx ${(lento / 1000).toFixed(1)} s  ·  ${datos.length} medidas`
+                                : "esperando la segunda medida", gx, base + alto - 7);
+
+      // resumen numerico. Solo calcula con tiempos observados, nunca inventa
+      // sigma ni datos internos que ComfyUI no haya enviado.
       const medio = s.pasos.length
         ? s.pasos.reduce((a, b) => a + b, 0) / s.pasos.length : 0;
+      const porcentaje = total ? Math.max(0, Math.min(100, Math.round(100 * s.hecho / total))) : 0;
+      const va = s.vivo ? performance.now() - s.ini : s.fin;
+      const faltan = s.vivo && medio ? medio * Math.max(0, total - s.hecho) : 0;
+      ctx.fillStyle = s.vivo ? ACCENT : INFO_FG;
+      ctx.font = "700 20px 'IBM Plex Mono', Consolas, monospace";
+      ctx.fillText(`${porcentaje}%`, x2 + 8, base + 20);
+      ctx.font = "9px 'IBM Plex Mono', Consolas, monospace";
+      ctx.fillStyle = "#9fb0b0";
+      ctx.fillText(`paso ${s.hecho}/${total}`, x2 + 8, base + 34);
+      ctx.fillText(`último ${s.ultimo ? (s.ultimo / 1000).toFixed(1) + " s" : "--"}`, x2 + 8, base + 47);
+      ctx.fillText(`media  ${medio ? (medio / 1000).toFixed(1) + " s" : "--"}`, x2 + 8, base + 59);
+      ctx.fillStyle = s.vivo ? INFO_FG : "#6f7d7e";
+      ctx.fillText(s.vivo ? (faltan ? `ETA ${reloj(faltan)}` : `tiempo ${reloj(va)}`)
+                           : `total ${reloj(va)}`, x2 + 8, base + 71);
+
+      // linea final accesible al ampliar el nodo: conserva los mismos datos
+      // en texto sin depender de interpretar el grafico.
       let txt;
       if (s.vivo) {
-        const va = performance.now() - s.ini;
-        const faltan = medio ? medio * (total - s.hecho) : 0;
         txt = `paso ${s.hecho}/${total}   ${(medio / 1000).toFixed(1)} s/paso   ` +
               `${reloj(va)} transcurrido` + (faltan ? `   faltan ~${reloj(faltan)}` : "");
       } else {
@@ -719,6 +810,8 @@ function addProgreso(node, titulo) {
         while (t.length > 2 && ctx.measureText(t + "…").width > max) t = t.slice(0, -1);
         t += "…";
       }
+      ctx.font = "9px 'IBM Plex Mono', Consolas, monospace";
+      ctx.fillStyle = "#6f7d7e";
       ctx.fillText(t, pad, base + alto + 10);
       ctx.restore();
     },
@@ -1495,7 +1588,10 @@ const SECCIONES_P6 = [
 const SECCIONES_H3 = SECCIONES_P6.filter((x) => x !== "camara");
 
 // Espejo de MODELOS en nodes.py. El orden es el que se ve en la fila.
-const MODELOS_UI = ["MiniMax H3", "LTX-2.5", "Libre"];
+const MODELOS_UI = [
+  "MiniMax H3", "LTX-2.5", "Wan 2.2", "Hunyuan 1.5",
+  "CogVideoX 1.5", "Mochi 1", "Libre",
+];
 
 // Recetas por pestana. La de H3 es la larga de arriba; la de LTX queda
 // pendiente de ver un workflow real, y se dice asi en vez de inventarsela.
@@ -1551,6 +1647,254 @@ LO QUE NO FUNCIONA, y esto lo dice su guia expresamente:
 Ajusta el detalle al tamano del plano: un primer plano necesita mas precision que un plano general.
 
 Antes de escribir, preguntame lo que te falte, de una en una: que pasa en la escena, que dice cada personaje con sus palabras exactas, y que tipo de toma quiero. Si no te lo digo, proponme tu una y dime por que.`;
+
+const INSTRUCCION_WAN = `Vas a preparar un prompt para Wan 2.2 local. Primero averigua si voy a usar text-to-video o image-to-video. Preguntame de una en una las cosas que falten y no escribas el bloque final hasta tener una escena clara.
+
+REGLAS OFICIALES IMPORTANTES
+
+En image-to-video la imagen es el primer fotograma. No repitas una descripcion estatica de lo que ya se ve: concentra el prompt en lo que empieza a moverse, la secuencia de acciones, los cambios del entorno y la camara. Conserva y enfatiza cualquier movimiento de camara. El texto final debe ser directo, en ingles y de 100 palabras o menos.
+
+En text-to-video conserva el sujeto y la accion que te pida. Puedes enriquecer tiempo del dia, fuente y direccion de luz, tono, contraste, tipo de plano, angulo y composicion, pero solo cuando ayuden. No cambies la intencion original.
+
+Escribe acciones observables y ordenadas. Evita adjetivos abstractos que no puedan verse. Si hay varias personas, identificalas por ropa, posicion o rasgos estables.
+
+Cuando yo confirme la escena, devuelve SOLO este bloque, sin markdown ni comentarios. Estas secciones son para Cine con IA; el nodo las unira en un unico prompt:
+
+mode:
+subject:
+motion:
+scene:
+camera:
+style:
+negative_prompt:
+
+mode debe ser exactamente image-to-video o text-to-video. Todo lo demas va en ingles. En image-to-video deja subject o scene breves si ya estan fijados por la imagen. negative_prompt puede ser N/A.`;
+
+const INSTRUCCION_HUNYUAN = `Vas a preparar un prompt para HunyuanVideo 1.5 local. Primero preguntame si es text-to-video o image-to-video y luego pregunta, de una en una, solo lo que falte.
+
+La formula oficial para text-to-video es:
+Subject + Motion + Scene + [Shot Type] + [Camera Movement] + [Lighting] + [Style] + [Atmosphere].
+
+Para image-to-video el primer fotograma ya viene dado. La formula prioritaria es:
+Subject Motion Dynamics + Scene Motion Dynamics + [Camera Movement].
+
+Usa ingles claro y directo. Describe procesos en orden (first, then, meanwhile, finally), convierte emociones abstractas en gestos visibles, especifica izquierda/derecha, primer plano/fondo y distingue a cada personaje por atributos o posicion. El texto visible en pantalla debe ir entre comillas dobles.
+
+Cuando yo confirme la escena, devuelve SOLO este bloque, sin markdown ni explicaciones. Cine con IA unira los campos en el orden oficial:
+
+mode:
+subject:
+motion:
+scene:
+shot_type:
+camera_movement:
+lighting:
+style:
+atmosphere:
+negative_prompt:
+
+mode debe ser exactamente image-to-video o text-to-video. El resto va en ingles. En image-to-video no redescribas inutilmente lo que ya esta fijado por el primer fotograma. Los campos opcionales pueden decir N/A.`;
+
+const INSTRUCCION_COG = `Vas a preparar un prompt para CogVideoX 1.5 local. Primero preguntame si es text-to-video o image-to-video. Haz las preguntas que falten de una en una y espera mis respuestas antes de entregar el bloque final.
+
+CogVideoX fue entrenado con captions largos y descriptivos. Escribe en ingles, con oraciones completas y una secuencia temporal clara. Integra sujeto, entorno, acciones, cambios, composicion, camara, luz, color y atmosfera en una descripcion coherente. No empieces con frases vacias como "the image shows".
+
+En image-to-video la imagen es el primer fotograma y la accion debe comenzar desde ese estado. No introduzcas cortes, cambios de escena, transiciones de camara ni saltos de perspectiva que contradigan la imagen inicial.
+
+Respeta el limite del codificador de CogVideoX 1.5: maximo 224 tokens. Prefiere detalle concreto antes que listas de adjetivos.
+
+Cuando yo confirme la escena, devuelve SOLO este bloque, sin markdown ni comentarios. Las secciones son para revisar y Cine con IA las unira en un solo caption:
+
+mode:
+subject_and_scene:
+temporal_action:
+camera_and_composition:
+lighting_and_color:
+style_and_atmosphere:
+negative_prompt:
+
+mode debe ser exactamente image-to-video o text-to-video. Todo lo demas va en ingles. negative_prompt puede ser N/A.`;
+
+const INSTRUCCION_MOCHI = `Vas a preparar un prompt para Mochi 1 local. Preguntame de una en una por el sujeto, la accion, el entorno, la toma y la luz. No escribas el bloque final hasta que yo confirme la idea.
+
+Mochi 1 recibe un prompt en ingles y un negativo separado. Su documentacion publica no impone una plantilla de secciones; Cine con IA usa los campos de abajo solo para que yo pueda revisar y corregir el resultado antes de unirlo en un parrafo.
+
+Describe una escena fotorealista concreta, con acciones visibles y continuidad temporal. Incluye encuadre y movimiento de camara solo si son importantes. Prefiere movimiento moderado y fisicamente claro: la version preview reconoce que el movimiento extremo puede producir deformaciones y que esta optimizada para estilos fotorealistas, no para animacion.
+
+Cuando yo confirme la escena, devuelve SOLO este bloque, sin markdown ni explicaciones:
+
+subject:
+action:
+environment:
+camera:
+lighting_and_style:
+negative_prompt:
+
+Todo va en ingles. negative_prompt puede ser N/A.`;
+
+// Cada perfil declara el bloque que devuelve la IA y el widget donde se
+// guarda. Las secciones son una mesa de montaje: Python las recompone como
+// un prompt continuo y mantiene el negativo en una salida independiente.
+const PERFILES_PROMPT = {
+  "Wan 2.2": {
+    grupo: "wan", instruccion: INSTRUCCION_WAN, principal: "wan_movimiento",
+    titulos: [
+      ["wan_sujeto", "sujeto", "En I2V, solo lo necesario para identificar qué elemento se mueve."],
+      ["wan_movimiento", "movimiento  ·  lo más importante", "Acciones visibles y ordenadas; describe cómo empieza y cómo termina."],
+      ["wan_escena", "escena dinámica", "Cambios del entorno. En I2V evita repetir lo que ya muestra la imagen."],
+      ["wan_camara", "cámara", "Conserva y enfatiza el movimiento de cámara solicitado."],
+      ["wan_estilo", "estética", "Luz, tono, encuadre y composición que realmente ayuden."],
+      ["wan_negativo", "prompt negativo", "Sale por la conexión negative; N/A se convierte en vacío."],
+    ],
+    secciones: {
+      mode: "wan_modo", subject: "wan_sujeto", motion: "wan_movimiento",
+      scene: "wan_escena", camera: "wan_camara", style: "wan_estilo",
+      negative_prompt: "wan_negativo",
+    },
+    alias: { modo: "mode", sujeto: "subject", movimiento: "motion",
+             escena: "scene", camara: "camera", cámara: "camera",
+             estilo: "style", negative: "negative_prompt", negativo: "negative_prompt" },
+  },
+  "Hunyuan 1.5": {
+    grupo: "hunyuan", instruccion: INSTRUCCION_HUNYUAN, principal: "hunyuan_movimiento",
+    titulos: [
+      ["hunyuan_sujeto", "1 · sujeto", "Apariencia o identidad estable del sujeto."],
+      ["hunyuan_movimiento", "2 · movimiento", "Acción observable y secuencia temporal."],
+      ["hunyuan_escena", "3 · escena", "Entorno y cambios que ocurren en él."],
+      ["hunyuan_plano", "4 · tipo de plano", "Close-up, medium shot, long shot, aerial shot…"],
+      ["hunyuan_camara", "5 · movimiento de cámara", "Relación de la cámara con el sujeto."],
+      ["hunyuan_luz", "6 · iluminación", "Fuente, dirección, dureza y evolución de la luz."],
+      ["hunyuan_estilo", "7 · estilo", "Photorealistic, cinematic, pixel art, ink wash…"],
+      ["hunyuan_atmosfera", "8 · atmósfera", "Tono visual general, expresado con señales observables."],
+      ["hunyuan_negativo", "prompt negativo", "Sale por la conexión negative; N/A se convierte en vacío."],
+    ],
+    secciones: {
+      mode: "hunyuan_modo", subject: "hunyuan_sujeto", motion: "hunyuan_movimiento",
+      scene: "hunyuan_escena", shot_type: "hunyuan_plano",
+      camera_movement: "hunyuan_camara", lighting: "hunyuan_luz",
+      style: "hunyuan_estilo", atmosphere: "hunyuan_atmosfera",
+      negative_prompt: "hunyuan_negativo",
+    },
+    alias: { modo: "mode", sujeto: "subject", movimiento: "motion",
+             escena: "scene", plano: "shot_type", camera: "camera_movement",
+             camara: "camera_movement", cámara: "camera_movement",
+             luz: "lighting", estilo: "style", atmosfera: "atmosphere",
+             atmósfera: "atmosphere", negative: "negative_prompt", negativo: "negative_prompt" },
+  },
+  "CogVideoX 1.5": {
+    grupo: "cog", instruccion: INSTRUCCION_COG, principal: "cog_accion_temporal",
+    titulos: [
+      ["cog_sujeto_escena", "sujeto y escena", "Quién, dónde y qué rasgos deben permanecer coherentes."],
+      ["cog_accion_temporal", "acción en el tiempo", "Secuencia completa desde el estado inicial hasta el final."],
+      ["cog_camara_composicion", "cámara y composición", "En I2V evita transiciones, cortes y cambios de perspectiva."],
+      ["cog_luz_color", "luz y color", "Fuentes, contraste y paleta que se ven en el plano."],
+      ["cog_estilo_atmosfera", "estilo y atmósfera", "Detalle concreto; el total no debe superar 224 tokens."],
+      ["cog_negativo", "prompt negativo", "Sale por la conexión negative; N/A se convierte en vacío."],
+    ],
+    secciones: {
+      mode: "cog_modo", subject_and_scene: "cog_sujeto_escena",
+      temporal_action: "cog_accion_temporal",
+      camera_and_composition: "cog_camara_composicion",
+      lighting_and_color: "cog_luz_color",
+      style_and_atmosphere: "cog_estilo_atmosfera",
+      negative_prompt: "cog_negativo",
+    },
+    alias: { modo: "mode", subject: "subject_and_scene", scene: "subject_and_scene",
+             sujeto: "subject_and_scene", accion: "temporal_action", acción: "temporal_action",
+             camera: "camera_and_composition", camara: "camera_and_composition",
+             cámara: "camera_and_composition", lighting: "lighting_and_color",
+             luz: "lighting_and_color", style: "style_and_atmosphere",
+             estilo: "style_and_atmosphere", negative: "negative_prompt",
+             negativo: "negative_prompt" },
+  },
+  "Mochi 1": {
+    grupo: "mochi", instruccion: INSTRUCCION_MOCHI, principal: "mochi_accion",
+    titulos: [
+      ["mochi_sujeto", "sujeto", "Descripción fotorealista del elemento principal."],
+      ["mochi_accion", "acción", "Movimiento moderado, visible y físicamente claro."],
+      ["mochi_entorno", "entorno", "Lugar y elementos con los que interactúa el sujeto."],
+      ["mochi_camara", "cámara", "Encuadre y movimiento solo cuando aporten al plano."],
+      ["mochi_luz_estilo", "luz y estilo", "Mochi 1 Preview está orientado a fotorealismo."],
+      ["mochi_negativo", "prompt negativo", "Sale por la conexión negative; N/A se convierte en vacío."],
+    ],
+    secciones: {
+      subject: "mochi_sujeto", action: "mochi_accion", environment: "mochi_entorno",
+      camera: "mochi_camara", lighting_and_style: "mochi_luz_estilo",
+      negative_prompt: "mochi_negativo",
+    },
+    alias: { sujeto: "subject", accion: "action", acción: "action",
+             entorno: "environment", escena: "environment", camara: "camera",
+             cámara: "camera", lighting: "lighting_and_style", luz: "lighting_and_style",
+             style: "lighting_and_style", estilo: "lighting_and_style",
+             negative: "negative_prompt", negativo: "negative_prompt" },
+  },
+};
+
+function normalizarClavePerfil(txt) {
+  return String(txt || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_\s-]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function clavePerfil(perfil, txt) {
+  const k = normalizarClavePerfil(txt);
+  if (Object.hasOwn(perfil.secciones, k)) return k;
+  for (const [alias, destino] of Object.entries(perfil.alias || {})) {
+    if (normalizarClavePerfil(alias) === k) return destino;
+  }
+  return null;
+}
+
+function parsearPerfil(texto, perfil) {
+  const r = {};
+  if (!texto || !texto.trim()) return r;
+  const limpio = texto.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, "").trim();
+
+  if (limpio.startsWith("{")) {
+    try {
+      const o = JSON.parse(limpio);
+      for (const [k, v] of Object.entries(o)) {
+        const c = clavePerfil(perfil, k);
+        if (c && typeof v === "string") r[c] = v.trim();
+      }
+      if (Object.keys(r).length) return r;
+    } catch (e) { /* seguimos por encabezados */ }
+  }
+
+  const nombres = [...Object.keys(perfil.secciones), ...Object.keys(perfil.alias || {})]
+    .map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[_\s-]+/g, "[_ -]+"));
+  const rx = new RegExp(
+    "^[ \\t>#*_\\-]{0,6}(?:\\d{1,2}[.)]\\s*)?\\**\\s*(" + nombres.join("|") +
+    ")\\s*\\**\\s*[:：]?[ \\t]*$|^[ \\t>#*_\\-]{0,6}(?:\\d{1,2}[.)]\\s*)?\\**\\s*(" +
+    nombres.join("|") + ")\\s*\\**\\s*[:：][ \\t]*\\**[ \\t]*", "gmi");
+  const marcas = [];
+  let m;
+  while ((m = rx.exec(texto)) !== null) {
+    const c = clavePerfil(perfil, m[1] || m[2]);
+    if (c) marcas.push({ clave: c, ini: m.index, fin: m.index + m[0].length });
+    if (rx.lastIndex === m.index) rx.lastIndex++;
+  }
+  if (!marcas.length) {
+    const destino = Object.entries(perfil.secciones).find(([k]) => k !== "mode" && k !== "negative_prompt");
+    if (destino) r[destino[0]] = texto.trim();
+    return r;
+  }
+  for (let i = 0; i < marcas.length; i++) {
+    const hasta = i + 1 < marcas.length ? marcas[i + 1].ini : texto.length;
+    r[marcas[i].clave] = texto.slice(marcas[i].fin, hasta).trim();
+  }
+  return r;
+}
+
+function limpiarValorPerfil(clave, valor) {
+  const t = String(valor || "").trim();
+  if (/^(?:n\/?a|none|not applicable|sin especificar)$/i.test(t)) return "";
+  if (clave === "mode") {
+    const m = t.toLowerCase().replace(/_/g, "-");
+    if (m.includes("image") || m === "i2v") return "image-to-video";
+    if (m.includes("text") || m === "t2v") return "text-to-video";
+  }
+  return t;
+}
 
 // nombres alternativos que suelen devolver los asistentes
 const ALIAS_P6 = {
@@ -2079,6 +2423,9 @@ app.registerExtension({
         grupoPorNombre(this, ["ltx_negativo"], "sin_uso");
         grupoPorNombre(this, ["libre_prompt", "libre_extra", "libre_separador",
                               "libre_instruccion"], "libre");
+        for (const perfil of Object.values(PERFILES_PROMPT)) {
+          grupoPorNombre(this, Object.values(perfil.secciones), perfil.grupo);
+        }
         grupoPorNombre(this, ["plano", "angulo", "movimiento", "camara"], "camara");
         grupoPorNombre(this, ["intensidad"], "h3");   // amplitud y velocidad son de MiniMax
 
@@ -2092,6 +2439,11 @@ app.registerExtension({
                         "Aquí no se toca nada: sale tal cual lo escribes."), "libre");
         grupo(addTitulo(this, "libre_instruccion", "tu receta para la ia",
                         "El botón de copiar copia esto, no la guía de MiniMax."), "libre");
+        for (const perfil of Object.values(PERFILES_PROMPT)) {
+          for (const [sec, tit, ayuda] of perfil.titulos) {
+            grupo(addTitulo(this, sec, tit, ayuda), perfil.grupo);
+          }
+        }
 
         // el bloque de camara: listas visibles a modo de guia de tomas
         grupo(addTitulo(this, "plano", "cámara", "Elige la toma. Se escribe sola, en inglés."), "camara");
@@ -2179,6 +2531,7 @@ app.registerExtension({
           const cual = String(findWidget(nd, "modelo")?.value || "MiniMax H3");
           let texto = instruccionConDuracion();
           if (cual === "LTX-2.5") texto = INSTRUCCION_LTX;
+          if (PERFILES_PROMPT[cual]) texto = PERFILES_PROMPT[cual].instruccion;
           if (cual === "Libre") {
             texto = String(findWidget(nd, "libre_instruccion")?.value || "").trim();
             if (!texto) return "⚠   Escribe tu receta en 'Tu instrucción para la IA'";
@@ -2193,9 +2546,9 @@ app.registerExtension({
                                        : "📋  Pegar prompt  ·  " + cual;
         }, function (nd) {
           const cual = String(findWidget(nd, "modelo")?.value || "MiniMax H3");
-          // fuera de MiniMax no hay secciones que repartir: el texto entra
-          // entero en la caja principal de esa pestana
-          if (cual !== "MiniMax H3") {
+          // LTX y Libre reciben un párrafo ya terminado. Los perfiles con
+          // receta propia se reparten más abajo en sus campos revisables.
+          if (cual === "LTX-2.5" || cual === "Libre") {
             const destino = cual === "LTX-2.5" ? "ltx_prompt" : "libre_prompt";
             ventanaPegar((texto) => {
               if (!texto || !texto.trim()) return;
@@ -2203,6 +2556,41 @@ app.registerExtension({
               nd.__cargaP6 = { puestas: [destino], fallidas: [], vaciadas: [], leidos: 0 };
               bPegar.avisar("✓   Pegado en " + (ETIQUETAS[destino] || destino), nd);
             }, { sinCasilla: true });
+            return;
+          }
+          const perfil = PERFILES_PROMPT[cual];
+          if (perfil) {
+            ventanaPegar((texto, vaciar) => {
+              if (!texto || !texto.trim()) return;
+              const partes = parsearPerfil(texto, perfil);
+              const puestas = [], fallidas = [], vaciadas = [];
+              const hubo = Object.keys(partes).length > 0;
+              for (const [sec, nombreWidget] of Object.entries(perfil.secciones)) {
+                const w = findWidget(nd, nombreWidget);
+                if (partes[sec] === undefined) {
+                  // El modo conserva su valor predeterminado si la IA lo
+                  // omite; los campos de texto sí pueden vaciarse al pedirlo.
+                  if (vaciar && hubo && sec !== "mode" && w && String(w.value || "").trim()) {
+                    ponerTexto(w, "");
+                    vaciadas.push(nombreWidget);
+                  }
+                  continue;
+                }
+                if (!w) { fallidas.push(nombreWidget); continue; }
+                ponerTexto(w, limpiarValorPerfil(sec, partes[sec]));
+                puestas.push(nombreWidget);
+              }
+              nd.__cargaP6 = {
+                puestas, fallidas, vaciadas, leidos: 0,
+                esperadas: Object.keys(perfil.secciones).length,
+                modelo: cual, total: texto.length,
+              };
+              bPegar.avisar(puestas.length
+                ? `✓   ${puestas.length} de ${Object.keys(perfil.secciones).length} apartados rellenados`
+                : "⚠   No se reconoció ningún apartado", nd);
+              console.log("[CineConIA] perfil", cual, "| rellenadas:", puestas,
+                          "| vaciadas:", vaciadas, "| fallidas:", fallidas);
+            });
             return;
           }
           ventanaPegar((texto, vaciar) => {
@@ -2236,9 +2624,12 @@ app.registerExtension({
         });
         const bVaciar = addBoton(this, "🧹  Vaciar todos los apartados", function (nd) {
           const cual = String(findWidget(nd, "modelo")?.value || "MiniMax H3");
-          const campos = cual === "MiniMax H3" ? SECCIONES_P6
-                       : cual === "LTX-2.5" ? ["ltx_prompt", "ltx_audio", "camara"]
-                       : ["libre_prompt", "libre_extra"];
+          const perfil = PERFILES_PROMPT[cual];
+          const campos = perfil
+            ? Object.entries(perfil.secciones).filter(([sec]) => sec !== "mode").map(([, w]) => w)
+            : cual === "MiniMax H3" ? SECCIONES_P6
+            : cual === "LTX-2.5" ? ["ltx_prompt", "ltx_audio", "camara"]
+            : ["libre_prompt", "libre_extra"];
           const llenas = campos.filter((sec) => {
             const w = findWidget(nd, sec);
             return w && String(w.value || "").trim();
@@ -2270,6 +2661,14 @@ app.registerExtension({
           if (c.vaciadoManual) return [`vaciados ${c.vaciadoManual} apartados`,
                                        "listo para un llenado nuevo", avisoExtra];
           if (c.copiado) {
+            const cual = String(findWidget(nd, "modelo")?.value || "MiniMax H3");
+            if (cual !== "MiniMax H3") {
+              return ["instrucción de " + cual + " copiada al portapapeles",
+                      PERFILES_PROMPT[cual]
+                        ? "basada en su guía oficial y preparada para separar campos"
+                        : "pégala al inicio de tu conversación con la IA",
+                      "cuando termine, pega aquí su respuesta"];
+            }
             const d = duracionDelGrafo();
             return ["instrucción copiada al portapapeles",
                     d ? `incluye la duración: ${d.segundos.toFixed(2)} s (${d.fotogramas} fotogramas)`
@@ -2282,7 +2681,7 @@ app.registerExtension({
           }
           const vac = c.vaciadas && c.vaciadas.length;
           return [
-            `última carga: ${c.puestas.length}/${SECCIONES_P6.length} apartados` + (vac ? `  ·  ${vac} vaciadas` : ""),
+            `última carga: ${c.puestas.length}/${c.esperadas || SECCIONES_P6.length} apartados` + (vac ? `  ·  ${vac} vaciadas` : ""),
             c.puestas.join(", ").slice(0, 46),
             c.fallidas.length ? "no se pudo escribir en: " + c.fallidas.join(", ") : avisoExtra,
           ];
@@ -2306,6 +2705,10 @@ app.registerExtension({
           atarPestanas(this, "modelo", {
             "MiniMax H3": ["h3", "camara"],
             "LTX-2.5": ["ltx", "camara"],
+            "Wan 2.2": ["wan"],
+            "Hunyuan 1.5": ["hunyuan"],
+            "CogVideoX 1.5": ["cog"],
+            "Mochi 1": ["mochi"],
             "Libre": ["libre"],
           });
         }

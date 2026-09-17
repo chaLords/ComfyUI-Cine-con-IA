@@ -8,7 +8,7 @@
 
 # ComfyUI Cine con IA
 
-Nodos personalizados para simplificar los flujos cinematográficos de video con IA en ComfyUI. Los nombres visibles son deliberadamente genéricos para que el paquete pueda crecer y trabajar con varios modelos. Su primer flujo completo integra actualmente MiniMax H3 —preparación, prompt, carga, generación, refinado y salida— mientras que el nodo Prompt también admite LTX-2.5 y un modo Libre independiente del modelo.
+Nodos personalizados para simplificar los flujos cinematográficos de video con IA en ComfyUI. Los nombres visibles son deliberadamente genéricos para que el paquete pueda crecer y trabajar con varios modelos. Su primer flujo completo integra actualmente MiniMax H3 —preparación, prompt, carga, generación, refinado y salida— mientras que el nodo Prompt ofrece pestañas específicas para MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 y un modo Libre independiente del modelo.
 
 La interfaz está en español y añade controles visuales, avisos de memoria, progreso de render, ayudas contextuales y herramientas para planificar la cámara sin convertir el workflow en una maraña de nodos técnicos.
 
@@ -21,7 +21,7 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 | --- | --- |
 | **Cine con IA · Proporción y Tamaño** | Calcula ancho y alto desde proporciones de cine, redes sociales o fotografía. Permite trabajar por megapíxeles o lado principal y ajusta el resultado al múltiplo requerido por el modelo. |
 | **Cine con IA · Duración** | Convierte segundos y FPS en una cantidad válida de fotogramas. Incluye la rejilla de MiniMax H3 y ajustes avanzados para otros modelos. |
-| **Cine con IA · Prompt** | Construye prompts para MiniMax H3, LTX-2.5 o cualquier modelo mediante el modo Libre. Gestiona secciones, cámara, instrucciones para otra IA y pegado automático del resultado. |
+| **Cine con IA · Prompt** | Construye y separa prompts específicos para MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 o cualquier modelo mediante el modo Libre. |
 | **Cine con IA · Cargar modelo** | Carga el modelo, codificador de texto y VAEs de video/audio. Encadena hasta cuatro LoRAs y aplica optimizaciones de VRAM, sigma shift y vista previa cuando están disponibles. |
 | **Cine con IA · Escena** | Crea el condicionamiento y el latente audiovisual de H3. Acepta hasta tres imágenes de referencia y una imagen guía anclada a un fotograma. |
 | **Cine con IA · Render** | Ejecuta el primer pase de muestreo con controles directos de pasos, sampler, scheduler, semilla y denoise. |
@@ -32,19 +32,21 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 
 - Controles rápidos para relación de aspecto, resolución, duración, FPS, escala y parámetros de muestreo.
 - Información en vivo sobre resolución final, megapíxeles, coste relativo, duración real y rango recomendado de H3.
-- Barra de progreso integrada para el primer pase y el refinado.
+- Paneles estadísticos de progreso para ambos pases, con gráfico real por paso, tiempo del último paso, promedio, porcentaje y tiempo estimado restante.
 - Hasta cuatro LoRAs encadenados, aplicados en orden.
-- Pestañas de prompt para **MiniMax H3**, **LTX-2.5** y **Libre**.
+- Pestañas adaptables para **MiniMax H3**, **LTX-2.5**, **Wan 2.2**, **Hunyuan 1.5**, **CogVideoX 1.5**, **Mochi 1** y **Libre**.
 - Selector de plano, ángulo y movimiento con redacción automática en inglés.
 - Historial de tomas guardado dentro del workflow para ayudar a variar la cobertura de cámara.
-- Botones para copiar instrucciones destinadas a una IA, pegar su respuesta y repartir automáticamente las seis secciones de H3.
+- Botones para copiar una guía basada en fuentes oficiales, pegar la respuesta de una IA y repartir automáticamente los campos propios de cada modelo.
 - Compatibilidad con workflows guardados con nombres anteriores de los nodos.
 
 ## Compatibilidad de modelos y nombres
 
 Los nombres que aparecen en ComfyUI son genéricos: **Cargar modelo**, **Escena**, **Render**, **Escalar y Refinar** y **Salida**. Esto es intencional y permite incorporar otros modelos sin cambiar el vocabulario del workflow.
 
-El flujo completo de generación está implementado actualmente para **MiniMax H3**. La preparación de prompts ya incluye los modos **LTX-2.5** y **Libre**. Las referencias a H3 en los requisitos técnicos describen el backend actual, no los nombres públicos de los nodos.
+El flujo completo de generación está implementado actualmente para **MiniMax H3**. La preparación de prompts es independiente y también incluye **LTX-2.5**, **Wan 2.2**, **HunyuanVideo 1.5**, **CogVideoX 1.5**, **Mochi 1** y **Libre**. Estas pestañas adicionales producen los textos positivo y negativo para conectarlos al workflow correspondiente de ComfyUI; no sustituyen los nodos de carga, condicionamiento o muestreo de ese modelo.
+
+Antes de incorporar un modelo con nombre propio se comprueba su compatibilidad actual con ComfyUI. ComfyUI enumera soporte nativo de video para Wan 2.2, LTX-Video, HunyuanVideo 1.5, CogVideoX, Mochi y MiniMax H3. Conviene mantener ComfyUI actualizado porque el soporte y las plantillas evolucionan.
 
 Algunos identificadores internos todavía terminan en `H3`, como `CineCargarH3`, `CineEscenaH3` y `CineRenderH3`. El usuario no ve esos identificadores y se conservan exclusivamente por compatibilidad: cambiarlos rompería workflows guardados anteriormente.
 
@@ -125,9 +127,32 @@ El selector de cámara puede sustituir una toma ya escrita o insertar una nueva 
 
 Produce un único párrafo continuo y adapta la terminología de cámara al vocabulario de LTX. El campo de audio se añade al final del mismo prompt.
 
+### Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5 y Mochi 1
+
+Cada modelo tiene su propia pestaña y una guía distinta para conversar con una IA. El flujo previsto es:
+
+1. Copiar la instrucción de la pestaña elegida y pegarla en una IA.
+2. Responder sus preguntas sobre el plano.
+3. Pegar en el nodo el bloque etiquetado que devuelve.
+4. Revisar los campos separados. El nodo los une en el orden adecuado y entrega `prompt` y `negative` como salidas independientes.
+
+Los campos son una mesa de edición, no una sintaxis nueva impuesta al modelo. Wan prioriza movimiento y continuidad de cámara; Hunyuan sigue el orden documentado de sus componentes; CogVideoX usa una descripción temporal detallada dentro del límite de 224 tokens de su codificador; Mochi favorece movimiento concreto y fotorealista.
+
 ### Libre
 
 Une dos campos con un separador configurable sin reescribir el contenido. Sirve para modelos actuales o futuros que utilicen otro formato.
+
+## Fuentes oficiales de modelos y compatibilidad
+
+Las guías de prompt se basan en la documentación de los autores, mientras que la compatibilidad con ComfyUI se comprueba por separado:
+
+- [Ficha de MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3) y [paquete/workflows para ComfyUI](https://huggingface.co/Comfy-Org/MiniMax-H3)
+- [Ficha de LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5)
+- [Wan 2.2 I2V](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B), [Wan 2.2 T2V](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) y [ejemplos oficiales de ComfyUI](https://comfyanonymous.github.io/ComfyUI_examples/wan22/)
+- [Ficha de HunyuanVideo 1.5](https://huggingface.co/tencent/HunyuanVideo-1.5)
+- [CogVideoX 1.5 T2V](https://huggingface.co/zai-org/CogVideoX1.5-5B) y [CogVideoX 1.5 I2V](https://huggingface.co/zai-org/CogVideoX1.5-5B-I2V)
+- [Ficha de Mochi 1](https://huggingface.co/genmo/mochi-1-preview) y [ejemplo oficial de ComfyUI](https://comfyanonymous.github.io/ComfyUI_examples/mochi/)
+- [Repositorio de ComfyUI y lista de soporte nativo](https://github.com/Comfy-Org/ComfyUI)
 
 ## Modelos y archivos
 

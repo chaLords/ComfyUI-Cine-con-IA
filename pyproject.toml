@@ -1,6 +1,6 @@
 [project]
 name = "cine-con-ia"
-version = "1.0.0"
+version = "1.1.0"
 description = "Model-friendly cinematic workflow nodes for creating, refining, and exporting AI video in ComfyUI."
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
@@ -11,6 +11,10 @@ keywords = [
     "cinema",
     "minimax-h3",
     "ltx-video",
+    "wan-2.2",
+    "hunyuan-video",
+    "cogvideox",
+    "mochi-1",
     "prompting",
     "latent-upscale",
     "frame-interpolation",
