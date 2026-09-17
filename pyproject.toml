@@ -1,0 +1,33 @@
+[project]
+name = "cine-con-ia"
+version = "1.0.0"
+description = "Nodos cinematográficos para preparar, generar, refinar y exportar video con MiniMax H3 en ComfyUI."
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = []
+keywords = [
+    "comfyui",
+    "video",
+    "cinema",
+    "minimax-h3",
+    "ltx-video",
+    "prompting",
+    "latent-upscale",
+    "frame-interpolation",
+]
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Environment :: GPU :: NVIDIA CUDA",
+]
+
+[project.urls]
+Repository = "https://github.com/chaLords/ComfyUI-Cine-con-IA"
+Documentation = "https://github.com/chaLords/ComfyUI-Cine-con-IA#readme"
+Issues = "https://github.com/chaLords/ComfyUI-Cine-con-IA/issues"
+
+[tool.comfy]
+PublisherId = "chalords"
+DisplayName = "Cine con IA"
+requires-comfyui = ">=0.34.2"
+

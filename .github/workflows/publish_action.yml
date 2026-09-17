@@ -1,0 +1,41 @@
+name: Publish to Comfy Registry
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "pyproject.toml"
+
+permissions:
+  contents: read
+
+jobs:
+  publish-node:
+    name: Publish custom node
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY_ACCESS_TOKEN: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+    steps:
+      - name: Check registry token
+        id: registry-token
+        shell: bash
+        run: |
+          if [ -n "$REGISTRY_ACCESS_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "REGISTRY_ACCESS_TOKEN is not configured; publication was skipped."
+          fi
+
+      - name: Check out code
+        if: steps.registry-token.outputs.available == 'true'
+        uses: actions/checkout@v7
+
+      - name: Publish custom node
+        if: steps.registry-token.outputs.available == 'true'
+        uses: Comfy-Org/publish-node-action@main
+        with:
+          personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+
