@@ -1,16 +1,20 @@
+<p align="center">
+  <strong>English</strong> · <a href="CHANGELOG_ES.md">Español</a>
+</p>
+
 # Changelog
 
-Todos los cambios relevantes del proyecto se documentarán en este archivo.
+All notable changes to this project will be documented in this file.
 
-El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [1.0.0] - 2026-09-17
 
-### Añadido
+### Added
 
-- Primera publicación de los ocho nodos Cine con IA.
-- Flujo completo para MiniMax H3: carga, escena, render, refinado y salida.
-- Modos de prompt para MiniMax H3, LTX-2.5 y texto libre.
-- Controles visuales, progreso integrado, historial de tomas y ayudas de VRAM.
-- Metadatos y automatización para Comfy Registry y ComfyUI-Manager.
+- Initial release of the eight Cine con IA nodes.
+- Complete MiniMax H3 workflow: loading, scene setup, rendering, refinement, and output.
+- Prompt modes for MiniMax H3, LTX-2.5, and free-form text.
+- Visual controls, integrated progress, shot history, and VRAM guidance.
+- Metadata and automation for Comfy Registry and ComfyUI-Manager.
 
