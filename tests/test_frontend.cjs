@@ -7,6 +7,8 @@ const test = require('node:test');
 const source = fs.readFileSync(path.join(__dirname, '../web/cineconia.js'), 'utf8');
 const helpers = source.slice(source.indexOf('async function consultarPrompt('),
   source.indexOf('/**\n * Boton dibujado', source.indexOf('async function consultarPrompt(')));
+const cameraHelpers = source.slice(source.indexOf('const PLANOS_EN = {'),
+  source.indexOf('// --- leer la camara', source.indexOf('const PLANOS_EN = {')));
 
 function setup(api) {
   const context = vm.createContext({ api,
@@ -14,6 +16,14 @@ function setup(api) {
     findWidget: (node, name) => node.widgets?.find((w) => w.name === name),
   });
   vm.runInContext(helpers, context);
+  return context;
+}
+
+function setupCamera() {
+  const context = vm.createContext({
+    findWidget: (node, name) => node.widgets?.find((w) => w.name === name),
+  });
+  vm.runInContext(cameraHelpers, context);
   return context;
 }
 
@@ -53,4 +63,17 @@ test('guide warning requires a connected image anchored at frame zero', () => {
   frame.value = 0;
   input.link = null;
   assert.equal(ctx.guiaInicialConectada(node), false);
+});
+
+test('selected camera controls become a visible English camera instruction', () => {
+  const ctx = setupCamera();
+  const node = {widgets: [
+    {name: 'modelo', value: 'MiniMax H3'},
+    {name: 'plano', value: 'plano medio'},
+    {name: 'angulo', value: 'tres cuartos'},
+    {name: 'movimiento', value: 'zoom in'},
+    {name: 'intensidad', value: 'normal'},
+  ]};
+  assert.equal(ctx.fraseCamara(node),
+    "The shot is framed as a medium shot, with the camera about forty-five degrees off the subject's front. The camera zooms in on the subject.");
 });

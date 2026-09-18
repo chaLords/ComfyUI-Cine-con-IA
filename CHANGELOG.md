@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.4] - 2026-09-18
+
+### Fixed
+
+- **Cambiar la toma en el texto** now writes the selected shot directly into the Camera field and keeps it visible for confirmation before prompt construction.
+
 ## [1.3.3] - 2026-09-18
 
 ### Fixed

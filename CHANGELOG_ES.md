@@ -8,6 +8,12 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.4] - 2026-09-18
+
+### Corregido
+
+- El botón **Cambiar la toma en el texto** escribe ahora la frase elegida directamente en el cuadro Cámara y la deja visible para confirmar qué se aplicará al prompt.
+
 ## [1.3.3] - 2026-09-18
 
 ### Corregido

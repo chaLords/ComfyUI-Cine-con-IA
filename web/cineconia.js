@@ -3190,20 +3190,13 @@ app.registerExtension({
         grupo(reubicar(this, addChips(this, "movimiento", MOVIMIENTOS_CHIPS, null, null,
           (nd, v) => tomaUsada(nd, "movimiento", v)), "movimiento"), "camara");
         grupo(reubicar(this, addBoton(this, "🎥  Cambiar la toma en el texto", function (nd) {
-          if ((nd.inputs || []).some((i) => i.link != null)) {
-            return "⚠ Hay texto conectado: edítalo en el nodo de origen";
-          }
-          consultarPrompt(nd).then((result) => {
-            ponerTexto(findWidget(nd, "detailed_description"), result.description);
-            ponerTexto(findWidget(nd, "camara"), "");
-            nd.__camara = { hechos: ["plano, ángulo y movimiento"] };
-            apuntarToma(nd);
-            nd.setDirtyCanvas(true, true);
-          }).catch((error) => ventanaPegar(() => {}, {
-            titulo: "No se aplicó la cámara", ayuda: error.message,
-            valor: "", aceptar: "Cerrar", sinCasilla: true,
-          }));
-          return "Aplicando la toma seleccionada…";
+          const frase = fraseCamara(nd).trim();
+          if (!frase) return "⚠ Elige al menos un plano, ángulo o movimiento";
+          ponerTexto(findWidget(nd, "camara"), frase);
+          const n = apuntarToma(nd);
+          nd.__camara = { hechos: ["caja de cámara"], frase };
+          nd.setDirtyCanvas(true, true);
+          return `✓ Toma ${n} escrita en Cámara`;
         }), "camara"), "h3");
 
 
@@ -3215,8 +3208,8 @@ app.registerExtension({
             nd.__camara = null;
             if (r.error) return ["⚠ " + r.error, "", ""];
             return ["✓ texto reescrito: " + r.hechos.join(", ") + cuenta,
-                    cortar(camaraEnTexto(nd), 58),
-                    "revisa la sección 4 antes de renderizar"];
+                    cortar(r.frase || camaraEnTexto(nd), 58),
+                    "se aplicará al construir el prompt final"];
           }
           const enTexto = camaraEnTexto(nd);
           const mano = String(findWidget(nd, "camara")?.value || "").trim();
