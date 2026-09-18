@@ -3,17 +3,45 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/cineconia-banner.png" alt="Cine con IA" width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-oscuro.png">
+    <img src="docs/assets/logo-claro.png" alt="Cine con IA" width="190">
+  </picture>
 </p>
 
-# ComfyUI Cine con IA
+<h1 align="center">ComfyUI · Cine con IA</h1>
 
-Nodos personalizados para simplificar los flujos cinematográficos de video con IA en ComfyUI. Los nombres visibles son deliberadamente genéricos para que el paquete pueda crecer y trabajar con varios modelos. Su primer flujo completo integra actualmente MiniMax H3 —preparación, prompt, carga, generación, refinado y salida— mientras que el nodo Prompt ofrece pestañas específicas para MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 y un modo Libre independiente del modelo.
+<p align="center">
+  <strong>Nueve nodos para rodar vídeo con IA en local, sin convertir el workflow en una maraña.</strong><br>
+  Proporción y Tamaño • Duración • Prompt • Cargar modelo • Escena • Render • Escalar y Refinar • Salida • Modelos
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-blue?style=flat-square"></a>
+  <img alt="ComfyUI 0.34.2 o superior" src="https://img.shields.io/badge/ComfyUI-%E2%89%A5%200.34.2-6b46c1?style=flat-square">
+  <img alt="Nueve nodos" src="https://img.shields.io/badge/nodos-9-e08a3c?style=flat-square">
+  <img alt="Interfaz en español" src="https://img.shields.io/badge/interfaz-espa%C3%B1ol-2ea043?style=flat-square">
+  <!-- Cuando tengas la URL del canal, descomenta esta línea y pon el enlace:
+  <a href="https://www.youtube.com/@TU-CANAL"><img alt="YouTube" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
+  -->
+</p>
+
+<p align="center">
+  <a href="#instalación">📥 Instalar</a> ·
+  <a href="#qué-incluye">🎬 Los nodos</a> ·
+  <a href="#flujo-recomendado">▶️ Cómo se usa</a> ·
+  <a href="#uso-del-nodo-prompt">✍️ El nodo Prompt</a> ·
+  <a href="CHANGELOG_ES.md">🛠 Novedades</a>
+</p>
+
+---
+
+Nodos personalizados para simplificar los flujos cinematográficos de vídeo con IA en ComfyUI. Los nombres visibles son deliberadamente genéricos para que el paquete pueda crecer y trabajar con varios modelos. Su primer flujo completo integra MiniMax H3 —preparación, prompt, carga, generación, refinado y salida— mientras que el nodo Prompt ofrece pestañas específicas para MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 y un modo Libre independiente del modelo.
 
 La interfaz está en español y añade controles visuales, avisos de memoria, progreso de render, ayudas contextuales y herramientas para planificar la cámara sin convertir el workflow en una maraña de nodos técnicos.
 
 > [!IMPORTANT]
-> Este repositorio contiene los nodos y su interfaz. No incluye ComfyUI, modelos, LoRAs, VAEs ni pesos de interpolación o escalado.
+> Este repositorio contiene los nodos y su interfaz. No incluye ComfyUI, modelos, LoRAs, VAEs ni pesos de interpolación o escalado. El nodo **Modelos** te los descarga a su carpeta con un botón.
 
 ## Qué incluye
 
@@ -27,6 +55,7 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 | **Cine con IA · Render** | Ejecuta el primer pase de muestreo con controles directos de pasos, sampler, scheduler, semilla y denoise. |
 | **Cine con IA · Escalar y Refinar** | Escala el latente de video con un upscaler 3D y realiza un segundo pase de refinado. Incluye perfiles de 3, 4 y 5 pasos y mensajes claros ante falta de VRAM. |
 | **Cine con IA · Salida** | Decodifica video y audio, interpola fotogramas opcionalmente y entrega un objeto `VIDEO`, fotogramas, audio, FPS e información del resultado. |
+| **Cine con IA · Modelos** | Enseña qué archivos necesita cada familia de modelos, marca los que ya tienes en disco y descarga los que falten directamente a su carpeta dentro de `models/`, con progreso y reanudación. |
 
 ## Funciones destacadas de la interfaz
 

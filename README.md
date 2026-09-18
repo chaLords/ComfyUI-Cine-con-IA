@@ -3,19 +3,45 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/cineconia-banner.png" alt="Cine con IA" width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-oscuro.png">
+    <img src="docs/assets/logo-claro.png" alt="Cine con IA" width="190">
+  </picture>
 </p>
 
-# ComfyUI Cine con IA
+<h1 align="center">ComfyUI · Cine con IA</h1>
 
-See the [workflow, camera and profile review](docs/REVIEW.md). The loader selector does not yet convert the complete H3 pipeline to other model families. Use **Ver prompt final** to inspect camera instructions before generation; a guide image at frame 0 also constrains the starting composition.
+<p align="center">
+  <strong>Nine nodes for shooting AI video locally, without turning the workflow into a tangle.</strong><br>
+  Ratio &amp; Size • Duration • Prompt • Load Model • Scene • Render • Upscale &amp; Refine • Output • Models
+</p>
 
-Custom nodes that simplify cinematic AI video workflows in ComfyUI. The visible node names are intentionally model-agnostic so the package can grow across multiple video models. Its first complete generation path currently integrates MiniMax H3—setup, prompting, model loading, generation, refinement, and output—while the Prompt node provides model-specific tabs for MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1, and a model-independent Free mode.
+<p align="center">
+  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"></a>
+  <img alt="ComfyUI 0.34.2 or newer" src="https://img.shields.io/badge/ComfyUI-%E2%89%A5%200.34.2-6b46c1?style=flat-square">
+  <img alt="Nine nodes" src="https://img.shields.io/badge/nodes-9-e08a3c?style=flat-square">
+  <img alt="Spanish interface" src="https://img.shields.io/badge/interface-Spanish-2ea043?style=flat-square">
+  <!-- Once you have the channel URL, uncomment this line and set the link:
+  <a href="https://www.youtube.com/@YOUR-CHANNEL"><img alt="YouTube" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
+  -->
+</p>
 
-The interface adds visual controls, memory warnings, render progress, contextual help, and camera-planning tools without turning the workflow into a maze of technical nodes.
+<p align="center">
+  <a href="#installation">📥 Install</a> ·
+  <a href="#included-nodes">🎬 The nodes</a> ·
+  <a href="#recommended-workflow">▶️ How it is used</a> ·
+  <a href="#using-the-prompt-node">✍️ The Prompt node</a> ·
+  <a href="CHANGELOG.md">🛠 Changelog</a>
+</p>
+
+---
+
+Custom nodes that simplify cinematic AI video workflows in ComfyUI. The display names are deliberately generic so the pack can grow and work with several models. Its first complete flow integrates MiniMax H3 — preparation, prompt, loading, generation, refinement and output — while the Prompt node offers dedicated tabs for MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 and a model-agnostic Free mode.
+
+The interface is in Spanish and adds visual controls, memory warnings, render progress, contextual help and camera planning tools, without turning the workflow into a tangle of technical nodes.
 
 > [!IMPORTANT]
-> This repository contains the nodes and their interface. It does not include ComfyUI, models, LoRAs, VAEs, interpolation weights, or upscaling weights.
+> This repository contains the nodes and their interface. It does not include ComfyUI, models, LoRAs, VAEs or interpolation and upscaling weights. The **Models** node downloads them into the right folder with one button.
 
 ## Included nodes
 
@@ -29,6 +55,7 @@ The interface adds visual controls, memory warnings, render progress, contextual
 | **Cine con IA · Render** | Runs the first sampling pass with direct controls for steps, sampler, scheduler, seed, and denoise. |
 | **Cine con IA · Escalar y Refinar** | Upscales the video latent with a 3D upscaler and performs a second refinement pass. Includes 3-, 4-, and 5-step profiles and clear out-of-VRAM messages. |
 | **Cine con IA · Salida** | Decodes video and audio, optionally interpolates frames, and returns a `VIDEO` object, frames, audio, FPS, and result information. |
+| **Cine con IA · Modelos** (Models) | Shows which files each model family needs, marks the ones already on disk, and downloads the rest straight into the right folder under `models/`, with progress and resume. |
 
 ## Interface highlights
 
