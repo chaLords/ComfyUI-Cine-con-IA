@@ -307,3 +307,59 @@ class CatalogTests(unittest.TestCase):
         self.assertTrue(NODES.CATALOGO["LTX-2.5"]["licencia"])
         for otra in ("MiniMax H3", "Wan 2.2", "Hunyuan 1.5"):
             self.assertIsNone(NODES.CATALOGO[otra]["licencia"], otra)
+
+
+class CameraBoxTests(unittest.TestCase):
+    """La caja de camara escrita a mano y las listas de la interfaz."""
+
+    # La caja real que se quedo de una toma anterior y se comio los chips.
+    CAJA = ("The shot is framed as a medium-wide shot, with the camera directly in "
+            "front of the subject's eye level, matching <Picture 1> and keeping both "
+            "hands and the entire laptop within the frame. The camera holds a static "
+            "shot for the entire 8.00 seconds.")
+    DESC = "Photorealistic cinematic imagery. [Shot 1] The presenter waves at the camera."
+
+    def _aplicar(self, angulo="tres cuartos", movimiento="zoom in"):
+        return NODES._aplicar_camara(self.DESC, self.CAJA, "plano americano",
+                                     angulo, movimiento, "normal")
+
+    def test_the_lists_are_applied_on_top_of_the_handwritten_box(self):
+        # Este es el fallo que dejo un video frontal y quieto: los chips decian
+        # tres cuartos y zoom in, y la caja vieja los anulaba en silencio.
+        salida = self._aplicar()
+        self.assertIn("forty-five degrees", salida)
+        self.assertNotIn("directly in front", salida)
+        self.assertIn("zoom", salida.lower())
+        self.assertNotIn("holds a static", salida)
+
+    def test_what_the_user_wrote_by_hand_survives(self):
+        salida = self._aplicar()
+        self.assertIn("keeping both hands", salida)
+        self.assertIn("entire laptop", salida)
+        self.assertIn("<Picture 1>", salida)
+        self.assertIn("medium-wide shot", salida)
+
+    def test_every_angle_replaces_the_old_one(self):
+        for angulo, frase in NODES.ANGULOS:
+            if angulo == "sin especificar":
+                continue
+            salida = self._aplicar(angulo=angulo)
+            self.assertIn(frase.replace("the camera ", ""), salida, angulo)
+            self.assertNotIn("directly in front", salida, angulo)
+
+    def test_no_movement_leaves_dangling_text(self):
+        # "[^.]*" se paraba en el punto de "8.00" y dejaba un ".00 seconds."
+        import re
+        for movimiento, _ in NODES.MOVIMIENTOS:
+            if movimiento == "sin especificar":
+                continue
+            salida = self._aplicar(movimiento=movimiento)
+            self.assertIsNone(re.search(r"\.\d\d\s|\s\.|\.\s*\.", salida),
+                              f"{movimiento}: {salida[:200]}")
+
+    def test_without_a_box_nothing_changed(self):
+        salida = NODES._aplicar_camara(self.DESC, "", "primer plano",
+                                       "contrapicado", "zoom in", "normal")
+        self.assertIn("close-up", salida)
+        self.assertIn("looking up", salida)
+        self.assertIn("zoom", salida.lower())

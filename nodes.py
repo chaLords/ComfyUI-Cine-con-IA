@@ -412,7 +412,28 @@ _RE_PLANO = [re.compile(x, re.IGNORECASE) for x in (
 _RE_PLANO_ART = [re.compile(r"(?:\b(?:an?|the)\s+)?(?:" + x.pattern + r")", re.IGNORECASE)
                  for x in _RE_PLANO]
 
-_RE_MOV = [re.compile(r"(?:the camera\s+)?" + x + r"[^.]*", re.IGNORECASE) for x in (
+# Angulos ya escritos en el texto. A diferencia del movimiento, aqui se
+# sustituye SOLO la frase del angulo y no lo que viene detras: en
+# "...directly in front of him, keeping both hands within the frame" lo que
+# sigue a la coma es encuadre del usuario y hay que respetarlo.
+# El orden manda: lo mas especifico primero. "directly in front of the
+# subject's eye level" tiene que ganar a "at the subject's eye level".
+_RE_ANGULO = [re.compile(x, re.IGNORECASE) for x in (
+    r"(?:the camera\s+)?directly in front of (?:the )?(?:subject'?s?|him|her|them|it)(?:'s)?(?:\s+eye[- ]level)?",
+    r"(?:the camera\s+)?(?:directly\s+)?(?:in front of|facing) (?:the )?(?:subject'?s?|him|her|them|it)(?:'s)?",
+    r"(?:the camera\s+)?directly overhead(?:,?\s*looking (?:straight )?down)?",
+    r"(?:the camera\s+)?(?:just )?behind and beside[^,.]*",
+    r"(?:the camera\s+)?(?:about\s+)?forty[- ]?five degrees[^,.]*",
+    r"(?:the camera\s+)?(?:below|beneath|under)[^,.]*,?\s*looking up(?: at (?:them|him|her|it))?",
+    r"(?:the camera\s+)?above[^,.]*,?\s*looking down(?: at (?:them|him|her|it))?",
+    r"(?:the camera\s+)?at (?:the )?(?:subject'?s?|his|her|their) eye[- ]level",
+    r"(?:from )?(?:an? )?(?:low|high|overhead|eye[- ]level|three[- ]quarter|over[- ]the[- ]shoulder|dutch)[- ]angle(?: shot)?",
+)]
+
+# El "[^.]*" de siempre se paraba en el punto de "8.00 seconds" y dejaba
+# colgando un ".00 seconds." absurdo. Un punto entre cifras no termina
+# una frase, asi que se deja pasar.
+_RE_MOV = [re.compile(r"(?:the camera\s+)?" + x + r"(?:[^.]|\.(?=\d))*", re.IGNORECASE) for x in (
     r"holds? a static (?:shot|frame)", r"push(?:es|ing)? in", r"pull(?:s|ing)? (?:out|back)",
     r"zoom(?:s|ing)? in", r"zoom(?:s|ing)? out", r"pan(?:s|ning)? (?:left|right)",
     r"tilt(?:s|ing)? (?:up|down)", r"truck(?:s|ing)? (?:left|right)",
@@ -465,7 +486,7 @@ def _pulir(texto):
     return texto.strip()
 
 
-def _camara_en_texto(texto, plano_txt, mov_txt):
+def _camara_en_texto(texto, plano_txt, mov_txt, ang_txt=""):
     """Cambia la camara que ya hubiera, SUSTITUYENDO en su sitio.
 
     Borrar dejaba frases rotas y trozos sueltos ("Close-up:." colgando).
@@ -474,17 +495,25 @@ def _camara_en_texto(texto, plano_txt, mov_txt):
     pone el movimiento nuevo, que ademas se come lo que venia detras porque
     describia el movimiento viejo.
 
-    Devuelve (texto, plano_puesto, movimiento_puesto).
+    Devuelve (texto, plano_puesto, movimiento_puesto, angulo_puesto).
     """
     fuera = texto
     plano_ok = False
     mov_ok = False
+    ang_ok = False
 
     if plano_txt:
         for rx in _RE_PLANO:
             if rx.search(fuera):
                 fuera = rx.sub(lambda m: _como_estaba(m.group(0), plano_txt), fuera)
                 plano_ok = True
+                break
+
+    if ang_txt:
+        for rx in _RE_ANGULO:
+            if rx.search(fuera):
+                fuera = rx.sub(lambda m: _como_estaba(m.group(0), ang_txt), fuera)
+                ang_ok = True
                 break
 
     if mov_txt:
@@ -494,7 +523,8 @@ def _camara_en_texto(texto, plano_txt, mov_txt):
                 mov_ok = True
                 break
 
-    return (_pulir(fuera) if (plano_ok or mov_ok) else texto), plano_ok, mov_ok
+    hubo = plano_ok or mov_ok or ang_ok
+    return (_pulir(fuera) if hubo else texto), plano_ok, mov_ok, ang_ok
 
 
 def _inyectar_camara(descripcion, bloque):
@@ -523,31 +553,40 @@ def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad, 
     el movimiento viejo se borra; luego se inserta solo lo que falte.
     """
     manual = (manual or "").strip()
+    tablaP = _PLANO_TXT_LTX if ltx else _PLANO_TXT
+    tablaM = LTX_MOVIMIENTOS if ltx else dict(MOVIMIENTOS)
+    plano_txt = tablaP.get(plano, "")
+    mov = tablaM.get(movimiento, "")
+    mov_txt = ("the camera " + mov) if mov else ""
+    ang_txt = "" if ltx else _busca(ANGULOS, angulo)
+
     if manual:
-        # texto a mano: no se puede sustituir palabra a palabra, asi que se
-        # borra el movimiento viejo y se inserta lo que escribio el usuario
+        # La caja escrita a mano NO anula las listas: las listas se aplican
+        # ENCIMA de ella. Antes la caja mandaba del todo, y una frase vieja
+        # que dijera "static shot directly in front" se comia en silencio el
+        # "zoom in" y el "tres cuartos" que el usuario acababa de elegir: los
+        # chips se veian encendidos y no salian en el video.
+        # Ahora se sustituye en su sitio lo que las listas controlan -- plano,
+        # angulo y movimiento -- y lo demas que escribio se queda tal cual.
+        caja, _, _, _ = _camara_en_texto(manual, plano_txt, mov_txt, ang_txt)
         texto = descripcion
         for tabla in (_RE_MOV, _RE_PLANO_ART):
             for rx in tabla:
                 if rx.search(texto):
                     texto = rx.sub("", texto)
                     break
-        return _inyectar_camara(_pulir(texto), manual)
+        return _inyectar_camara(_pulir(texto), caja)
 
-    tablaP = _PLANO_TXT_LTX if ltx else _PLANO_TXT
-    tablaM = LTX_MOVIMIENTOS if ltx else dict(MOVIMIENTOS)
-    plano_txt = tablaP.get(plano, "")
-    mov = tablaM.get(movimiento, "")
-    mov_txt = ("the camera " + mov) if mov else ""
-
-    texto, plano_ok, mov_ok = _camara_en_texto(descripcion, plano_txt, mov_txt)
+    texto, plano_ok, mov_ok, ang_ok = _camara_en_texto(
+        descripcion, plano_txt, mov_txt, ang_txt)
 
     # solo se inserta lo que NO se pudo sustituir dentro de la prosa
     if ltx:
         falta = _frase_camara_ltx("sin especificar" if plano_ok else plano, angulo,
                                   "sin especificar" if mov_ok else movimiento)
     else:
-        falta = _frase_camara("sin especificar" if plano_ok else plano, angulo,
+        falta = _frase_camara("sin especificar" if plano_ok else plano,
+                              "sin especificar" if ang_ok else angulo,
                               "sin especificar" if mov_ok else movimiento, intensidad)
     return _inyectar_camara(texto, falta) if falta else texto
 

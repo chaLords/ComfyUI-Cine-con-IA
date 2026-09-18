@@ -8,6 +8,14 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] - 2026-09-18
+
+### Fixed
+
+- The hand-written camera box no longer overrides the shot-size, angle and movement lists. They are now substituted inside whatever is in the box, and the rest of what was written there is kept. A leftover box from an earlier shot used to silently cancel the chips, so a take selected as three-quarter with a zoom in rendered frontal and static.
+- Angles written into the text can now be replaced in place; before, only shot size and movement could.
+- A movement clause no longer stops at the decimal point of "8.00 seconds" and leaves ".00 seconds." dangling.
+
 ## [1.3.0] - 2026-09-18
 
 ### Added

@@ -8,6 +8,14 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.1] - 2026-09-18
+
+### Corregido
+
+- La caja de cámara escrita a mano ya no anula las listas de plano, ángulo y movimiento. Ahora se sustituyen dentro de lo que haya en la caja y se respeta el resto de lo escrito. Una caja que quedaba de una toma anterior cancelaba los chips en silencio, así que una toma elegida en tres cuartos con zoom in salía frontal y quieta.
+- Los ángulos ya escritos en el texto se pueden sustituir en su sitio; antes solo el plano y el movimiento.
+- La frase del movimiento ya no se corta en el punto decimal de "8.00 seconds" dejando colgando un ".00 seconds.".
+
 ## [1.3.0] - 2026-09-18
 
 ### Añadido

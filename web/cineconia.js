@@ -3156,8 +3156,9 @@ app.registerExtension({
             ponerToma(nd, salto);
           }
 
-          // si la caja de camara tiene texto, es ella la que manda en el
-          // prompt: se actualiza ahi para que lo que ves sea lo que sale
+          // la caja se reescribe con la toma nueva para que lo que lees sea
+          // lo que sale; aunque no la toques, al construir el prompt las
+          // listas ya se aplican dentro de ella
           const caja = findWidget(nd, "camara");
           const aMano = String(caja?.value || "").trim();
           let r;
@@ -3190,8 +3191,13 @@ app.registerExtension({
           const mano = String(findWidget(nd, "camara")?.value || "").trim();
           const chips = fraseCamara(nd);
 
-          if (mano) return ["caja de cámara  ·  manda sobre las listas",
-                            cortar(mano, 58), ""];
+          // La caja ya NO anula las listas: al construir el prompt, el plano,
+          // el angulo y el movimiento se sustituyen dentro de ella y el resto
+          // de lo que escribio se respeta. Decir aqui "manda sobre las listas"
+          // era mentira, y esa mentira costo un render frontal y quieto.
+          if (mano) return ["caja de cámara  +  las listas se aplican encima",
+                            cortar(mano, 58),
+                            "plano, ángulo y movimiento salen de los chips"];
           if (enTexto && chips) {
             return ["la sección 4 dice: " + cortar(enTexto, 40),
                     "las listas dicen otra cosa",
