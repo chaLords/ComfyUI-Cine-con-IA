@@ -8,6 +8,24 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.2.0] - 2026-09-18
+
+### Añadido
+
+- Selector de perfil de modelo en el nodo Cargar modelo: MiniMax H3, LTX-2.5, Wan 2.2, Hunyuan 1.5 y Personalizado.
+- Al elegir un perfil se proponen el modelo, el codificador de texto y los VAE que le corresponden, y se ponen sus shifts y sus valores de VRAM.
+- Personalizado no toca nada y deduce la familia por el nombre de los archivos elegidos.
+
+### Cambiado
+
+- El cargador deja de ser solo de MiniMax: el modo del codificador de texto, el nodo de sigma shift, el VAE de audio y los parches de VRAM de MiniMax siguen al perfil elegido.
+- Las familias sin audio ya no cargan un segundo VAE, y la salida de VAE de audio repite la de vídeo.
+- El sigma shift prueba los nodos que usa cada familia y, si no hay ninguno instalado, deja el modelo igual en vez de parar el render.
+
+### Corregido
+
+- El emparejado de archivos ya resuelve los choques entre familias (`hunyuan_video_vae` lleva dentro `video_vae`; `umt5_xxl` lleva dentro `t5`) quedándose con la pista más específica.
+
 ## [1.1.0] - 2026-09-17
 
 ### Añadido

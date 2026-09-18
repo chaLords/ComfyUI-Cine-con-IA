@@ -50,6 +50,25 @@ class DurationTests(unittest.TestCase):
         self.assertEqual(seconds, 8.0)
 
 
+class ModelLoaderTests(unittest.TestCase):
+    def test_empty_lora_slots_start_with_zero_strength(self):
+        inputs = NODES.CineCargarH3.INPUT_TYPES()
+
+        self.assertEqual(inputs["required"]["lora"][1]["default"], "ninguno")
+        self.assertEqual(inputs["required"]["lora_fuerza"][1]["default"], 0.0)
+        for slot in (2, 3, 4):
+            self.assertEqual(inputs["optional"][f"lora_{slot}"][1]["default"], "ninguno")
+            self.assertEqual(inputs["optional"][f"lora_fuerza_{slot}"][1]["default"], 0.0)
+
+    def test_invalid_lora_strengths_do_not_block_prompt_validation(self):
+        self.assertTrue(NODES.CineCargarH3.VALIDATE_INPUTS(
+            lora_fuerza="ninguno",
+            lora_fuerza_2="ninguno",
+            lora_fuerza_3=None,
+            lora_fuerza_4=float("nan"),
+        ))
+
+
 class PromptTests(unittest.TestCase):
     def test_free_mode_keeps_user_text(self):
         prompt, negative = NODES.CinePrompt6().armar(
@@ -150,3 +169,67 @@ class PromptTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModelProfileTests(unittest.TestCase):
+    """El selector de perfil del nodo Cargar modelo."""
+
+    def test_every_profile_is_complete(self):
+        for name, profile in NODES.PERFILES_CARGA.items():
+            for key in ("clip", "audio", "shift", "parches", "previa", "valores", "pistas"):
+                self.assertIn(key, profile, f"{name} no declara {key}")
+            self.assertTrue(profile["shift"], f"{name} no declara ningun nodo de shift")
+            for field in ("modelo", "codificador_texto", "vae_video", "vae_audio"):
+                self.assertTrue(profile["pistas"].get(field), f"{name} no da pistas para {field}")
+
+    def test_default_profile_is_minimax_and_is_listed(self):
+        self.assertEqual(NODES.PERFIL_POR_DEFECTO, "MiniMax H3")
+        self.assertIn(NODES.PERFIL_POR_DEFECTO, NODES.PERFILES)
+        self.assertEqual(NODES.PERFILES[-1], "Personalizado")
+
+    def test_only_minimax_uses_the_audio_vae_and_the_vram_patches(self):
+        for name, profile in NODES.PERFILES_CARGA.items():
+            expected = name == "MiniMax H3"
+            self.assertEqual(profile["audio"], expected, f"{name}: VAE de audio")
+            self.assertEqual(profile["parches"], expected, f"{name}: parches de MiniMax")
+
+    def test_custom_profile_guesses_the_family_from_the_file_names(self):
+        cases = {
+            "MiniMax H3": ("minimax_h3_ref2va.safetensors", "qwen3vl_32b_minimax_h3.safetensors",
+                           "minimax_h3_video_vae.safetensors", "minimax_h3_audio_vae.safetensors"),
+            "LTX-2.5": ("ltx-2.5-dev.safetensors", "t5xxl_fp8.safetensors",
+                        "ltx-2.5-vae.safetensors", "ltx-2.5-vae.safetensors"),
+            "Wan 2.2": ("wan2.2_t2v_14B.safetensors", "umt5_xxl_fp8.safetensors",
+                        "wan_2.1_vae.safetensors", "wan_2.1_vae.safetensors"),
+            "Hunyuan 1.5": ("hunyuan_video_1.5.safetensors", "llava_llama3_fp8.safetensors",
+                            "hunyuan_video_vae.safetensors", "hunyuan_video_vae.safetensors"),
+        }
+        for expected, files in cases.items():
+            resolved, profile = NODES._perfil_carga("Personalizado", *files)
+            self.assertEqual(resolved, expected, f"{files[0]} deberia ser {expected}")
+            self.assertIs(profile, NODES.PERFILES_CARGA[expected])
+
+    def test_unknown_files_fall_back_to_minimax(self):
+        resolved, _ = NODES._perfil_carga("Personalizado", "x.safetensors", "y.safetensors",
+                                          "z.safetensors", "w.safetensors")
+        self.assertEqual(resolved, NODES.PERFIL_POR_DEFECTO)
+
+    def test_an_explicit_profile_beats_the_file_names(self):
+        resolved, _ = NODES._perfil_carga("LTX-2.5", "minimax_h3.safetensors",
+                                          "qwen3vl.safetensors", "a", "b")
+        self.assertEqual(resolved, "LTX-2.5")
+
+    def test_the_profile_widget_is_the_last_one_saved(self):
+        # Los valores se guardan por posicion: si 'perfil' deja de ser el
+        # ultimo, cualquier workflow guardado antes se lee descolocado.
+        spec = NODES.CineCargarH3.INPUT_TYPES()
+        self.assertEqual(list(spec["optional"])[-1], "perfil")
+        self.assertNotIn("perfil", spec["required"])
+
+    def test_the_shift_falls_back_when_the_node_is_missing(self):
+        # Sin ningun nodo de shift instalado, el modelo sale igual que entro:
+        # el shift es un ajuste, no una razon para parar un render.
+        model = object()
+        salida, nota = NODES._aplicar_shift(model, [("NoExisteEsteNodo", "uno")], 6.0, 3.0)
+        self.assertIs(salida, model)
+        self.assertIn("sin shift", nota)

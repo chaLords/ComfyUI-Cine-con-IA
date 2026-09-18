@@ -829,6 +829,167 @@ def _lista(carpeta):
         return []
 
 
+# ---------------------------------------------------------------------------
+# Perfiles del cargador
+#
+# Cada familia de modelos se carga distinto y no basta con cambiar el nombre
+# de los archivos:
+#   - el codificador de texto se abre en un "modo" propio (CLIPType),
+#   - el sigma shift lo pone un nodo distinto en cada familia,
+#   - los troceos de VRAM de MiniMax solo valen para MiniMax,
+#   - el VAE de audio solo lo usa H3; las demas familias no llevan audio.
+#
+# La tabla dice, por familia, que usar. Anadir una familia nueva es anadir
+# una entrada aqui: cargar() no se toca.
+#
+# "shift" es una lista de candidatos; se prueban en orden y se usa el primero
+# que exista en esta instalacion. Cada candidato es (nodo, forma):
+#   "av"  -> shift_video y shift_audio, los dos
+#   "uno" -> shift = shift_video
+#   "ltx" -> max_shift = shift_video, base_shift = shift_audio
+#
+# "pistas" son trozos de nombre de archivo para que la interfaz rellene sola
+# los cuatro desplegables. La copia de esta tabla que usa la interfaz esta en
+# web/cineconia.js (PISTAS_PERFIL): si se toca una, se toca la otra.
+# ---------------------------------------------------------------------------
+
+PERFILES_CARGA = {
+    "MiniMax H3": {
+        "clip": "MINIMAX",
+        "audio": True,
+        "shift": [("MiniMaxH3SigmaShift", "av")],
+        "parches": True,
+        "previa": "taeh3",
+        "valores": {"trocear_atencion": 16, "trocear_ffn": 16,
+                    "shift_video": 6.0, "shift_audio": 3.0},
+        "pistas": {
+            "modelo": ["minimax_h3", "minimax", "_h3"],
+            "codificador_texto": ["qwen3vl", "minimax"],
+            "vae_video": ["h3_video_vae", "minimax"],
+            "vae_audio": ["h3_audio_vae", "audio_vae"],
+        },
+    },
+    "LTX-2.5": {
+        "clip": "LTXV",
+        "audio": False,
+        "shift": [("ModelSamplingLTXV", "ltx"), ("ModelSamplingSD3", "uno")],
+        "parches": False,
+        "previa": "taelt",
+        "valores": {"trocear_atencion": 1, "trocear_ffn": 1,
+                    "shift_video": 2.05, "shift_audio": 0.95},
+        "pistas": {
+            "modelo": ["ltxv", "ltx"],
+            "codificador_texto": ["t5xxl", "t5"],
+            "vae_video": ["ltxv", "ltx"],
+            "vae_audio": ["ltxv", "ltx"],
+        },
+    },
+    "Wan 2.2": {
+        "clip": "WAN",
+        "audio": False,
+        "shift": [("ModelSamplingSD3", "uno")],
+        "parches": False,
+        "previa": "taew",
+        "valores": {"trocear_atencion": 1, "trocear_ffn": 1,
+                    "shift_video": 8.0, "shift_audio": 3.0},
+        "pistas": {
+            "modelo": ["wan2", "wan_2", "wan"],
+            "codificador_texto": ["umt5"],
+            "vae_video": ["wan2", "wan"],
+            "vae_audio": ["wan2", "wan"],
+        },
+    },
+    "Hunyuan 1.5": {
+        "clip": "HUNYUAN_VIDEO",
+        "audio": False,
+        "shift": [("ModelSamplingSD3", "uno")],
+        "parches": False,
+        "previa": "taehv",
+        "valores": {"trocear_atencion": 1, "trocear_ffn": 1,
+                    "shift_video": 7.0, "shift_audio": 3.0},
+        "pistas": {
+            "modelo": ["hunyuan"],
+            "codificador_texto": ["llava", "llama"],
+            "vae_video": ["hunyuan"],
+            "vae_audio": ["hunyuan"],
+        },
+    },
+}
+
+# El orden manda en la interfaz. "Personalizado" va al final: no rellena nada
+# y deduce la familia mirando los nombres de archivo que haya elegido el
+# usuario, para que quien monte algo raro no se quede sin cargador.
+PERFILES = list(PERFILES_CARGA) + ["Personalizado"]
+PERFIL_POR_DEFECTO = "MiniMax H3"
+
+
+def _familia_por_archivos(*nombres):
+    """Deduce el perfil mirando los nombres de archivo elegidos.
+
+    Se usa solo con 'Personalizado'. Puntua cada perfil por cuantas de sus
+    pistas aparecen; gana el que mas puntue. Si no puntua ninguno, H3, que es
+    con lo que nacio el nodo.
+    """
+    texto = " ".join(str(n or "").lower().replace("\\", "/") for n in nombres)
+    # Los nombres se pisan entre familias: "hunyuan_video_vae" lleva dentro
+    # "video_vae". Por eso cada campo suma la pista MAS LARGA que aparezca,
+    # que siempre es la mas especifica, en vez de contar coincidencias sueltas.
+    mejor, puntos_mejor = PERFIL_POR_DEFECTO, 0
+    for nombre, perfil in PERFILES_CARGA.items():
+        puntos = 0
+        for pistas in perfil["pistas"].values():
+            largos = [len(p) for p in pistas if p in texto]
+            if largos:
+                puntos += max(largos)
+        if puntos > puntos_mejor:
+            mejor, puntos_mejor = nombre, puntos
+    return mejor
+
+
+def _perfil_carga(nombre, *archivos):
+    """Devuelve (nombre_resuelto, diccionario del perfil)."""
+    if nombre in PERFILES_CARGA:
+        return nombre, PERFILES_CARGA[nombre]
+    resuelto = _familia_por_archivos(*archivos)
+    return resuelto, PERFILES_CARGA[resuelto]
+
+
+def _tipo_clip(nombre_tipo):
+    """Traduce el nombre del modo del codificador al enum de ComfyUI.
+
+    Si esta version de ComfyUI no conoce ese modo, se avisa y se sigue con el
+    modo normal en vez de reventar la carga entera.
+    """
+    import logging
+    import comfy.sd
+    tipo = getattr(comfy.sd.CLIPType, nombre_tipo, None)
+    if tipo is None:
+        logging.warning("[Cine con IA] Esta version de ComfyUI no conoce el modo "
+                        "de codificador %s. Se usa el modo normal.", nombre_tipo)
+        tipo = getattr(comfy.sd.CLIPType, "STABLE_DIFFUSION", None)
+    return tipo
+
+
+def _aplicar_shift(model, candidatos, shift_video, shift_audio):
+    """Prueba los nodos de sigma shift del perfil y usa el primero que exista.
+
+    Devuelve (modelo, nota). Si no hay ninguno, deja el modelo igual: el shift
+    es un ajuste, no un requisito, y vale mas seguir que parar el render.
+    """
+    for nodo, forma in candidatos:
+        if forma == "av":
+            args = {"shift_video": shift_video, "shift_audio": shift_audio}
+        elif forma == "ltx":
+            args = {"max_shift": shift_video, "base_shift": shift_audio}
+        else:
+            args = {"shift": shift_video}
+        m = _llamar_nodo(nodo, model=model, **args)
+        if m is not None:
+            detalle = "/".join("{:g}".format(v) for v in args.values())
+            return m, "shift {} ({})".format(detalle, nodo)
+    return model, "sin shift (no esta {})".format(candidatos[0][0])
+
+
 class CineCargarH3:
     """Carga el modelo, el codificador y los dos VAE, y aplica los ahorros de VRAM."""
 
@@ -848,8 +1009,8 @@ class CineCargarH3:
                 "shift_audio": ("FLOAT", {"default": 3.0, "min": 0.01, "max": 100.0, "step": 0.01}),
                 "lora": (["ninguno"] + _lista("loras"), {"default": "ninguno",
                           "tooltip": "LoRA opcional sobre el modelo. Para realismo de piel y rostro en H3: h3-realism-people-t2v-i2v-r2v.safetensors"}),
-                "lora_fuerza": ("FLOAT", {"default": 0.75, "min": -2.0, "max": 3.0, "step": 0.05,
-                                          "tooltip": "0.75 es el valor de referencia del LoRA de realismo. Mas alto endurece la piel."}),
+                "lora_fuerza": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 3.0, "step": 0.05,
+                                          "tooltip": "Sin LoRA queda en 0. Al elegir uno por primera vez, la interfaz propone 0.75 como punto de partida."}),
                 "vista_previa": ("BOOLEAN", {"default": True,
                                              "tooltip": "Muestra el video avanzando mientras se genera, decodificado con un VAE diminuto. Cuesta muy poco y deja ver si la toma va bien antes de esperar el render entero."}),
             },
@@ -860,11 +1021,17 @@ class CineCargarH3:
             # vacias: la funcion ya tiene sus valores por defecto.
             "optional": {
                 "lora_2": (["ninguno"] + _lista("loras"), {"default": "ninguno"}),
-                "lora_fuerza_2": ("FLOAT", {"default": 0.75, "min": -2.0, "max": 3.0, "step": 0.05}),
+                "lora_fuerza_2": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 3.0, "step": 0.05}),
                 "lora_3": (["ninguno"] + _lista("loras"), {"default": "ninguno"}),
-                "lora_fuerza_3": ("FLOAT", {"default": 0.75, "min": -2.0, "max": 3.0, "step": 0.05}),
+                "lora_fuerza_3": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 3.0, "step": 0.05}),
                 "lora_4": (["ninguno"] + _lista("loras"), {"default": "ninguno"}),
-                "lora_fuerza_4": ("FLOAT", {"default": 0.75, "min": -2.0, "max": 3.0, "step": 0.05}),
+                "lora_fuerza_4": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 3.0, "step": 0.05}),
+                # El perfil se ve arriba del todo, pero el control de verdad va
+                # aqui, el ultimo, por la misma razon de siempre: los valores
+                # se guardan por posicion. Lo que se ve arriba son las
+                # pestanas, que no se guardan y solo escriben en este campo.
+                "perfil": (PERFILES, {"default": PERFIL_POR_DEFECTO,
+                           "tooltip": "Que familia de modelos se esta cargando. Cambia el modo del codificador de texto, el nodo de sigma shift y que parches de VRAM tienen sentido. Personalizado no rellena nada y deduce la familia por el nombre de los archivos."}),
             },
         }
 
@@ -886,16 +1053,26 @@ class CineCargarH3:
 
     def cargar(self, modelo, codificador_texto, vae_video, vae_audio,
                trocear_atencion, trocear_ffn, shift_video, shift_audio,
-               lora="ninguno", lora_fuerza=0.75, vista_previa=True,
-               lora_2="ninguno", lora_fuerza_2=0.75,
-               lora_3="ninguno", lora_fuerza_3=0.75,
-               lora_4="ninguno", lora_fuerza_4=0.75):
+               lora="ninguno", lora_fuerza=0.0, vista_previa=True,
+               lora_2="ninguno", lora_fuerza_2=0.0,
+               lora_3="ninguno", lora_fuerza_3=0.0,
+               lora_4="ninguno", lora_fuerza_4=0.0,
+               perfil=PERFIL_POR_DEFECTO):
         import logging
         import folder_paths
         import comfy.sd
         import comfy.utils
 
         notas = []
+
+        # --- que familia se esta cargando. De aqui salen el modo del
+        # codificador, el nodo de shift, si hay audio y que parches valen.
+        nombre_perfil, p = _perfil_carga(
+            perfil, modelo, codificador_texto, vae_video, vae_audio)
+        if perfil not in PERFILES_CARGA:
+            notas.append("perfil {} (deducido)".format(nombre_perfil))
+        else:
+            notas.append("perfil {}".format(nombre_perfil))
 
         # --- modelo
         ruta = folder_paths.get_full_path_or_raise("diffusion_models", modelo)
@@ -926,53 +1103,62 @@ class CineCargarH3:
         if cadena:
             notas.append("LoRA: " + " -> ".join(cadena))
 
-        # --- codificador de texto, en modo MiniMax
+        # --- codificador de texto, en el modo que pida la familia
         ruta_clip = folder_paths.get_full_path_or_raise("text_encoders", codificador_texto)
         clip = comfy.sd.load_clip(
             ckpt_paths=[ruta_clip],
             embedding_directory=folder_paths.get_folder_paths("embeddings"),
-            clip_type=comfy.sd.CLIPType.MINIMAX,
+            clip_type=_tipo_clip(p["clip"]),
             model_options={},
         )
 
-        # --- los dos VAE
+        # --- VAE. El de audio solo lo abre H3: cargar un segundo VAE que
+        # nadie va a usar cuesta RAM para nada. En las familias sin audio la
+        # salida vae_audio repite la de video para no dejar la ranura vacia.
         def _vae(nombre):
             rp = folder_paths.get_full_path_or_raise("vae", nombre)
             sd, meta = comfy.utils.load_torch_file(rp, return_metadata=True)
             return comfy.sd.VAE(sd=sd, metadata=meta)
 
         vae_v = _vae(vae_video)
-        vae_a = _vae(vae_audio)
+        if p["audio"]:
+            vae_a = _vae(vae_audio)
+        else:
+            vae_a = vae_v
+            notas.append("sin VAE de audio ({} no lleva audio)".format(nombre_perfil))
 
-        # --- parches de VRAM (KJNodes). Si no estan, se sigue sin ellos.
-        if trocear_ffn > 1:
-            m = _llamar_nodo("MiniMaxChunkFeedForward", model=model,
-                             chunks=trocear_ffn, seq_threshold=2048)
-            if m is not None:
-                model = m
-                notas.append("FFN troceado x{}".format(trocear_ffn))
-            else:
-                notas.append("FFN sin trocear (falta KJNodes)")
+        # --- parches de VRAM (KJNodes). Son de MiniMax: en otras familias no
+        # se aplican aunque el numero este puesto. Si no estan, se sigue.
+        if not p["parches"]:
+            if trocear_ffn > 1 or trocear_atencion > 1:
+                notas.append("troceo omitido (solo sirve en MiniMax)")
+        else:
+            if trocear_ffn > 1:
+                m = _llamar_nodo("MiniMaxChunkFeedForward", model=model,
+                                 chunks=trocear_ffn, seq_threshold=2048)
+                if m is not None:
+                    model = m
+                    notas.append("FFN troceado x{}".format(trocear_ffn))
+                else:
+                    notas.append("FFN sin trocear (falta KJNodes)")
 
-        if trocear_atencion > 1:
-            m = _llamar_nodo("MiniMaxLowVRAMAttention", model=model,
-                             head_chunks=trocear_atencion)
-            if m is not None:
-                model = m
-                notas.append("atencion en {} grupos".format(trocear_atencion))
-            else:
-                notas.append("atencion sin trocear (falta KJNodes)")
+            if trocear_atencion > 1:
+                m = _llamar_nodo("MiniMaxLowVRAMAttention", model=model,
+                                 head_chunks=trocear_atencion)
+                if m is not None:
+                    model = m
+                    notas.append("atencion en {} grupos".format(trocear_atencion))
+                else:
+                    notas.append("atencion sin trocear (falta KJNodes)")
 
-        # --- sigma shift (nodo del core)
-        m = _llamar_nodo("MiniMaxH3SigmaShift", model=model,
-                         shift_video=shift_video, shift_audio=shift_audio)
-        if m is not None:
-            model = m
-            notas.append("shift {}/{}".format(shift_video, shift_audio))
+        # --- sigma shift, con el nodo que use cada familia
+        model, nota_shift = _aplicar_shift(model, p["shift"], shift_video, shift_audio)
+        notas.append(nota_shift)
 
         # --- vista previa en vivo (KJNodes + un VAE diminuto)
         if vista_previa:
-            pequenos = [v for v in _lista("vae_approx") if "taeh3" in v.lower()] or _lista("vae_approx")
+            clave = p["previa"]
+            pequenos = [v for v in _lista("vae_approx") if clave in v.lower()] or _lista("vae_approx")
             if pequenos:
                 m = _llamar_nodo("ModelPreviewOverrideKJ", model=model, vae=vae_v,
                                  max_resolution=1024, jpeg_quality=80,
@@ -991,7 +1177,8 @@ class CineCargarH3:
             modelo.split("\\")[-1].split("/")[-1],
             ", ".join(notas) if notas else "sin parches",
         ])
-        logging.info("[Cine con IA] Cargar H3: %s", " | ".join(notas) if notas else "sin parches")
+        logging.info("[Cine con IA] Cargar modelo: %s",
+                     " | ".join(notas) if notas else "sin parches")
         return (model, clip, vae_v, vae_a, info)
 
 

@@ -8,6 +8,24 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-09-18
+
+### Added
+
+- Model profile selector in the Load Model node: MiniMax H3, LTX-2.5, Wan 2.2, Hunyuan 1.5, and Custom.
+- Picking a profile proposes the matching diffusion model, text encoder, and VAE files, and sets its own shift and VRAM values.
+- Custom makes no changes and infers the family from the chosen file names.
+
+### Changed
+
+- The loader is no longer MiniMax-only: the text encoder mode, the sigma shift node, the audio VAE, and the MiniMax VRAM patches now follow the selected profile.
+- Families without audio no longer load a second VAE, and the audio VAE output mirrors the video one.
+- The sigma shift tries the nodes its family uses and, if none is installed, leaves the model untouched instead of failing.
+
+### Fixed
+
+- File matching now resolves collisions between families (`hunyuan_video_vae` contains `video_vae`; `umt5_xxl` contains `t5`) by preferring the most specific hint.
+
 ## [1.1.0] - 2026-09-17
 
 ### Added
