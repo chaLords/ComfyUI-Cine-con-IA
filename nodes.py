@@ -192,13 +192,13 @@ REGLAS_DE_OFICIO = """### Shot constraints
 
 These rules apply to every shot and never describe a particular scene. What the scene contains is defined above.
 
-A hand that is holding something keeps holding it from the moment it takes it until the last frame, and stays inside the frame while it does. It reads as a hand throughout: correct number of fingers, correct anatomy, skin texture and its own shadow. It never flattens into a solid shape or a patch of uniform colour.
+A hand holding something maintains consistent contact unless the action above asks it to release. When visible, the hand has consistent anatomy, skin texture and its own shadow.
 
 No hand, arm or person enters the frame that was not already established in the scene above.
 
 Nobody touches their hair, face, cheek, chin or clothing unless the scene above asks for it.
 
-The camera stops pushing in while the faces, the hands and anything they hold are still fully inside the frame with margin around them.
+Follow the framing and camera movement specified in the shot above. Objects and hands may leave the frame naturally when that framing or movement requires it.
 
 Every surface keeps its own shape and material: a curved object stays curved across its whole visible side, with the light falling on it as a continuous highlight. The only flat rectangular shapes in the frame are the ones the scene above describes.
 
@@ -433,13 +433,15 @@ _RE_ANGULO = [re.compile(x, re.IGNORECASE) for x in (
 # El "[^.]*" de siempre se paraba en el punto de "8.00 seconds" y dejaba
 # colgando un ".00 seconds." absurdo. Un punto entre cifras no termina
 # una frase, asi que se deja pasar.
-_RE_MOV = [re.compile(r"(?:the camera\s+)?" + x + r"(?:[^.]|\.(?=\d))*", re.IGNORECASE) for x in (
+_RE_MOV = [re.compile(r"\bthe camera\s+" + x +
+    r"(?:(?![, ]+(?:while|as|and)\s+(?:he|she|they|the subject)\b)[^.;\n\"]|\.(?=\d))*",
+    re.IGNORECASE) for x in (
     r"holds? a static (?:shot|frame)", r"push(?:es|ing)? in", r"pull(?:s|ing)? (?:out|back)",
     r"zoom(?:s|ing)? in", r"zoom(?:s|ing)? out", r"pan(?:s|ning)? (?:left|right)",
     r"tilt(?:s|ing)? (?:up|down)", r"truck(?:s|ing)? (?:left|right)",
     r"doll(?:y|ies|ying) (?:in|out|left|right)", r"pedestal(?:s|ing)? (?:up|down)",
     r"cran(?:e|es|ing) (?:up|down)", r"arc(?:s|ing)? around", r"circles around",
-    r"tracking shot", r"shak(?:es|ing)", r"roll(?:s|ing)? (?:clockwise|counterclockwise)",
+    r"(?:follows [^.;]*? in a )?tracking shot", r"shak(?:es|ing)", r"roll(?:s|ing)? (?:clockwise|counterclockwise)",
 )]
 
 # basura que queda al quitar frases: "[Shot 1] : ", " . .", espacios dobles
@@ -520,7 +522,7 @@ def _camara_en_texto(texto, plano_txt, mov_txt, ang_txt=""):
     if plano_txt:
         rx = _primera(fuera, _RE_PLANO)
         if rx is not None:
-            fuera = rx.sub(lambda m: _como_estaba(m.group(0), plano_txt), fuera)
+            fuera = rx.sub(lambda m: _como_estaba(m.group(0), plano_txt), fuera, count=1)
             plano_ok = True
 
     if ang_txt:
@@ -570,7 +572,20 @@ def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad, 
     plano_txt = tablaP.get(plano, "")
     mov = tablaM.get(movimiento, "")
     mov_txt = ("the camera " + mov) if mov else ""
-    ang_txt = "" if ltx else _busca(ANGULOS, angulo)
+    if mov_txt and not ltx and not (mov.startswith(("holds", "takes")) or ";" in mov):
+        intensidad_txt = _busca(INTENSIDADES, intensidad)
+        if intensidad_txt:
+            mov_txt += " " + intensidad_txt
+    ang_txt = LTX_ANGULOS.get(angulo, "") if ltx else _busca(ANGULOS, angulo)
+
+    def completar(texto):
+        texto, p_ok, m_ok, a_ok = _camara_en_texto(texto, plano_txt, mov_txt, ang_txt)
+        p = "sin especificar" if p_ok else plano
+        a = "sin especificar" if a_ok else angulo
+        m = "sin especificar" if m_ok else movimiento
+        falta = (_frase_camara_ltx(p, a, m) if ltx else
+                 _frase_camara(p, a, m, intensidad))
+        return _inyectar_camara(texto, falta) if falta else texto
 
     if manual:
         # La caja escrita a mano NO anula las listas: las listas se aplican
@@ -580,27 +595,13 @@ def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad, 
         # chips se veian encendidos y no salian en el video.
         # Ahora se sustituye en su sitio lo que las listas controlan -- plano,
         # angulo y movimiento -- y lo demas que escribio se queda tal cual.
-        caja, _, _, _ = _camara_en_texto(manual, plano_txt, mov_txt, ang_txt)
-        texto = descripcion
-        for tabla in (_RE_MOV, _RE_PLANO_ART):
-            for rx in tabla:
-                if rx.search(texto):
-                    texto = rx.sub("", texto)
-                    break
+        caja = completar(manual)
+        # No borrar prosa completa: puede contener acciones o dialogo del
+        # usuario. Sustituir las dimensiones seleccionadas tambien aqui.
+        texto, _, _, _ = _camara_en_texto(descripcion, plano_txt, mov_txt, ang_txt)
         return _inyectar_camara(_pulir(texto), caja)
 
-    texto, plano_ok, mov_ok, ang_ok = _camara_en_texto(
-        descripcion, plano_txt, mov_txt, ang_txt)
-
-    # solo se inserta lo que NO se pudo sustituir dentro de la prosa
-    if ltx:
-        falta = _frase_camara_ltx("sin especificar" if plano_ok else plano, angulo,
-                                  "sin especificar" if mov_ok else movimiento)
-    else:
-        falta = _frase_camara("sin especificar" if plano_ok else plano,
-                              "sin especificar" if ang_ok else angulo,
-                              "sin especificar" if mov_ok else movimiento, intensidad)
-    return _inyectar_camara(texto, falta) if falta else texto
+    return completar(descripcion)
 
 
 # Perfiles del nodo de prompt. Se agregan por nombre, no por posicion, para
@@ -635,7 +636,7 @@ class CinePrompt6:
             req[nombre] = ("STRING", {"multiline": True, "default": "", "tooltip": ayuda})
         req["omitir_vacias"] = ("BOOLEAN", {"default": True})
         req["reglas_de_oficio"] = ("BOOLEAN", {"default": True,
-                                               "tooltip": "Anade al final unas reglas que valen para cualquier plano: manos que no sueltan lo que agarran, la camara que no corta las manos, las caras que no derivan. No describen ninguna escena concreta."})
+                                               "tooltip": "Anade reglas de continuidad y anatomia sin anular el encuadre o la accion elegidos."})
         # Los widgets se guardan por POSICION en widgets_values, asi que todo
         # lo nuevo va al final: asi un workflow guardado antes sigue leyendo
         # sus seis secciones y sus dos interruptores donde estaban.
@@ -651,7 +652,7 @@ class CinePrompt6:
                              "tooltip": "Amplitud y velocidad del movimiento. 'normal' no escribe nada, "
                                         "que es lo que pide la guia."})
         req["camara"] = ("STRING", {"multiline": True, "default": "",
-                         "tooltip": "Si escribes algo aqui, manda sobre las tres listas de arriba. "
+                         "tooltip": "Las listas seleccionadas se aplican sobre este texto; libre conserva esa dimension. "
                                     "En ingles y en prosa. Se inserta dentro de detailed_description, "
                                     "justo detras de [Shot 1]."})
 
@@ -799,8 +800,8 @@ class CinePrompt6:
 
         # --- MiniMax H3: el formato de seis secciones de siempre
         # La camara no es una seccion aparte del formato: H3 la quiere dentro
-        # de la descripcion, en la frase del plano. El texto a mano gana a las
-        # listas para que se pueda afinar sin pelearse con los desplegables.
+        # de la descripcion, en la frase del plano. Las listas seleccionadas
+        # se aplican sobre la caja manual; 'libre' conserva esa dimension.
         partes = []
         for nombre, _ in self.SECCIONES:
             texto = (kwargs.get(nombre) or "").strip()
@@ -2081,6 +2082,29 @@ def _registrar_rutas():
     rutas = getattr(getattr(PromptServer, "instance", None), "routes", None)
     if rutas is None:
         return
+
+    @rutas.post("/cineconia/prompt_preview")
+    async def _prompt_preview(peticion):
+        try:
+            cuerpo = await peticion.json()
+            if not isinstance(cuerpo, dict):
+                raise ValueError("Se esperaba un objeto de campos del nodo Prompt")
+            schema = CinePrompt6.INPUT_TYPES()
+            permitidos = set(schema.get("required", {})) | set(schema.get("optional", {}))
+            campos = {k: v for k, v in cuerpo.items() if k in permitidos}
+            if any(not isinstance(v, (str, bool, int, float)) for v in campos.values()):
+                raise ValueError("Los campos deben ser texto, numeros o booleanos")
+            if sum(len(str(v)) for v in campos.values()) > 200000:
+                raise ValueError("El prompt supera el limite de la vista previa")
+            positivo, negativo = CinePrompt6().armar(**campos)
+            descripcion = _aplicar_camara(
+                campos.get("detailed_description", ""), campos.get("camara", ""),
+                campos.get("plano", "sin especificar"), campos.get("angulo", "sin especificar"),
+                campos.get("movimiento", "sin especificar"), campos.get("intensidad", "normal"))
+            return web.json_response({"prompt": positivo, "negative": negativo,
+                                      "description": descripcion})
+        except (ValueError, TypeError) as exc:
+            return web.json_response({"error": str(exc)}, status=400)
 
     @rutas.post("/cineconia/catalogo")
     async def _catalogo(peticion):

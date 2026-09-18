@@ -42,6 +42,8 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 
 ## Compatibilidad de modelos y nombres
 
+Consulta la [revisión técnica del workflow, cámaras y perfiles](docs/REVIEW_ES.md). El selector de carga aún no convierte toda la cadena H3 a otras familias. Usa **Ver prompt final** para comprobar la cámara antes de generar; una imagen guía en el fotograma 0 también condiciona la composición inicial.
+
 Los nombres que aparecen en ComfyUI son genéricos: **Cargar modelo**, **Escena**, **Render**, **Escalar y Refinar** y **Salida**. Esto es intencional y permite incorporar otros modelos sin cambiar el vocabulario del workflow.
 
 El flujo completo de generación está implementado actualmente para **MiniMax H3**. La preparación de prompts es independiente y también incluye **LTX-2.5**, **Wan 2.2**, **HunyuanVideo 1.5**, **CogVideoX 1.5**, **Mochi 1** y **Libre**. Estas pestañas adicionales producen los textos positivo y negativo para conectarlos al workflow correspondiente de ComfyUI; no sustituyen los nodos de carga, condicionamiento o muestreo de ese modelo.

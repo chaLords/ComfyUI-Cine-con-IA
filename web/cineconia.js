@@ -2419,6 +2419,32 @@ function verInstruccion(texto) {
   });
 }
 
+async function consultarPrompt(node) {
+  // Los valores conectados llegan al ejecutar el grafo; no se simulan aqui.
+  const conectados = (node.inputs || []).filter((i) => i.link != null).map((i) => i.name);
+  const campos = Object.fromEntries((node.widgets || [])
+    .filter((w) => widgetSeGuarda(w) && !conectados.includes(w.name))
+    .map((w) => [w.name, w.value]));
+  const response = await api.fetchApi("/cineconia/prompt_preview", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(campos),
+  });
+  if (!response.ok) throw new Error("No se pudo preparar el prompt. Reinicia ComfyUI si acabas de actualizar.");
+  return { ...(await response.json()), conectados };
+}
+
+function guiaInicialConectada(node) {
+  const graph = node.graph;
+  for (const id of node.outputs?.[0]?.links || []) {
+    const link = graph?.links?.[id] || graph?.links?.get?.(id);
+    const escena = graph?.getNodeById?.(link?.target_id);
+    if ((escena?.comfyClass || escena?.type) !== "CineEscenaH3") continue;
+    if (escena.inputs?.some((i) => i.name === "imagen_guia" && i.link != null)
+        && Number(findWidget(escena, "fotograma_guia")?.value || 0) === 0) return true;
+  }
+  return false;
+}
+
 /**
  * Boton dibujado en el nodo. No se serializa.
  * La etiqueta puede ser texto fijo o una funcion(nodo) que la calcule en
@@ -3164,37 +3190,22 @@ app.registerExtension({
         grupo(reubicar(this, addChips(this, "movimiento", MOVIMIENTOS_CHIPS, null, null,
           (nd, v) => tomaUsada(nd, "movimiento", v)), "movimiento"), "camara");
         grupo(reubicar(this, addBoton(this, "🎥  Cambiar la toma en el texto", function (nd) {
-          // Si la toma que hay puesta ya se rodo, se salta a la siguiente de
-          // la lista de cobertura. Asi cada clic es una toma distinta y los
-          // chips de la anterior se quedan atenuados, que es lo que se ve.
-          let salto = null;
-          if (tomasDe(nd).includes(tomaActual(nd))) {
-            salto = siguienteToma(nd);
-            if (!salto) {
-              return `·   Ya rodaste las ${TOMAS_SUGERIDAS.length} tomas de la lista`;
-            }
-            ponerToma(nd, salto);
+          if ((nd.inputs || []).some((i) => i.link != null)) {
+            return "⚠ Hay texto conectado: edítalo en el nodo de origen";
           }
-
-          // la caja se reescribe con la toma nueva para que lo que lees sea
-          // lo que sale; aunque no la toques, al construir el prompt las
-          // listas ya se aplican dentro de ella
-          const caja = findWidget(nd, "camara");
-          const aMano = String(caja?.value || "").trim();
-          let r;
-          if (aMano) {
-            ponerTexto(caja, fraseCamara(nd));
-            r = { hechos: ["caja de cámara"] };
-          } else {
-            r = aplicarCamaraAlTexto(nd);
-            if (r.error) return "⚠   " + r.error;
-          }
-          nd.__camara = r;
-          const n = apuntarToma(nd);
-          console.log("[CineConIA] toma", n, salto ? "(saltada a la siguiente)" : "(la que estaba puesta)");
-          return salto ? `✓   Toma ${n}:  ${salto[0]}  ·  ${salto[2]}`
-                       : `✓   Toma ${n} escrita`;
+          consultarPrompt(nd).then((result) => {
+            ponerTexto(findWidget(nd, "detailed_description"), result.description);
+            ponerTexto(findWidget(nd, "camara"), "");
+            nd.__camara = { hechos: ["plano, ángulo y movimiento"] };
+            apuntarToma(nd);
+            nd.setDirtyCanvas(true, true);
+          }).catch((error) => ventanaPegar(() => {}, {
+            titulo: "No se aplicó la cámara", ayuda: error.message,
+            valor: "", aceptar: "Cerrar", sinCasilla: true,
+          }));
+          return "Aplicando la toma seleccionada…";
         }), "camara"), "h3");
+
 
         grupo(reubicar(this, addInfo(this, (nd) => {
           const r = nd.__camara;
@@ -3211,6 +3222,12 @@ app.registerExtension({
           const mano = String(findWidget(nd, "camara")?.value || "").trim();
           const chips = fraseCamara(nd);
 
+          if (guiaInicialConectada(nd)) return [
+            "⚠ imagen guía fija la composición del fotograma 0",
+            "otro ángulo inicial requiere una guía con esa vista",
+            "puedes pedir un movimiento hacia el nuevo ángulo",
+          ];
+
           // La caja ya NO anula las listas: al construir el prompt, el plano,
           // el angulo y el movimiento se sustituyen dentro de ella y el resto
           // de lo que escribio se respeta. Decir aqui "manda sobre las listas"
@@ -3219,9 +3236,9 @@ app.registerExtension({
                             cortar(mano, 58),
                             "plano, ángulo y movimiento salen de los chips"];
           if (enTexto && chips) {
-            return ["la sección 4 dice: " + cortar(enTexto, 40),
-                    "las listas dicen otra cosa",
-                    "pulsa 🎥 para escribirla en el texto"];
+            return ["las listas se aplican al generar el prompt",
+                    "usa Ver prompt final para revisar el resultado",
+                    "🎥 también actualiza el texto editable"];
           }
           if (enTexto) return ["✓ cámara leída de la sección 4" + cuenta,
                                cortar(enTexto, 58),
@@ -3338,6 +3355,24 @@ app.registerExtension({
             console.log("[CineConIA] rellenadas:", puestas, "| vaciadas:", vaciadas, "| fallidas:", fallidas);
           });
         });
+        const bPreview = addBoton(this, "🔎  Ver prompt final · sin generar video", function (nd) {
+          consultarPrompt(nd).then((result) => {
+            const aviso = result.conectados.length
+              ? "Vista parcial: faltan los valores conectados de " + result.conectados.join(", ") + "."
+              : "Texto construido por el mismo código que se usa al ejecutar este nodo.";
+            ventanaPegar(() => {}, {
+              titulo: "Prompt final",
+              ayuda: aviso + (guiaInicialConectada(nd)
+                ? " La imagen guía fija la composición inicial; el texto no garantiza un cambio de ángulo." : ""),
+              valor: result.prompt + (result.negative ? "\n\nNEGATIVE:\n" + result.negative : ""),
+              aceptar: "Cerrar", sinCasilla: true,
+            });
+          }).catch((error) => ventanaPegar(() => {}, {
+            titulo: "Vista previa no disponible", ayuda: error.message,
+            valor: "", aceptar: "Cerrar", sinCasilla: true,
+          }));
+          return "Preparando vista previa…";
+        });
         const bVaciar = addBoton(this, "🧹  Vaciar todos los apartados", function (nd) {
           const cual = String(findWidget(nd, "modelo")?.value || "MiniMax H3");
           const perfil = PERFILES_PROMPT[cual];
@@ -3408,6 +3443,7 @@ app.registerExtension({
         // mirar en los apartados. Por eso esos dos suben arriba del todo.
         // Vaciar se queda abajo a proposito: borra y no tiene vuelta atras.
         alPrincipio(this, infoCarga);
+        alPrincipio(this, bPreview);
         alPrincipio(this, bPegar);
         alPrincipio(this, bCopiar);
 

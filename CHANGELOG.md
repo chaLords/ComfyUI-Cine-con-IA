@@ -8,6 +8,19 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.3] - 2026-09-18
+
+### Fixed
+
+- Camera controls fill missing instructions in handwritten camera text, including LTX angles.
+- Starting-frame edits preserve movement destinations. Movement replacement requires an explicit camera subject, preserves semicolon-separated actions and retains selected intensity.
+- Continuity rules respect requested framing. Applying a shot no longer cycles to another selection.
+
+### Added
+
+- Final prompt preview using the execution-time Python builder without generating video; connected inputs are marked as pending.
+- Frame-zero guide warning and a bilingual review of the workflow, profiles and AcademiaSD example.
+
 ## [1.3.2] - 2026-09-18
 
 ### Fixed

@@ -8,6 +8,19 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.3] - 2026-09-18
+
+### Corregido
+
+- Los chips completan las instrucciones ausentes en la caja de cámara; el ángulo de LTX también se aplica al texto manual.
+- El cambio de encuadre conserva el destino de un movimiento. El movimiento requiere un sujeto de cámara explícito, conserva acciones separadas por punto y coma y respeta la intensidad elegida.
+- Las reglas de continuidad respetan el encuadre solicitado. Aplicar la toma ya no selecciona otra toma automáticamente.
+
+### Añadido
+
+- Vista del prompt final mediante el mismo constructor Python de ejecución, sin generar video. Las entradas conectadas se indican como pendientes.
+- Aviso de imagen guía anclada al fotograma 0 y revisión bilingüe del workflow, perfiles y ejemplo AcademiaSD.
+
 ## [1.3.2] - 2026-09-18
 
 ### Corregido

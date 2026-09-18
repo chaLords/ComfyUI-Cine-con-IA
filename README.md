@@ -8,6 +8,8 @@
 
 # ComfyUI Cine con IA
 
+See the [workflow, camera and profile review](docs/REVIEW.md). The loader selector does not yet convert the complete H3 pipeline to other model families. Use **Ver prompt final** to inspect camera instructions before generation; a guide image at frame 0 also constrains the starting composition.
+
 Custom nodes that simplify cinematic AI video workflows in ComfyUI. The visible node names are intentionally model-agnostic so the package can grow across multiple video models. Its first complete generation path currently integrates MiniMax H3—setup, prompting, model loading, generation, refinement, and output—while the Prompt node provides model-specific tabs for MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1, and a model-independent Free mode.
 
 The interface adds visual controls, memory warnings, render progress, contextual help, and camera-planning tools without turning the workflow into a maze of technical nodes.

@@ -1,6 +1,10 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import asyncio
+import sys
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "nodes.py"
@@ -319,6 +323,51 @@ class CameraBoxTests(unittest.TestCase):
             "shot for the entire 8.00 seconds.")
     DESC = "Photorealistic cinematic imagery. [Shot 1] The presenter waves at the camera."
 
+    def test_selected_dimensions_are_added_to_a_box_without_camera_vocabulary(self):
+        salida = NODES._aplicar_camara(self.DESC, "Keep the red scarf visible.",
+            "primer plano", "tres cuartos", "zoom in", "normal")
+        for fragment in ("close-up", "forty-five degrees", "zooms in", "red scarf"):
+            self.assertIn(fragment, salida)
+
+    def test_ltx_angle_replaces_old_angle_and_is_not_lost_with_manual_text(self):
+        salida = NODES._aplicar_camara(self.DESC,
+            "The shot is filmed at the subject's eye level.", "sin especificar",
+            "cenital", "sin especificar", "normal", ltx=True)
+        self.assertIn("overhead view", salida)
+        self.assertNotIn("eye level", salida)
+
+    def test_subject_action_is_not_mistaken_for_camera_shake(self):
+        salida = NODES._aplicar_camara("[Shot 1] She shakes the bottle.", "",
+            "sin especificar", "sin especificar", "fijo", "normal")
+        self.assertIn("She shakes the bottle.", salida)
+        self.assertIn("holds a static", salida)
+
+    def test_camera_replacement_preserves_action_after_semicolon(self):
+        salida = NODES._aplicar_camara(
+            "[Shot 1] The camera pushes in slowly; she waves and smiles.", "",
+            "sin especificar", "sin especificar", "fijo", "normal")
+        self.assertIn("she waves and smiles", salida)
+        self.assertNotIn("pushes in", salida)
+
+    def test_framing_destination_survives_even_when_same_size_occurs_twice(self):
+        salida = NODES._aplicar_camara(self.DESC,
+            "A medium shot opens, returning to a medium shot at the end.",
+            "primer plano", "sin especificar", "sin especificar", "normal")
+        self.assertIn("A close-up opens", salida)
+        self.assertIn("returning to a medium shot", salida)
+
+    def test_shot_rules_no_longer_force_hands_inside_a_closeup(self):
+        prompt, _ = NODES.CinePrompt6().armar(plano="primer plano",
+            detailed_description=self.DESC, reglas_de_oficio=True)
+        self.assertNotIn("stops pushing in", prompt)
+        self.assertNotIn("stays inside the frame", prompt)
+
+    def test_replaced_movement_keeps_selected_intensity(self):
+        salida = NODES._aplicar_camara(self.DESC, self.CAJA, "sin especificar",
+            "sin especificar", "zoom in", "suave")
+        self.assertIn("small amplitude at slow speed", salida)
+
+
     def _aplicar(self, angulo="tres cuartos", movimiento="zoom in"):
         return NODES._aplicar_camara(self.DESC, self.CAJA, "plano americano",
                                      angulo, movimiento, "normal")
@@ -363,6 +412,42 @@ class CameraBoxTests(unittest.TestCase):
         self.assertIn("close-up", salida)
         self.assertIn("looking up", salida)
         self.assertIn("zoom", salida.lower())
+
+
+class PromptPreviewRouteTests(unittest.TestCase):
+    def setUp(self):
+        self.handlers = {}
+        def route(path):
+            def register(handler):
+                self.handlers[path] = handler
+                return handler
+            return register
+        routes = SimpleNamespace(post=route, get=route)
+        server = SimpleNamespace(PromptServer=SimpleNamespace(instance=SimpleNamespace(routes=routes)))
+        aiohttp = SimpleNamespace(web=SimpleNamespace(
+            json_response=lambda data, status=200: (status, data)))
+        with patch.dict(sys.modules, {"server": server, "aiohttp": aiohttp}):
+            NODES._registrar_rutas()
+
+    def request(self, body):
+        async def json():
+            return body
+        return asyncio.run(self.handlers["/cineconia/prompt_preview"](SimpleNamespace(json=json)))
+
+    def test_preview_matches_executed_prompt_without_loading_models(self):
+        body = dict(modelo="MiniMax H3", camara="Keep the red scarf visible.",
+                    plano="primer plano", angulo="tres cuartos", movimiento="zoom in",
+                    detailed_description="[Shot 1] She waves.", reglas_de_oficio=False)
+        status, result = self.request(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(result["prompt"], NODES.CinePrompt6().armar(**body)[0])
+        self.assertIn("forty-five degrees", result["description"])
+
+    def test_preview_rejects_bad_types_and_excessive_text(self):
+        for body in ([], {"camara": {}}, {"camara": "a" * 200001}):
+            status, result = self.request(body)
+            self.assertEqual(status, 400)
+            self.assertIn("error", result)
 
 
 class CameraReaderOrderTests(unittest.TestCase):
