@@ -8,6 +8,12 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.2] - 2026-09-18
+
+### Corregido
+
+- Cuando un bloque de cámara nombra dos tamaños de plano —dónde empieza y dónde acaba el movimiento, del tipo "framed as a medium shot ... tightening to a close-up"— ahora se lee y se sustituye el encuadre. Las tablas se recorrían en su propio orden, así que "close-up" ganaba solo por estar más arriba en la lista y los chips se quedaban con el plano equivocado.
+
 ## [1.3.1] - 2026-09-18
 
 ### Corregido

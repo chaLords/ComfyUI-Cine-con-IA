@@ -502,26 +502,38 @@ def _camara_en_texto(texto, plano_txt, mov_txt, ang_txt=""):
     mov_ok = False
     ang_ok = False
 
+    def _primera(texto, tabla):
+        """La que aparece ANTES EN EL TEXTO, no la primera de la tabla.
+
+        Un bloque de camara suele nombrar dos tamanos de plano: donde empieza
+        y donde acaba ("framed as a medium shot ... tightening to a close-up").
+        El encuadre es el primero. Recorriendo la tabla por orden ganaba
+        "close-up" solo por estar antes en la lista.
+        """
+        elegida, donde = None, None
+        for rx in tabla:
+            m = rx.search(texto)
+            if m and (donde is None or m.start() < donde):
+                elegida, donde = rx, m.start()
+        return elegida
+
     if plano_txt:
-        for rx in _RE_PLANO:
-            if rx.search(fuera):
-                fuera = rx.sub(lambda m: _como_estaba(m.group(0), plano_txt), fuera)
-                plano_ok = True
-                break
+        rx = _primera(fuera, _RE_PLANO)
+        if rx is not None:
+            fuera = rx.sub(lambda m: _como_estaba(m.group(0), plano_txt), fuera)
+            plano_ok = True
 
     if ang_txt:
-        for rx in _RE_ANGULO:
-            if rx.search(fuera):
-                fuera = rx.sub(lambda m: _como_estaba(m.group(0), ang_txt), fuera)
-                ang_ok = True
-                break
+        rx = _primera(fuera, _RE_ANGULO)
+        if rx is not None:
+            fuera = rx.sub(lambda m: _como_estaba(m.group(0), ang_txt), fuera)
+            ang_ok = True
 
     if mov_txt:
-        for rx in _RE_MOV:
-            if rx.search(fuera):
-                fuera = rx.sub(lambda m: _como_estaba(m.group(0), mov_txt), fuera)
-                mov_ok = True
-                break
+        rx = _primera(fuera, _RE_MOV)
+        if rx is not None:
+            fuera = rx.sub(lambda m: _como_estaba(m.group(0), mov_txt), fuera)
+            mov_ok = True
 
     hubo = plano_ok or mov_ok or ang_ok
     return (_pulir(fuera) if hubo else texto), plano_ok, mov_ok, ang_ok

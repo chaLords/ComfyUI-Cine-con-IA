@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.2] - 2026-09-18
+
+### Fixed
+
+- When a camera block names two shot sizes — where the shot starts and where the move ends, such as "framed as a medium shot ... tightening to a close-up" — the framing is now the one read and replaced. The tables were scanned in their own order, so "close-up" won simply by sitting higher in the list, and the chips ended up on the wrong shot size.
+
 ## [1.3.1] - 2026-09-18
 
 ### Fixed

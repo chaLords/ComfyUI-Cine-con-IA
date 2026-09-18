@@ -363,3 +363,30 @@ class CameraBoxTests(unittest.TestCase):
         self.assertIn("close-up", salida)
         self.assertIn("looking up", salida)
         self.assertIn("zoom", salida.lower())
+
+
+class CameraReaderOrderTests(unittest.TestCase):
+    """Cuando el bloque de camara nombra dos tamanos de plano."""
+
+    # Un bloque de camara casi siempre dice donde EMPIEZA y donde ACABA.
+    # El encuadre es el primero; el segundo es a donde llega el movimiento.
+    BLOQUE = ("The shot is framed as a medium shot matching <Picture 1>, with the camera "
+              "at his eye level. The camera pushes in toward his face with small amplitude "
+              "at slow speed, tightening to a close-up of his head and shoulders by the "
+              "final second, with the mug and his hands already lowered out of the frame.")
+    DESC = "Photorealistic cinematic live-action. [Shot 1] He sits by the window and drinks."
+
+    def test_the_chip_replaces_the_framing_not_the_destination(self):
+        salida = NODES._aplicar_camara(self.DESC, self.BLOQUE, "plano medio corto",
+                                       "sin especificar", "sin especificar", "normal")
+        # se sustituye el encuadre...
+        self.assertIn("framed as a close shot", salida)
+        # ...y NO el plano al que llega el movimiento
+        self.assertIn("tightening to a close-up", salida)
+
+    def test_nothing_is_lost_when_the_chips_are_unset(self):
+        salida = NODES._aplicar_camara(self.DESC, self.BLOQUE, "sin especificar",
+                                       "sin especificar", "sin especificar", "normal")
+        for trozo in ("framed as a medium shot", "at his eye level", "pushes in",
+                      "tightening to a close-up", "already lowered out of the frame"):
+            self.assertIn(trozo, salida, trozo)

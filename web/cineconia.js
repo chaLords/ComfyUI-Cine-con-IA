@@ -1646,14 +1646,31 @@ const ANG_RE = [
   [/behind and beside/i, "sobre el hombro"],
 ];
 
-/** Mira que camara describe ya el texto de la seccion 4. */
+/** Mira que camara describe ya el texto de la seccion 4.
+ *
+ * Gana la que aparezca ANTES EN EL TEXTO, no la primera de la tabla. Un
+ * bloque de camara suele nombrar dos tamanos de plano: donde empieza y
+ * donde acaba ("framed as a medium shot ... tightening to a close-up").
+ * El encuadre es el primero; el segundo es a donde llega. Recorriendo la
+ * tabla por orden ganaba "close-up" solo por estar antes en la lista, y
+ * los chips se quedaban con el plano equivocado.
+ */
+function primeroEnElTexto(t, tabla) {
+  let clave = null, donde = Infinity;
+  for (const [re, k] of tabla) {
+    const m = t.match(new RegExp(re.source, re.flags.replace("g", "")));
+    if (m && m.index < donde) { donde = m.index; clave = k; }
+  }
+  return clave;
+}
+
 function leerCamara(texto) {
   const t = String(texto || "");
-  const primero = (tabla) => {
-    for (const [re, clave] of tabla) if (re.test(t)) return clave;
-    return null;
+  return {
+    plano: primeroEnElTexto(t, PLANO_RE),
+    angulo: primeroEnElTexto(t, ANG_RE),
+    movimiento: primeroEnElTexto(t, MOV_RE),
   };
-  return { plano: primero(PLANO_RE), angulo: primero(ANG_RE), movimiento: primero(MOV_RE) };
 }
 
 // --- historial de tomas ya rodadas --------------------------------------
@@ -1776,15 +1793,18 @@ function aplicarCamaraAlTexto(node) {
   if (!t.trim()) return { error: "la sección 4 está vacía" };
 
   const hechos = [];
+  // Se sustituye la que aparezca ANTES en el texto, por la misma razon que
+  // en leerCamara: la primera es el encuadre, la segunda es a donde llega.
   const sustituir = (tabla, destino) => {
     if (!destino) return false;
+    let elegida = null, donde = Infinity;
     for (const [re] of tabla) {
-      if (re.test(t)) {
-        t = t.replace(new RegExp(re.source, "gi"), (m) => comoEstaba(m, destino));
-        return true;
-      }
+      const m = t.match(new RegExp(re.source, re.flags.replace("g", "")));
+      if (m && m.index < donde) { donde = m.index; elegida = re; }
     }
-    return false;
+    if (!elegida) return false;
+    t = t.replace(new RegExp(elegida.source, "gi"), (m) => comoEstaba(m, destino));
+    return true;
   };
 
   const plano = PLANO_TXT[String(findWidget(node, "plano")?.value || "")] || "";
