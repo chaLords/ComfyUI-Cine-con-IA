@@ -1709,9 +1709,12 @@ class CineSalida:
 # donde quiera. Aqui el workflow solo dice QUE familia quiere, y los enlaces
 # y las carpetas de destino salen siempre de esta tabla.
 #
-# Cada entrada: (carpeta_destino, ruta_dentro_del_repo, GB, esencial, para_que)
+# Cada entrada: (carpeta_destino, ruta_dentro_del_repo, GB, esencial, para_que
+#                [, repo_alternativo])
 #   carpeta_destino  nombre de carpeta de ComfyUI: es la que manda, no el repo
 #   esencial         True = sin esto la familia no arranca
+#   repo_alternativo permite ofrecer un checkpoint compatible publicado en
+#                    otro repositorio, sin convertirlo en una familia distinta
 # El nombre del archivo en disco es el ultimo tramo de la ruta del repo.
 #
 # Los tamanos son los reales de Hugging Face, comprobados uno a uno.
@@ -1734,6 +1737,10 @@ CATALOGO = {
              1.96, False, "LoRA turbo: 4 pasos en vez de 8. Mas rapido, algo menos de detalle."),
             ("diffusion_models", "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
              20.97, False, "Variante fl2va: primer y ultimo fotograma en vez de referencias."),
+            ("diffusion_models", "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+             21.00, False,
+             "Singularity Ref2VA v1.3: checkpoint completo afinado para movimiento dinamico y mejor respuesta de camara.",
+             "WarmBloodAban/Minimax-h3_Singularity"),
             ("model_patches", "model_patches/minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors",
              2.30, False, "ControlNet: dirigir el movimiento con pose, profundidad o bordes."),
         ],
@@ -1832,9 +1839,18 @@ def _entradas(familia, con_extras=False):
     return fuera
 
 
-def _url_de(familia, ruta_repo):
+def _partes_entrada(familia, entrada):
+    """Normaliza una entrada y resuelve el repositorio que contiene el archivo."""
+    if len(entrada) not in (5, 6):
+        raise ValueError("entrada de catalogo invalida")
+    carpeta, ruta_repo, gb, esencial, texto = entrada[:5]
+    repo = entrada[5] if len(entrada) == 6 else CATALOGO[familia]["repo"]
+    return carpeta, ruta_repo, gb, esencial, texto, repo
+
+
+def _url_de(familia, ruta_repo, repo=None):
     return "https://huggingface.co/{}/resolve/main/{}".format(
-        CATALOGO[familia]["repo"], ruta_repo)
+        repo or CATALOGO[familia]["repo"], ruta_repo)
 
 
 def _destino(carpeta, ruta_repo):
@@ -1929,7 +1945,7 @@ def _token_hf():
 
 
 def _entrada(familia, indice):
-    """Busca (carpeta, ruta_repo, gb, esencial, texto) por familia e indice."""
+    """Busca una entrada del catalogo por familia e indice."""
     f = CATALOGO.get(familia)
     if not f:
         raise ValueError("familia desconocida")
@@ -1945,7 +1961,8 @@ def _bajar_uno(familia, indice):
     import urllib.request
     import urllib.error
 
-    carpeta, ruta_repo, gb, _, _ = _entrada(familia, indice)
+    carpeta, ruta_repo, gb, _, _, repo = _partes_entrada(
+        familia, _entrada(familia, indice))
     base, nombre, destino = _destino(carpeta, ruta_repo)
     if os.path.isfile(destino) and os.path.getsize(destino) > 1024:
         return nombre, None
@@ -1961,7 +1978,7 @@ def _bajar_uno(familia, indice):
     if hechos:
         cab["Range"] = "bytes={}-".format(hechos)
 
-    url = _url_de(familia, ruta_repo)
+    url = _url_de(familia, ruta_repo, repo)
     peticion = urllib.request.Request(url, headers=cab)
     try:
         respuesta = urllib.request.urlopen(peticion, timeout=60)
@@ -2054,7 +2071,7 @@ def _trabajador():
 def _estado_catalogo(familia, con_extras):
     fuera = []
     for fam, i, e in _entradas(familia, con_extras):
-        carpeta, ruta_repo, gb, esencial, texto = e
+        carpeta, ruta_repo, gb, esencial, texto, _ = _partes_entrada(fam, e)
         import os
         fuera.append({
             "familia": fam, "indice": i,

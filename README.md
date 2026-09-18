@@ -3,10 +3,7 @@
 </p>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-oscuro.png">
-    <img src="docs/assets/logo-claro.png" alt="Cine con IA" width="190">
-  </picture>
+  <img src="docs/assets/logo.png" alt="Cine con IA" width="190">
 </p>
 
 <h1 align="center">ComfyUI · Cine con IA</h1>
@@ -196,6 +193,14 @@ The selectors read directly from the folders configured by ComfyUI:
 - `models/frame_interpolation`: frame-interpolation model.
 
 Exact filenames depend on the models installed on your system and appear automatically in each selector.
+
+For MiniMax H3, the **Models** node also offers the optional
+`Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors` checkpoint. It is
+a complete Ref2VA checkpoint (about 21 GB), not a LoRA, and is downloaded from
+the [Singularity repository](https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity)
+into `models/diffusion_models`. It remains optional and is never downloaded
+automatically. After downloading it, refresh the model lists or restart ComfyUI,
+then select it in **Load Model** while keeping the MiniMax H3 profile.
 
 ## Memory and performance
 

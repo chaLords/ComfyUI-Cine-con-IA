@@ -273,13 +273,16 @@ class CatalogTests(unittest.TestCase):
                 yield familia, entrada
 
     def test_every_entry_is_well_formed(self):
-        for familia, (carpeta, ruta, size, esencial, texto) in self._todas():
+        for familia, entrada in self._todas():
+            carpeta, ruta, size, esencial, texto, repo = NODES._partes_entrada(
+                familia, entrada)
             self.assertIn(carpeta, self.CARPETAS_VALIDAS, f"{familia}: carpeta {carpeta}")
             self.assertTrue(ruta.endswith((".safetensors", ".pth", ".sft", ".bin", ".gguf")),
                             f"{familia}: {ruta}")
             self.assertGreater(size, 0, f"{familia}: {ruta} sin tamano")
             self.assertIsInstance(esencial, bool)
             self.assertTrue(texto.strip(), f"{familia}: {ruta} sin explicacion")
+            self.assertRegex(repo, r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
     def test_every_family_has_something_essential(self):
         for familia, datos in NODES.CATALOGO.items():
@@ -293,10 +296,21 @@ class CatalogTests(unittest.TestCase):
             self.assertEqual(len(nombres), len(set(nombres)), f"{familia} repite un nombre")
 
     def test_the_url_is_built_from_the_catalog_repo(self):
-        for familia, (_, ruta, _, _, _) in self._todas():
-            url = NODES._url_de(familia, ruta)
+        for familia, entrada in self._todas():
+            _, ruta, _, _, _, repo = NODES._partes_entrada(familia, entrada)
+            url = NODES._url_de(familia, ruta, repo)
             self.assertTrue(url.startswith("https://huggingface.co/"), url)
-            self.assertIn(NODES.CATALOGO[familia]["repo"], url)
+            self.assertIn(repo, url)
+
+    def test_singularity_uses_its_own_repository(self):
+        entrada = next(
+            e for e in NODES.CATALOGO["MiniMax H3"]["archivos"]
+            if "Singularity" in e[1]
+        )
+        _, ruta, _, esencial, _, repo = NODES._partes_entrada("MiniMax H3", entrada)
+        self.assertFalse(esencial)
+        self.assertEqual(repo, "WarmBloodAban/Minimax-h3_Singularity")
+        self.assertIn(repo, NODES._url_de("MiniMax H3", ruta, repo))
 
     def test_an_entry_outside_the_catalog_is_refused(self):
         # El navegador solo manda (familia, indice). Nada mas debe pasar.

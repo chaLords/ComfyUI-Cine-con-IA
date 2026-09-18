@@ -3,10 +3,7 @@
 </p>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-oscuro.png">
-    <img src="docs/assets/logo-claro.png" alt="Cine con IA" width="190">
-  </picture>
+  <img src="docs/assets/logo.png" alt="Cine con IA" width="190">
 </p>
 
 <h1 align="center">ComfyUI · Cine con IA</h1>
@@ -198,6 +195,14 @@ Los desplegables leen directamente las carpetas configuradas por ComfyUI:
 - `models/frame_interpolation`: modelo de interpolación.
 
 Los nombres concretos dependen de los modelos instalados en tu equipo y aparecerán automáticamente en cada selector.
+
+Para MiniMax H3, el nodo **Modelos** ofrece también el checkpoint opcional
+`Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors`. Es un checkpoint
+Ref2VA completo (aproximadamente 21 GB), no un LoRA, y se descarga desde el
+[repositorio de Singularity](https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity)
+en `models/diffusion_models`. Sigue siendo opcional y nunca se descarga por sí
+solo. Después de descargarlo, actualiza las listas de modelos o reinicia ComfyUI
+y selecciónalo en **Cargar modelo** manteniendo el perfil MiniMax H3.
 
 ## Memoria y rendimiento
 

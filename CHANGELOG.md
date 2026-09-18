@@ -8,6 +8,16 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.5] - 2026-09-18
+
+### Added
+
+- The Models node now offers the 21 GB Singularity Ref2VA v1.3 int8 checkpoint as an optional MiniMax H3 download. It is stored in `models/diffusion_models` and is never downloaded automatically.
+
+### Changed
+
+- Model-catalog entries can safely point to a different Hugging Face repository while preserving the existing family and destination-folder controls.
+
 ## [1.3.4] - 2026-09-18
 
 ### Fixed
