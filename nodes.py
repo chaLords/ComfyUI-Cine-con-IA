@@ -1648,6 +1648,501 @@ class CineSalida:
         return (video, imagenes, audio, fps_final, info)
 
 
+# ---------------------------------------------------------------------------
+# Catalogo de modelos
+#
+# Vive AQUI a proposito, no en el workflow. Un workflow es un archivo que
+# cualquiera puede publicar y modificar; si los enlaces viajaran dentro, un
+# workflow ajeno podria traer un boton que descarga otra cosa y la escribe
+# donde quiera. Aqui el workflow solo dice QUE familia quiere, y los enlaces
+# y las carpetas de destino salen siempre de esta tabla.
+#
+# Cada entrada: (carpeta_destino, ruta_dentro_del_repo, GB, esencial, para_que)
+#   carpeta_destino  nombre de carpeta de ComfyUI: es la que manda, no el repo
+#   esencial         True = sin esto la familia no arranca
+# El nombre del archivo en disco es el ultimo tramo de la ruta del repo.
+#
+# Los tamanos son los reales de Hugging Face, comprobados uno a uno.
+# ---------------------------------------------------------------------------
+
+CATALOGO = {
+    "MiniMax H3": {
+        "repo": "Comfy-Org/MiniMax-H3",
+        "licencia": None,
+        "archivos": [
+            ("diffusion_models", "diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+             20.97, True, "El modelo. ref2va = a partir de imagenes de referencia."),
+            ("text_encoders", "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+             15.69, True, "Codificador de texto. La version nvfp4 es la que cabe en 16 GB."),
+            ("vae", "vae/minimax_h3_video_vae_int8_convrot.safetensors",
+             2.81, True, "VAE de video."),
+            ("vae", "vae/minimax_h3_audio_vae_fp32.safetensors",
+             0.61, True, "VAE de audio. H3 genera sonido."),
+            ("loras", "loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+             1.96, False, "LoRA turbo: 4 pasos en vez de 8. Mas rapido, algo menos de detalle."),
+            ("diffusion_models", "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+             20.97, False, "Variante fl2va: primer y ultimo fotograma en vez de referencias."),
+            ("model_patches", "model_patches/minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors",
+             2.30, False, "ControlNet: dirigir el movimiento con pose, profundidad o bordes."),
+        ],
+        "extras": [
+            ("embeddings", "embeddings/minimaxh3_" + n + ".safetensors", 0.001, False, d)
+            for n, d in (
+                ("bullet_time", "Efecto bullet time."),
+                ("kiss_camera", "Efecto kiss cam."),
+                ("truman_show", "Efecto Truman Show."),
+                ("spiral_ascent", "Ascenso en espiral."),
+                ("four_seasons", "Las cuatro estaciones."),
+                ("blooming_flowers", "Flores abriendose."),
+                ("fire_breath", "Aliento de fuego."),
+                ("dark_magic", "Magia oscura."),
+                ("storm_magic", "Magia de tormenta."),
+                ("art_is_explosion", "Explosion artistica."),
+            )
+        ],
+    },
+    "LTX-2.5": {
+        "repo": "Lightricks/LTX-2.5",
+        # Este repo pide aceptar las condiciones en Hugging Face. Se acepta
+        # una vez en la web y despues hace falta un token para descargar.
+        "licencia": "https://huggingface.co/Lightricks/LTX-2.5",
+        "archivos": [
+            ("diffusion_models", "diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors",
+             21.50, True, "El modelo destilado: 8 pasos, CFG 1."),
+            ("text_encoders", "text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+             15.37, True, "Codificador Gemma4. LTX-2.5 dejo T5."),
+            ("vae", "vae/ltx-2.5-video-vae-bf16.safetensors", 1.47, True, "VAE de video."),
+            ("vae", "vae/ltx-2.5-audio-vae-bf16.safetensors", 0.36, True, "VAE de audio."),
+            ("latent_upscale_models", "latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors",
+             1.00, False, "Escalador espacial x2 en latente."),
+            ("latent_upscale_models", "latent_upscale_models/ltx-2.5-latent-temporal-upscaler-x2-bf16-1.0.safetensors",
+             0.26, False, "Escalador temporal x2: el doble de fotogramas."),
+        ],
+        "extras": [],
+    },
+    "Wan 2.2": {
+        "repo": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+        "licencia": None,
+        # OJO: Wan 2.2 de 14B son DOS modelos que se turnan, high_noise para
+        # el principio del muestreo y low_noise para el final. El nodo Cargar
+        # modelo tiene una sola ranura, asi que con Wan hacen falta dos nodos.
+        "archivos": [
+            ("diffusion_models", "split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
+             14.29, True, "Wan 2.2 i2v, mitad high noise. Va con la otra mitad."),
+            ("diffusion_models", "split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
+             14.29, True, "Wan 2.2 i2v, mitad low noise."),
+            ("text_encoders", "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+             6.27, True, "Codificador umt5."),
+            ("vae", "split_files/vae/wan_2.1_vae.safetensors", 0.25, True, "VAE. El de 2.1 sirve para 2.2."),
+            ("diffusion_models", "split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors",
+             14.29, False, "Wan 2.2 t2v, mitad high noise."),
+            ("diffusion_models", "split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
+             14.29, False, "Wan 2.2 t2v, mitad low noise."),
+            ("diffusion_models", "split_files/diffusion_models/wan2.2_animate_14B_int8_convrot.safetensors",
+             18.41, False, "Wan Animate: mover un personaje con un video de referencia."),
+        ],
+        "extras": [],
+    },
+    "Hunyuan 1.5": {
+        "repo": "Comfy-Org/HunyuanVideo_1.5_repackaged",
+        "licencia": None,
+        "archivos": [
+            ("diffusion_models", "split_files/diffusion_models/hunyuanvideo1.5_480p_i2v_step_distilled_fp8_scaled.safetensors",
+             8.34, True, "Hunyuan 1.5 i2v 480p, destilado en pasos. El que mejor va en 16 GB."),
+            ("text_encoders", "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+             9.38, True, "Codificador Qwen2.5-VL. La 1.5 dejo llava+llama."),
+            ("vae", "split_files/vae/hunyuanvideo15_vae_fp16.safetensors", 2.52, True, "VAE."),
+            ("diffusion_models", "split_files/diffusion_models/hunyuanvideo1.5_720p_i2v_cfg_distilled_fp8_scaled.safetensors",
+             8.33, False, "Version 720p. Mas resolucion, mas VRAM."),
+            ("diffusion_models", "split_files/diffusion_models/hunyuanvideo1.5_720p_sr_distilled_fp8_scaled.safetensors",
+             8.34, False, "Superresolucion a 720p sobre un video ya generado."),
+            ("loras", "split_files/loras/hunyuanvideo1.5_t2v_480p_lightx2v_4step_lora_rank_32_bf16.safetensors",
+             0.34, False, "LoRA de 4 pasos."),
+        ],
+        "extras": [],
+    },
+}
+
+FAMILIAS_CATALOGO = list(CATALOGO)
+
+
+def _entradas(familia, con_extras=False):
+    """Las entradas de una familia, o de todas si se pide 'Todas'."""
+    nombres = FAMILIAS_CATALOGO if familia == "Todas" else [familia]
+    fuera = []
+    for n in nombres:
+        f = CATALOGO.get(n)
+        if not f:
+            continue
+        lista = list(f["archivos"]) + (list(f["extras"]) if con_extras else [])
+        for i, e in enumerate(lista):
+            fuera.append((n, i, e))
+    return fuera
+
+
+def _url_de(familia, ruta_repo):
+    return "https://huggingface.co/{}/resolve/main/{}".format(
+        CATALOGO[familia]["repo"], ruta_repo)
+
+
+def _destino(carpeta, ruta_repo):
+    """Carpeta real + nombre de archivo. Las dos cosas salen del catalogo.
+
+    El nombre se reduce a su ultimo tramo y se comprueba que no traiga
+    separadores ni '..': un catalogo nuestro nunca los trae, pero esto es lo
+    que impide que un fallo aqui se convierta en una escritura fuera de
+    models/.
+    """
+    import os
+    import folder_paths
+    nombre = os.path.basename(ruta_repo.replace("\\", "/"))
+    # basename ya deja fuera cualquier '../', pero no basta con eso: se exige
+    # ademas que el nombre sea un archivo de modelo con pinta de serlo. Asi,
+    # si algun dia el catalogo trae una linea rara, no acaba escribiendo un
+    # archivo con un nombre cualquiera dentro de models/.
+    if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.(safetensors|sft|pth|bin|gguf)$", nombre):
+        raise ValueError("nombre de archivo invalido: {!r}".format(ruta_repo))
+    bases = folder_paths.get_folder_paths(carpeta)
+    if not bases:
+        raise ValueError("ComfyUI no tiene configurada la carpeta {}".format(carpeta))
+    base = os.path.abspath(bases[0])
+    ruta = os.path.abspath(os.path.join(base, nombre))
+    if os.path.commonpath([base, ruta]) != base:
+        raise ValueError("destino fuera de la carpeta")
+    return base, nombre, ruta
+
+
+def _ya_esta(carpeta, ruta_repo):
+    """True si el archivo ya esta descargado, mirandolo en disco."""
+    import os
+    try:
+        _, _, ruta = _destino(carpeta, ruta_repo)
+    except Exception:
+        return False
+    return os.path.isfile(ruta) and os.path.getsize(ruta) > 1024
+
+
+# ---------------------------------------------------------------------------
+# Descargas
+#
+# El navegador nunca manda una URL ni una ruta: manda (familia, indice). Todo
+# lo demas -- de donde se baja y donde se guarda -- sale del catalogo de
+# arriba. Asi un workflow no puede redirigir una descarga.
+#
+# Se baja a un archivo .part y solo al terminar se renombra, para que una
+# descarga cortada no parezca un modelo entero y roto. Si se corta, la
+# siguiente vez sigue donde iba con una peticion Range.
+# ---------------------------------------------------------------------------
+
+_DESCARGAS = {
+    "cola": [],          # [(familia, indice)]
+    "actual": None,      # {"familia","indice","nombre","hechos","total","gb"}
+    "hechas": [],        # [nombre]
+    "error": None,
+    "cancelar": False,
+    "hilo": None,
+}
+_CANDADO = None
+
+
+def _lock():
+    global _CANDADO
+    if _CANDADO is None:
+        import threading
+        _CANDADO = threading.Lock()
+    return _CANDADO
+
+
+def _token_hf():
+    """Token de Hugging Face, si lo hay. Nunca se guarda en el workflow.
+
+    Se busca donde ya lo deja quien use huggingface-cli, para no pedirselo
+    otra vez al usuario ni tener un campo con un token a la vista.
+    """
+    import os
+    for v in ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN", "HUGGINGFACE_TOKEN"):
+        t = os.environ.get(v)
+        if t and t.strip():
+            return t.strip()
+    for ruta in (os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "token"),
+                 os.path.join(os.path.expanduser("~"), ".huggingface", "token")):
+        try:
+            with open(ruta, "r", encoding="utf-8") as fh:
+                t = fh.read().strip()
+            if t:
+                return t
+        except Exception:
+            pass
+    return None
+
+
+def _entrada(familia, indice):
+    """Busca (carpeta, ruta_repo, gb, esencial, texto) por familia e indice."""
+    f = CATALOGO.get(familia)
+    if not f:
+        raise ValueError("familia desconocida")
+    lista = list(f["archivos"]) + list(f["extras"])
+    if not isinstance(indice, int) or indice < 0 or indice >= len(lista):
+        raise ValueError("indice fuera de rango")
+    return lista[indice]
+
+
+def _bajar_uno(familia, indice):
+    import logging
+    import os
+    import urllib.request
+    import urllib.error
+
+    carpeta, ruta_repo, gb, _, _ = _entrada(familia, indice)
+    base, nombre, destino = _destino(carpeta, ruta_repo)
+    if os.path.isfile(destino) and os.path.getsize(destino) > 1024:
+        return nombre, None
+
+    os.makedirs(base, exist_ok=True)
+    parcial = destino + ".part"
+    hechos = os.path.getsize(parcial) if os.path.isfile(parcial) else 0
+
+    cab = {"User-Agent": "ComfyUI-CineConIA"}
+    tok = _token_hf()
+    if tok:
+        cab["Authorization"] = "Bearer " + tok
+    if hechos:
+        cab["Range"] = "bytes={}-".format(hechos)
+
+    url = _url_de(familia, ruta_repo)
+    peticion = urllib.request.Request(url, headers=cab)
+    try:
+        respuesta = urllib.request.urlopen(peticion, timeout=60)
+    except urllib.error.HTTPError as e:
+        if e.code == 416:            # ya estaba entero
+            os.replace(parcial, destino)
+            return nombre, None
+        if e.code in (401, 403):
+            lic = CATALOGO[familia].get("licencia")
+            if lic:
+                return nombre, ("{} pide aceptar sus condiciones. Entra en {} "
+                                "con tu cuenta, acepta, y deja el token en la "
+                                "variable HF_TOKEN o con 'huggingface-cli login'."
+                                .format(familia, lic))
+            return nombre, "Hugging Face devolvio {} para este archivo.".format(e.code)
+        if hechos and e.code in (400, 404, 501):
+            # el servidor no admite Range: se empieza de cero
+            try:
+                os.remove(parcial)
+            except Exception:
+                pass
+            return _bajar_uno(familia, indice)
+        return nombre, "Error {} al pedir el archivo.".format(e.code)
+    except Exception as e:
+        return nombre, "No se pudo conectar: {}".format(e)
+
+    modo = "ab" if (hechos and respuesta.status == 206) else "wb"
+    if modo == "wb":
+        hechos = 0
+    largo = respuesta.headers.get("Content-Length")
+    total = (int(largo) + hechos) if largo and largo.isdigit() else int(gb * 1e9)
+
+    with _lock():
+        _DESCARGAS["actual"] = {"familia": familia, "indice": indice, "nombre": nombre,
+                                "hechos": hechos, "total": total, "gb": gb}
+
+    try:
+        with open(parcial, modo) as fh:
+            while True:
+                if _DESCARGAS["cancelar"]:
+                    return nombre, "cancelado"
+                trozo = respuesta.read(1024 * 1024)
+                if not trozo:
+                    break
+                fh.write(trozo)
+                hechos += len(trozo)
+                with _lock():
+                    if _DESCARGAS["actual"]:
+                        _DESCARGAS["actual"]["hechos"] = hechos
+    except Exception as e:
+        return nombre, "Se corto la descarga: {}. Vuelve a darle y sigue donde iba.".format(e)
+    finally:
+        try:
+            respuesta.close()
+        except Exception:
+            pass
+
+    if os.path.getsize(parcial) < 1024:
+        return nombre, "El archivo descargado esta vacio."
+    os.replace(parcial, destino)
+    logging.info("[Cine con IA] descargado %s", nombre)
+    return nombre, None
+
+
+def _trabajador():
+    while True:
+        with _lock():
+            if _DESCARGAS["cancelar"] or not _DESCARGAS["cola"]:
+                _DESCARGAS["actual"] = None
+                _DESCARGAS["hilo"] = None
+                _DESCARGAS["cancelar"] = False
+                return
+            familia, indice = _DESCARGAS["cola"].pop(0)
+        nombre, error = _bajar_uno(familia, indice)
+        with _lock():
+            _DESCARGAS["actual"] = None
+            if error == "cancelado":
+                _DESCARGAS["cola"] = []
+                _DESCARGAS["hilo"] = None
+                _DESCARGAS["cancelar"] = False
+                return
+            if error:
+                _DESCARGAS["error"] = "{}: {}".format(nombre, error)
+                _DESCARGAS["cola"] = []
+                _DESCARGAS["hilo"] = None
+                return
+            _DESCARGAS["hechas"].append(nombre)
+
+
+def _estado_catalogo(familia, con_extras):
+    fuera = []
+    for fam, i, e in _entradas(familia, con_extras):
+        carpeta, ruta_repo, gb, esencial, texto = e
+        import os
+        fuera.append({
+            "familia": fam, "indice": i,
+            "nombre": os.path.basename(ruta_repo.replace("\\", "/")),
+            "carpeta": carpeta, "gb": gb, "esencial": bool(esencial),
+            "texto": texto, "tengo": _ya_esta(carpeta, ruta_repo),
+        })
+    return fuera
+
+
+def _registrar_rutas():
+    """Engancha las rutas al servidor de ComfyUI.
+
+    Si algo falla aqui NO se rompe la carga de los nodos: el nodo de modelos
+    se quedaria sin botones, pero el resto del paquete sigue funcionando.
+    """
+    import logging
+    try:
+        from server import PromptServer
+        from aiohttp import web
+    except Exception:
+        logging.info("[Cine con IA] sin servidor: el nodo Modelos no tendra botones")
+        return
+
+    rutas = getattr(getattr(PromptServer, "instance", None), "routes", None)
+    if rutas is None:
+        return
+
+    @rutas.post("/cineconia/catalogo")
+    async def _catalogo(peticion):
+        try:
+            cuerpo = await peticion.json()
+        except Exception:
+            cuerpo = {}
+        familia = str(cuerpo.get("familia") or "Todas")
+        if familia != "Todas" and familia not in CATALOGO:
+            return web.json_response({"error": "familia desconocida"}, status=400)
+        return web.json_response({
+            "archivos": _estado_catalogo(familia, bool(cuerpo.get("extras"))),
+            "token": bool(_token_hf()),
+        })
+
+    @rutas.post("/cineconia/descargar")
+    async def _descargar(peticion):
+        import threading
+        try:
+            cuerpo = await peticion.json()
+        except Exception:
+            return web.json_response({"error": "peticion invalida"}, status=400)
+        pedidos = cuerpo.get("archivos") or []
+        if not isinstance(pedidos, list) or len(pedidos) > 64:
+            return web.json_response({"error": "lista invalida"}, status=400)
+
+        cola = []
+        for p in pedidos:
+            try:
+                familia = str(p.get("familia"))
+                indice = int(p.get("indice"))
+                _entrada(familia, indice)          # valida contra el catalogo
+            except Exception:
+                return web.json_response({"error": "entrada fuera del catalogo"}, status=400)
+            cola.append((familia, indice))
+
+        with _lock():
+            if _DESCARGAS["hilo"] is not None:
+                return web.json_response({"error": "ya hay una descarga en marcha"}, status=409)
+            _DESCARGAS["cola"] = cola
+            _DESCARGAS["hechas"] = []
+            _DESCARGAS["error"] = None
+            _DESCARGAS["cancelar"] = False
+            hilo = threading.Thread(target=_trabajador, daemon=True)
+            _DESCARGAS["hilo"] = hilo
+        hilo.start()
+        return web.json_response({"ok": True, "en_cola": len(cola)})
+
+    @rutas.get("/cineconia/progreso")
+    async def _progreso(peticion):
+        with _lock():
+            actual = dict(_DESCARGAS["actual"]) if _DESCARGAS["actual"] else None
+            return web.json_response({
+                "actual": actual,
+                "quedan": len(_DESCARGAS["cola"]),
+                "hechas": list(_DESCARGAS["hechas"]),
+                "error": _DESCARGAS["error"],
+                "trabajando": _DESCARGAS["hilo"] is not None,
+            })
+
+    @rutas.post("/cineconia/cancelar")
+    async def _cancelar(peticion):
+        with _lock():
+            _DESCARGAS["cancelar"] = True
+            _DESCARGAS["cola"] = []
+        return web.json_response({"ok": True})
+
+    logging.info("[Cine con IA] rutas de descarga listas")
+
+
+
+class CineModelos:
+    """Lista lo que hace falta para cada familia y lo descarga a su carpeta."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "familia": (["Todas"] + FAMILIAS_CATALOGO, {"default": "Todas",
+                             "tooltip": "Que familia de modelos mostrar."}),
+                "incluir_opcionales": ("BOOLEAN", {"default": True,
+                                        "tooltip": "Ademas de lo imprescindible, las variantes: LoRA turbo, ControlNet, escaladores."}),
+                "incluir_efectos": ("BOOLEAN", {"default": False,
+                                     "tooltip": "Los embeddings de efectos de H3: bullet time, kiss cam y demas. Pesan 1 MB cada uno."}),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("info",)
+    FUNCTION = "revisar"
+    CATEGORY = CATEGORY
+    OUTPUT_NODE = True
+    DESCRIPTION = ("Que modelos necesita cada familia, cuales ya tienes y un boton "
+                   "para bajar los que falten a su carpeta correcta.")
+
+    def revisar(self, familia, incluir_opcionales=False, incluir_efectos=False):
+        filas = _estado_catalogo(familia, incluir_efectos)
+        if not incluir_opcionales:
+            filas = [f for f in filas if f["esencial"] or f["tengo"]]
+        faltan = [f for f in filas if not f["tengo"]]
+        if not faltan:
+            info = "{}: no falta nada ({} archivos)".format(familia, len(filas))
+        else:
+            info = "{}: faltan {} archivos, {:.1f} GB\n{}".format(
+                familia, len(faltan), sum(f["gb"] for f in faltan),
+                "\n".join("  - {} -> models/{}".format(f["nombre"], f["carpeta"])
+                          for f in faltan[:12]))
+        return (info,)
+
+
+_registrar_rutas()
+
+
 NODE_CLASS_MAPPINGS = {
     "CineCargarH3": CineCargarH3,
     "CineEscenaH3": CineEscenaH3,
@@ -1657,6 +2152,7 @@ NODE_CLASS_MAPPINGS = {
     "CineRatioSize": CineRatioSize,
     "CineDuracion": CineDuracion,
     "CinePrompt6": CinePrompt6,
+    "CineModelos": CineModelos,
 }
 
 # Los nombres de CLASE no se tocan nunca: son la llave con la que ComfyUI
@@ -1672,4 +2168,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CineRatioSize": "Cine con IA · Proporción y Tamaño",
     "CineDuracion": "Cine con IA · Duración",
     "CinePrompt6": "Cine con IA · Prompt",
+    "CineModelos": "Cine con IA · Modelos",
 }

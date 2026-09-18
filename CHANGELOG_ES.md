@@ -8,6 +8,19 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.0] - 2026-09-18
+
+### Añadido
+
+- Nodo **Modelos**: enseña lo que necesita cada familia, marca lo que ya está en disco y descarga el resto directamente en la carpeta que le toca dentro de `models/`.
+- Si se corta la conexión, la descarga sigue donde iba. El progreso se ve archivo a archivo dentro del nodo.
+- El catálogo vive en el paquete, no en el workflow: el navegador solo manda el nombre de una familia y un índice, así que un workflow no puede redirigir una descarga ni elegir dónde se guarda.
+- Pie con los enlaces del proyecto.
+
+### Notas
+
+- LTX-2.5 se sirve desde un repositorio con condiciones que hay que aceptar. El nodo lo avisa y enlaza la licencia; basta con poner `HF_TOKEN` o hacer `huggingface-cli login` una vez.
+
 ## [1.2.0] - 2026-09-18
 
 ### Añadido

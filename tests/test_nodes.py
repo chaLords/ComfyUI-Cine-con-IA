@@ -253,3 +253,57 @@ class ModelProfileTests(unittest.TestCase):
         salida, nota = NODES._aplicar_shift(model, [("NoExisteEsteNodo", "uno")], 6.0, 3.0)
         self.assertIs(salida, model)
         self.assertIn("sin shift", nota)
+
+
+class CatalogTests(unittest.TestCase):
+    """El catalogo de descargas del nodo Modelos."""
+
+    CARPETAS_VALIDAS = {
+        "diffusion_models", "text_encoders", "vae", "vae_approx", "loras",
+        "model_patches", "embeddings", "latent_upscale_models", "upscale_models",
+    }
+
+    def _todas(self):
+        for familia, datos in NODES.CATALOGO.items():
+            for entrada in list(datos["archivos"]) + list(datos["extras"]):
+                yield familia, entrada
+
+    def test_every_entry_is_well_formed(self):
+        for familia, (carpeta, ruta, size, esencial, texto) in self._todas():
+            self.assertIn(carpeta, self.CARPETAS_VALIDAS, f"{familia}: carpeta {carpeta}")
+            self.assertTrue(ruta.endswith((".safetensors", ".pth", ".sft", ".bin", ".gguf")),
+                            f"{familia}: {ruta}")
+            self.assertGreater(size, 0, f"{familia}: {ruta} sin tamano")
+            self.assertIsInstance(esencial, bool)
+            self.assertTrue(texto.strip(), f"{familia}: {ruta} sin explicacion")
+
+    def test_every_family_has_something_essential(self):
+        for familia, datos in NODES.CATALOGO.items():
+            self.assertTrue(any(a[3] for a in datos["archivos"]),
+                            f"{familia} no declara ningun archivo esencial")
+
+    def test_filenames_are_unique_within_a_family(self):
+        import os
+        for familia, datos in NODES.CATALOGO.items():
+            nombres = [os.path.basename(a[1]) for a in datos["archivos"]]
+            self.assertEqual(len(nombres), len(set(nombres)), f"{familia} repite un nombre")
+
+    def test_the_url_is_built_from_the_catalog_repo(self):
+        for familia, (_, ruta, _, _, _) in self._todas():
+            url = NODES._url_de(familia, ruta)
+            self.assertTrue(url.startswith("https://huggingface.co/"), url)
+            self.assertIn(NODES.CATALOGO[familia]["repo"], url)
+
+    def test_an_entry_outside_the_catalog_is_refused(self):
+        # El navegador solo manda (familia, indice). Nada mas debe pasar.
+        for familia, indice in (("MiniMax H3", 9999), ("MiniMax H3", -1),
+                                ("Inventada", 0), ("MiniMax H3", "0")):
+            with self.assertRaises(Exception, msg=f"acepto {familia!r}/{indice!r}"):
+                NODES._entrada(familia, indice)
+
+    def test_ltx_declares_that_it_needs_the_license_accepted(self):
+        # Es el unico repositorio con condiciones: sin esto el usuario recibe
+        # un 401 sin saber por que.
+        self.assertTrue(NODES.CATALOGO["LTX-2.5"]["licencia"])
+        for otra in ("MiniMax H3", "Wan 2.2", "Hunyuan 1.5"):
+            self.assertIsNone(NODES.CATALOGO[otra]["licencia"], otra)

@@ -185,6 +185,9 @@ const PERFILES_CARGA_UI = {
 };
 
 const PERFILES_UI = Object.keys(PERFILES_CARGA_UI).concat(["Personalizado"]);
+// Las familias del nodo Modelos. El catalogo de verdad esta en nodes.py;
+// aqui solo hacen falta los nombres para dibujar las pestanas.
+const MODELOS_CATALOGO = Object.keys(PERFILES_CARGA_UI);
 const PERFIL_POR_DEFECTO_UI = "MiniMax H3";
 const CAMPOS_ARCHIVO = ["modelo", "codificador_texto", "vae_video", "vae_audio"];
 
@@ -2473,6 +2476,188 @@ function addBoton(node, etiqueta, fn) {
   return w;
 }
 
+
+// --- nodo Modelos: lista de descargas ------------------------------------
+
+// Enlaces del pie. CANAL vacio = no se dibuja ese boton.
+const CANAL = "";
+const REPO = "https://github.com/chaLords/ComfyUI-Cine-con-IA";
+
+const gb = (n) => (Number(n) || 0) >= 10 ? `${Math.round(n)} GB` : `${(Number(n) || 0).toFixed(2)} GB`;
+const bytesGB = (n) => (Number(n) || 0) / 1e9;
+
+async function pedirJSON(ruta, cuerpo) {
+  const r = await api.fetchApi(ruta, cuerpo ? {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(cuerpo),
+  } : { method: "GET" });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+
+/**
+ * La lista de archivos. Cada fila se puede marcar y desmarcar; las que ya
+ * estan en disco salen apagadas y no se pueden marcar.
+ */
+function addListaModelos(node, estado) {
+  const filaH = 34, pad = 10;
+  const w = {
+    type: "cineconia_modelos",
+    name: "__modelos",
+    value: null,
+    options: { serialize: false },
+    serialize: false,
+    computeSize(width) {
+      const n = Math.max(1, estado.filas.length);
+      return [width, 20 + n * filaH];
+    },
+    draw(ctx, n, width, y) {
+      ctx.save();
+      ctx.textBaseline = "middle";
+      estado.rects = [];
+
+      if (estado.cargando) {
+        ctx.font = "11px 'IBM Plex Mono', Consolas, monospace";
+        ctx.fillStyle = INFO_FG; ctx.textAlign = "left";
+        ctx.fillText("consultando…", pad + 2, y + 18);
+        ctx.restore(); return;
+      }
+      if (!estado.filas.length) {
+        ctx.font = "11px 'IBM Plex Mono', Consolas, monospace";
+        ctx.fillStyle = INFO_FG; ctx.textAlign = "left";
+        ctx.fillText(estado.aviso || "sin archivos que mostrar", pad + 2, y + 18);
+        ctx.restore(); return;
+      }
+
+      estado.filas.forEach((f, i) => {
+        const fy = y + 10 + i * filaH;
+        const tengo = f.tengo;
+        const marcada = !tengo && estado.marcadas.has(f.familia + "#" + f.indice);
+        const bajando = estado.enCurso === f.familia + "#" + f.indice;
+
+        // fondo de la fila
+        ctx.globalAlpha = tengo ? 0.34 : 1;
+        ctx.fillStyle = marcada || bajando ? "#2b3a3c" : CHIP_BG;
+        roundRect(ctx, pad, fy, width - pad * 2, filaH - 5, 5);
+        ctx.fill();
+
+        // barra de progreso dentro de la propia fila
+        if (bajando && estado.progreso > 0) {
+          ctx.fillStyle = ACCENT; ctx.globalAlpha = 0.28;
+          roundRect(ctx, pad, fy, (width - pad * 2) * Math.min(1, estado.progreso), filaH - 5, 5);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+
+        // marca de estado
+        ctx.textAlign = "center";
+        ctx.font = "12px 'IBM Plex Mono', Consolas, monospace";
+        ctx.fillStyle = tengo ? "#7fb08a" : (marcada || bajando ? ACCENT : "#5d6b6d");
+        ctx.fillText(tengo ? "✓" : (bajando ? "↓" : (marcada ? "■" : "□")), pad + 14, fy + 14);
+
+        // nombre y destino
+        ctx.textAlign = "left";
+        ctx.font = "11px 'IBM Plex Mono', Consolas, monospace";
+        ctx.fillStyle = tengo ? "#8a9a9c" : CHIP_FG;
+        const dcho = 76;
+        let nom = f.nombre;
+        const maxN = width - pad * 2 - 30 - dcho;
+        if (ctx.measureText(nom).width > maxN) {
+          while (nom.length > 6 && ctx.measureText(nom + "…").width > maxN) nom = nom.slice(0, -1);
+          nom += "…";
+        }
+        ctx.fillText(nom, pad + 28, fy + 10);
+        ctx.font = "9px 'IBM Plex Mono', Consolas, monospace";
+        ctx.fillStyle = "#6f7d7e";
+        ctx.fillText(`models/${f.carpeta}${f.esencial ? "" : "   ·   opcional"}`, pad + 28, fy + 22);
+
+        // tamano
+        ctx.textAlign = "right";
+        ctx.font = "10px 'IBM Plex Mono', Consolas, monospace";
+        ctx.fillStyle = tengo ? "#7a8a8c" : "#9fb0b2";
+        ctx.fillText(bajando ? `${Math.round(estado.progreso * 100)}%` : gb(f.gb), width - pad - 10, fy + 14);
+
+        ctx.globalAlpha = 1;
+        estado.rects.push({ x: pad, y: fy, w: width - pad * 2, h: filaH - 5, fila: f });
+      });
+      ctx.restore();
+    },
+    mouse(event, pos, n) {
+      if (event.type !== "pointerdown" && event.type !== "mousedown") return false;
+      for (const r of estado.rects || []) {
+        if (pos[0] >= r.x && pos[0] <= r.x + r.w && pos[1] >= r.y && pos[1] <= r.y + r.h) {
+          if (r.fila.tengo || estado.trabajando) return true;
+          const k = r.fila.familia + "#" + r.fila.indice;
+          if (estado.marcadas.has(k)) estado.marcadas.delete(k); else estado.marcadas.add(k);
+          n.setDirtyCanvas(true, true);
+          return true;
+        }
+      }
+      return false;
+    },
+  };
+  node.widgets.push(w);
+  return w;
+}
+
+/** Pie con el logo y los enlaces. */
+function addPie(node) {
+  const alto = 46, pad = 10;
+  const state = { rects: [] };
+  const w = {
+    type: "cineconia_pie",
+    name: "__pie",
+    value: null,
+    options: { serialize: false },
+    serialize: false,
+    computeSize(width) { return [width, alto]; },
+    draw(ctx, n, width, y) {
+      ctx.save();
+      ctx.strokeStyle = "#394446"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad, y + 4.5); ctx.lineTo(width - pad, y + 4.5); ctx.stroke();
+
+      if (LOGO_OK) {
+        const h = 26, w2 = h * (LOGO.width / Math.max(1, LOGO.height));
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(LOGO, pad, y + 12, w2, h);
+        ctx.globalAlpha = 1;
+      }
+
+      state.rects = [];
+      ctx.textBaseline = "middle";
+      ctx.font = "600 10px system-ui, sans-serif";
+      let x = width - pad;
+      const botones = [];
+      if (CANAL) botones.push(["YouTube", CANAL]);
+      botones.push(["GitHub", REPO]);
+      for (const [etq, url] of botones.reverse()) {
+        const bw = Math.ceil(ctx.measureText(etq).width) + 20;
+        x -= bw;
+        ctx.fillStyle = CHIP_BG;
+        roundRect(ctx, x, y + 14, bw, 22, 4); ctx.fill();
+        ctx.fillStyle = "#9fb0b2"; ctx.textAlign = "center";
+        ctx.fillText(etq, x + bw / 2, y + 25.5);
+        state.rects.push({ x, y: y + 14, w: bw, h: 22, url });
+        x -= 6;
+      }
+      ctx.restore();
+    },
+    mouse(event, pos) {
+      if (event.type !== "pointerdown" && event.type !== "mousedown") return false;
+      for (const r of state.rects) {
+        if (pos[0] >= r.x && pos[0] <= r.x + r.w && pos[1] >= r.y && pos[1] <= r.y + r.h) {
+          window.open(r.url, "_blank", "noopener");
+          return true;
+        }
+      }
+      return false;
+    },
+  };
+  node.widgets.push(w);
+  return w;
+}
+
+
 app.registerExtension({
   name: "cineconia.ui",
 
@@ -2542,6 +2727,137 @@ app.registerExtension({
           ];
         });
       }, 330);
+    }
+
+    if (n === "CineModelos") {
+      marcarNodo(nodeType);
+      alCrear(nodeType, function () {
+        etiquetar(this);
+        const nodo = this;
+        const estado = {
+          filas: [], marcadas: new Set(), rects: [],
+          cargando: true, trabajando: false, enCurso: null, progreso: 0,
+          aviso: "", token: false,
+        };
+
+        const pestanas = addPestanas(this, "familia", ["Todas"].concat(MODELOS_CATALOGO));
+        this.widgets.splice(this.widgets.indexOf(pestanas), 1);
+        this.widgets.unshift(pestanas);
+
+        const refrescar = async () => {
+          estado.cargando = true;
+          nodo.setDirtyCanvas(true, true);
+          try {
+            const familia = String(findWidget(nodo, "familia")?.value || "Todas");
+            const extras = !!findWidget(nodo, "incluir_efectos")?.value;
+            const opcionales = !!findWidget(nodo, "incluir_opcionales")?.value;
+            const r = await pedirJSON("/cineconia/catalogo", { familia, extras });
+            estado.token = !!r.token;
+            estado.filas = (r.archivos || []).filter(
+              (f) => opcionales || f.esencial || f.tengo);
+            estado.aviso = "";
+            // Viene marcado lo ESENCIAL que falta, que es lo que hace falta
+            // para que la familia arranque. Lo opcional se ve pero no se
+            // marca solo: nadie quiere empezar 60 GB sin haberlo pedido.
+            estado.marcadas = new Set(
+              estado.filas.filter((f) => !f.tengo && f.esencial)
+                          .map((f) => f.familia + "#" + f.indice));
+          } catch (e) {
+            estado.filas = [];
+            estado.aviso = "no se pudo consultar el catalogo (¿ComfyUI al dia?)";
+          }
+          estado.cargando = false;
+          reajustar(nodo);
+          nodo.setDirtyCanvas(true, true);
+        };
+
+        const lista = addListaModelos(this, estado);
+
+        const marcadas = () => estado.filas.filter(
+          (f) => !f.tengo && estado.marcadas.has(f.familia + "#" + f.indice));
+
+        const etiquetaBoton = () => {
+          if (estado.trabajando) return "Cancelar la descarga";
+          const q = marcadas();
+          if (!q.length) {
+            return estado.filas.some((f) => !f.tengo)
+              ? "Marca lo que quieras bajar" : "No falta nada";
+          }
+          return `Descargar ${q.length}  ·  ${gb(q.reduce((a, f) => a + f.gb, 0))}`;
+        };
+
+        addBoton(this, etiquetaBoton, async () => {
+          if (estado.trabajando) {
+            await pedirJSON("/cineconia/cancelar", {});
+            return;
+          }
+          const quiero = marcadas();
+          if (!quiero.length) return;
+          const total = quiero.reduce((a, f) => a + f.gb, 0);
+          const ok = window.confirm(
+            `Se van a descargar ${quiero.length} archivos, ${gb(total)} en total.\n\n` +
+            quiero.slice(0, 10).map((f) => `  ${f.nombre}\n     -> models/${f.carpeta}`).join("\n") +
+            (quiero.length > 10 ? `\n  …y ${quiero.length - 10} mas` : "") +
+            `\n\nSe guardan solos en su carpeta. Puedes seguir usando ComfyUI.`);
+          if (!ok) return;
+          try {
+            await pedirJSON("/cineconia/descargar", {
+              archivos: quiero.map((f) => ({ familia: f.familia, indice: f.indice })),
+            });
+            estado.trabajando = true;
+            vigilar();
+          } catch (e) {
+            estado.aviso = "no se pudo empezar: " + e.message;
+            nodo.setDirtyCanvas(true, true);
+          }
+        });
+
+        let reloj = null;
+        const vigilar = () => {
+          if (reloj) return;
+          reloj = setInterval(async () => {
+            let p;
+            try { p = await pedirJSON("/cineconia/progreso"); }
+            catch (e) { return; }
+            estado.trabajando = !!p.trabajando;
+            if (p.actual) {
+              estado.enCurso = p.actual.familia + "#" + p.actual.indice;
+              estado.progreso = p.actual.total ? p.actual.hechos / p.actual.total : 0;
+            } else {
+              estado.enCurso = null; estado.progreso = 0;
+            }
+            if (p.error) estado.aviso = p.error;
+            if (!p.trabajando) {
+              clearInterval(reloj); reloj = null;
+              estado.enCurso = null; estado.progreso = 0;
+              await refrescar();
+            }
+            nodo.setDirtyCanvas(true, true);
+          }, 1000);
+        };
+
+        addInfo(this, () => {
+          if (estado.aviso) return ["", estado.aviso, ""];
+          const faltan = estado.filas.filter((f) => !f.tengo);
+          if (estado.trabajando) return ["descargando…", "se guardan solos en su carpeta", ""];
+          if (!faltan.length) return ["todo listo", "no falta ningun archivo de esta familia", ""];
+          return [
+            `faltan ${faltan.length} archivos  ·  ${gb(faltan.reduce((a, f) => a + f.gb, 0))}`,
+            "cada uno se guarda en la carpeta que le toca",
+            estado.token ? "" : "LTX-2.5 pide aceptar su licencia y un token de Hugging Face",
+          ];
+        });
+
+        addPie(this);
+
+        for (const nm of ["familia", "incluir_opcionales", "incluir_efectos"]) {
+          const w = findWidget(this, nm);
+          if (!w) continue;
+          const antes = w.callback;
+          w.callback = function () { const r = antes?.apply(this, arguments); refrescar(); return r; };
+        }
+        setTimeout(refrescar, 50);
+      }, 470);
     }
 
     if (n === "CineCargarH3") {

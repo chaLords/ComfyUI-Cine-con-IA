@@ -8,6 +8,19 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-09-18
+
+### Added
+
+- New **Models** node: lists what each family needs, marks what is already on disk, and downloads the rest straight into the right folder under `models/`.
+- Downloads resume where they left off if the connection drops, and report progress per file inside the node.
+- The catalogue lives in the package, not in the workflow: the browser only ever sends a family name and an index, so a workflow cannot redirect a download or choose where it lands.
+- Footer with the project links.
+
+### Notes
+
+- LTX-2.5 is served from a repository with terms to accept. The node says so and points at the licence page; set `HF_TOKEN` or run `huggingface-cli login` once.
+
 ## [1.2.0] - 2026-09-18
 
 ### Added
