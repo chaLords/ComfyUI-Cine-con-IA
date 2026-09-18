@@ -26,6 +26,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 
 - El emparejado de archivos ya resuelve los choques entre familias (`hunyuan_video_vae` lleva dentro `video_vae`; `umt5_xxl` lleva dentro `t5`) quedándose con la pista más específica.
 
+### Corregido
+
+- Hunyuan 1.5 carga su codificador en modo `HUNYUAN_VIDEO_15` con Qwen2.5-VL; estaba usando el modo de la 1.0 y las pistas de llava/llama, que son de HunyuanVideo 1.0.
+- LTX-2.5 busca su codificador Gemma en vez de T5, y carga su VAE de audio: sí genera audio.
+- MiniMax H3 propone el modelo `ref2va` y el VAE de vídeo int8, en vez de `fl2va` y el fp16.
+- Los archivos `.gguf` se proponen los últimos, porque este cargador usa `load_diffusion_model` y no los abre.
+
 ## [1.1.0] - 2026-09-17
 
 ### Añadido

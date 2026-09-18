@@ -26,6 +26,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - File matching now resolves collisions between families (`hunyuan_video_vae` contains `video_vae`; `umt5_xxl` contains `t5`) by preferring the most specific hint.
 
+### Fixed
+
+- Hunyuan 1.5 now loads its text encoder in `HUNYUAN_VIDEO_15` mode with Qwen2.5-VL; it was using the 1.0 mode and llava/llama hints, which belong to HunyuanVideo 1.0.
+- LTX-2.5 now looks for its Gemma encoder instead of T5, and loads its audio VAE — it does generate audio.
+- MiniMax H3 now proposes the `ref2va` model and the int8 video VAE instead of `fl2va` and the fp16 one.
+- `.gguf` files are proposed last, since this loader uses `load_diffusion_model` and cannot open them.
+
 ## [1.1.0] - 2026-09-17
 
 ### Added

@@ -863,25 +863,30 @@ PERFILES_CARGA = {
         "valores": {"trocear_atencion": 16, "trocear_ffn": 16,
                     "shift_video": 6.0, "shift_audio": 3.0},
         "pistas": {
-            "modelo": ["minimax_h3", "minimax", "_h3"],
-            "codificador_texto": ["qwen3vl", "minimax"],
-            "vae_video": ["h3_video_vae", "minimax"],
+            # ref2va primero: es el que usa el flujo de referencia. fl2va es
+            # el de primer/ultimo fotograma y se elige a mano si hace falta.
+            "modelo": ["minimax_h3_ref2va", "ref2va", "minimax_h3", "minimax", "_h3"],
+            "codificador_texto": ["qwen3vl_32b_minimax", "qwen3vl", "minimax"],
+            # int8 antes que fp16: en 16 GB de VRAM el fp16 no compensa.
+            "vae_video": ["h3_video_vae_int8", "h3_video_vae", "minimax_h3_video"],
             "vae_audio": ["h3_audio_vae", "audio_vae"],
         },
     },
     "LTX-2.5": {
         "clip": "LTXV",
-        "audio": False,
+        "audio": True,       # LTX-2.5 tambien genera audio, con su propio VAE
         "shift": [("ModelSamplingLTXV", "ltx"), ("ModelSamplingSD3", "uno")],
         "parches": False,
         "previa": "taelt",
         "valores": {"trocear_atencion": 1, "trocear_ffn": 1,
                     "shift_video": 2.05, "shift_audio": 0.95},
         "pistas": {
-            "modelo": ["ltxv", "ltx"],
-            "codificador_texto": ["t5xxl", "t5"],
-            "vae_video": ["ltxv", "ltx"],
-            "vae_audio": ["ltxv", "ltx"],
+            "modelo": ["ltx-2.5-22b", "ltx-2.5", "ltxv", "ltx"],
+            # LTX-2.5 dejo T5 y usa Gemma. El t5xxl queda de ultimo recurso
+            # por si alguien sigue con una 2.0 o 2.1.
+            "codificador_texto": ["gemma4", "gemma", "t5xxl"],
+            "vae_video": ["ltx-2.5-video-vae", "video-vae", "ltx"],
+            "vae_audio": ["ltx-2.5-audio-vae", "audio-vae"],
         },
     },
     "Wan 2.2": {
@@ -893,14 +898,17 @@ PERFILES_CARGA = {
         "valores": {"trocear_atencion": 1, "trocear_ffn": 1,
                     "shift_video": 8.0, "shift_audio": 3.0},
         "pistas": {
-            "modelo": ["wan2", "wan_2", "wan"],
+            "modelo": ["wan2_2", "wan2.2", "wan2", "wan_2", "wan"],
             "codificador_texto": ["umt5"],
-            "vae_video": ["wan2", "wan"],
-            "vae_audio": ["wan2", "wan"],
+            "vae_video": ["wan_2.1_vae", "wan2", "wan"],
+            "vae_audio": ["wan_2.1_vae", "wan2", "wan"],
         },
     },
     "Hunyuan 1.5": {
-        "clip": "HUNYUAN_VIDEO",
+        # OJO: 1.5 NO es 1.0. La 1.0 usaba llava+llama y el modo
+        # HUNYUAN_VIDEO; la 1.5 usa Qwen2.5-VL 7B y tiene su propio modo,
+        # HUNYUAN_VIDEO_15. Cargarla con el modo de la 1.0 da basura.
+        "clip": "HUNYUAN_VIDEO_15",
         "audio": False,
         "shift": [("ModelSamplingSD3", "uno")],
         "parches": False,
@@ -908,10 +916,10 @@ PERFILES_CARGA = {
         "valores": {"trocear_atencion": 1, "trocear_ffn": 1,
                     "shift_video": 7.0, "shift_audio": 3.0},
         "pistas": {
-            "modelo": ["hunyuan"],
-            "codificador_texto": ["llava", "llama"],
-            "vae_video": ["hunyuan"],
-            "vae_audio": ["hunyuan"],
+            "modelo": ["hunyuanvideo1.5", "hunyuanvideo15", "hunyuan"],
+            "codificador_texto": ["qwen_2.5_vl", "qwen2.5_vl", "qwen_2_5_vl"],
+            "vae_video": ["hunyuanvideo15_vae", "hunyuan"],
+            "vae_audio": ["hunyuanvideo15_vae", "hunyuan"],
         },
     },
 }

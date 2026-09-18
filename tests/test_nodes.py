@@ -187,11 +187,31 @@ class ModelProfileTests(unittest.TestCase):
         self.assertIn(NODES.PERFIL_POR_DEFECTO, NODES.PERFILES)
         self.assertEqual(NODES.PERFILES[-1], "Personalizado")
 
-    def test_only_minimax_uses_the_audio_vae_and_the_vram_patches(self):
+    def test_only_minimax_uses_the_vram_patches(self):
+        # MiniMaxChunkFeedForward y MiniMaxLowVRAMAttention son de MiniMax:
+        # aplicarlos a otra familia no haria nada o romperia el modelo.
         for name, profile in NODES.PERFILES_CARGA.items():
-            expected = name == "MiniMax H3"
-            self.assertEqual(profile["audio"], expected, f"{name}: VAE de audio")
-            self.assertEqual(profile["parches"], expected, f"{name}: parches de MiniMax")
+            self.assertEqual(profile["parches"], name == "MiniMax H3",
+                             f"{name}: parches de MiniMax")
+
+    def test_the_audio_vae_is_loaded_only_by_the_families_with_audio(self):
+        # H3 y LTX-2.5 generan audio y tienen su propio VAE. Wan y Hunyuan no,
+        # y cargarles un segundo VAE seria gastar RAM para nada.
+        con_audio = {"MiniMax H3", "LTX-2.5"}
+        for name, profile in NODES.PERFILES_CARGA.items():
+            self.assertEqual(profile["audio"], name in con_audio, f"{name}: VAE de audio")
+
+    def test_hunyuan_15_uses_its_own_encoder_mode(self):
+        # La 1.5 no es la 1.0: cambio de llava+llama a Qwen2.5-VL y tiene su
+        # propio CLIPType. Con el modo de la 1.0 el condicionamiento sale mal.
+        hunyuan = NODES.PERFILES_CARGA["Hunyuan 1.5"]
+        self.assertEqual(hunyuan["clip"], "HUNYUAN_VIDEO_15")
+        self.assertIn("qwen_2.5_vl", hunyuan["pistas"]["codificador_texto"])
+
+    def test_ltx_25_looks_for_gemma_not_t5(self):
+        # LTX-2.5 dejo T5 y usa Gemma.
+        pistas = NODES.PERFILES_CARGA["LTX-2.5"]["pistas"]["codificador_texto"]
+        self.assertEqual(pistas[0], "gemma4")
 
     def test_custom_profile_guesses_the_family_from_the_file_names(self):
         cases = {
