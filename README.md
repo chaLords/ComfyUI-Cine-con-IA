@@ -18,9 +18,7 @@
   <img alt="ComfyUI 0.34.2 or newer" src="https://img.shields.io/badge/ComfyUI-%E2%89%A5%200.34.2-6b46c1?style=flat-square">
   <img alt="Nine nodes" src="https://img.shields.io/badge/nodes-9-e08a3c?style=flat-square">
   <img alt="Spanish interface" src="https://img.shields.io/badge/interface-Spanish-2ea043?style=flat-square">
-  <!-- Once you have the channel URL, uncomment this line and set the link:
-  <a href="https://www.youtube.com/@YOUR-CHANNEL"><img alt="YouTube" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
-  -->
+  <a href="https://www.youtube.com/@cineconia.oficial"><img alt="YouTube channel" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
 </p>
 
 <p align="center">
@@ -28,7 +26,8 @@
   <a href="#included-nodes">🎬 The nodes</a> ·
   <a href="#recommended-workflow">▶️ How it is used</a> ·
   <a href="#using-the-prompt-node">✍️ The Prompt node</a> ·
-  <a href="CHANGELOG.md">🛠 Changelog</a>
+  <a href="CHANGELOG.md">🛠 Changelog</a> ·
+  <a href="https://www.youtube.com/@cineconia.oficial">📺 Tutorials</a>
 </p>
 
 ---

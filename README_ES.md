@@ -18,9 +18,7 @@
   <img alt="ComfyUI 0.34.2 o superior" src="https://img.shields.io/badge/ComfyUI-%E2%89%A5%200.34.2-6b46c1?style=flat-square">
   <img alt="Nueve nodos" src="https://img.shields.io/badge/nodos-9-e08a3c?style=flat-square">
   <img alt="Interfaz en español" src="https://img.shields.io/badge/interfaz-espa%C3%B1ol-2ea043?style=flat-square">
-  <!-- Cuando tengas la URL del canal, descomenta esta línea y pon el enlace:
-  <a href="https://www.youtube.com/@TU-CANAL"><img alt="YouTube" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
-  -->
+  <a href="https://www.youtube.com/@cineconia.oficial"><img alt="Canal de YouTube" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
 </p>
 
 <p align="center">
@@ -28,7 +26,8 @@
   <a href="#qué-incluye">🎬 Los nodos</a> ·
   <a href="#flujo-recomendado">▶️ Cómo se usa</a> ·
   <a href="#uso-del-nodo-prompt">✍️ El nodo Prompt</a> ·
-  <a href="CHANGELOG_ES.md">🛠 Novedades</a>
+  <a href="CHANGELOG_ES.md">🛠 Novedades</a> ·
+  <a href="https://www.youtube.com/@cineconia.oficial">📺 Tutoriales</a>
 </p>
 
 ---
