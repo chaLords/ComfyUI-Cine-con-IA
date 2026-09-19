@@ -8,6 +8,12 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.6] - 2026-09-18
+
+### Cambiado
+
+- Las estadísticas de Render y Escalar y Refinar conservan el primer paso como una línea horizontal de avance y después conectan los puntos iniciales, terminados y en curso mediante una curva naranja continua y un área sutilmente rellena. Las transiciones posteriores ya no aparecen como puntos separados.
+
 ## [1.3.5] - 2026-09-18
 
 ### Añadido

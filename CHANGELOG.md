@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.6] - 2026-09-18
+
+### Changed
+
+- Render and Upscale & Refine statistics keep the first step as a horizontal progress line, then connect the initial, completed, and live step points with one continuous orange curve and a subtle filled area. Later transitions are no longer shown as detached points.
+
 ## [1.3.5] - 2026-09-18
 
 ### Added

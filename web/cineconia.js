@@ -989,35 +989,141 @@ function addProgreso(node, titulo, obtenerTotal = null) {
       ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh);
       ctx.stroke();
 
+      // El grafico reserva una ranura por paso previsto, no solo por medida
+      // tomada. Antes la curva se estiraba siempre a todo el ancho, asi que
+      // 5 medidas ocupaban lo mismo que 8 y no se veia cuanto faltaba. Ahora
+      // lo medido ocupa su parte y lo pendiente queda abajo, apagado.
       const datos = (s.pasos || []).slice(-Math.max(2, total));
       const lento = Math.max(1, ...datos);
-      if (datos.length) {
+      // pasos[0] es la duracion del paso 2: el primero no se puede medir
+      // porque ComfyUI avisa cuando ya termino. Por eso la ranura 0 nunca
+      // lleva punto naranja aunque ese paso si este hecho.
+      const ranuras = Math.max(total, datos.length + 1, 2);
+      const enX = (i) => gx + (i / (ranuras - 1)) * gw;
+      const enY = (ms) => gy + gh - (ms / lento) * (gh - 3);
+      const suelo = gy + gh - 1.5;
+
+      const puntoApagado = (i) => {
         ctx.beginPath();
-        datos.forEach((ms, i) => {
-          const px = gx + (datos.length === 1 ? gw : (i / (datos.length - 1)) * gw);
-          const py = gy + gh - (ms / lento) * (gh - 3);
-          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        ctx.arc(enX(i), suelo, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      };
+
+      // Aro hueco: un paso que esta hecho o corriendo, pero cuya duracion
+      // todavia no es un dato cerrado. Hueco para no confundirlo con medida.
+      const puntoHueco = (x, py) => {
+        ctx.beginPath();
+        ctx.arc(x, py, 2.2, 0, Math.PI * 2);
+        ctx.strokeStyle = ACCENT;
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+      };
+
+      // Barra de avance pegada a la base. Es lo unico del grafico que puede
+      // moverse ya en el paso 1, porque no necesita haber medido ninguna
+      // duracion: solo pasos hechos sobre pasos totales.
+      if (total > 0 && s.hecho > 0) {
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = ACCENT;
+        ctx.fillRect(gx, gy + gh - 1, Math.min(1, s.hecho / total) * gw, 2);
+        ctx.globalAlpha = 1;
+      }
+
+      if (datos.length) {
+        // Curva continua desde el primer paso. El paso 1 no tiene una
+        // duracion fiable, pero si sabemos que es el origen de la serie: se
+        // une desde la base con la primera medida para que el salto se vea
+        // como una diagonal y no como puntos separados.
+        const puntos = [{ x: enX(0), y: suelo }];
+        datos.forEach((ms, i) => puntos.push({ x: enX(i + 1), y: enY(ms) }));
+
+        // El punto del paso que esta corriendo tambien forma parte de la
+        // curva. Sube en vivo y queda unido al ultimo dato cerrado.
+        let puntoEnCurso = null;
+        if (s.vivo && s.t && s.hecho < ranuras) {
+          const enCurso = Math.max(0, performance.now() - s.t);
+          puntoEnCurso = {
+            x: enX(s.hecho),
+            y: Math.max(gy + 2.5, enY(enCurso)),
+          };
+          const ultimoPunto = puntos[puntos.length - 1];
+          if (puntoEnCurso.x > ultimoPunto.x) puntos.push(puntoEnCurso);
+        }
+
+        // Area + curva naranja continua, incluido el ascenso inicial y el
+        // tramo en curso. El relleno hace legible la evolucion de un vistazo.
+        ctx.beginPath();
+        puntos.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
         });
         ctx.strokeStyle = ACCENT;
         ctx.lineWidth = 1.7;
         ctx.stroke();
-        ctx.lineTo(gx + gw, gy + gh);
-        ctx.lineTo(gx, gy + gh);
+        ctx.lineTo(puntos[puntos.length - 1].x, gy + gh);
+        ctx.lineTo(puntos[0].x, gy + gh);
         ctx.closePath();
-        ctx.globalAlpha = 0.16;
+        ctx.globalAlpha = 0.18;
         ctx.fillStyle = ACCENT;
         ctx.fill();
         ctx.globalAlpha = 1;
+
+        // un punto por medida, para poder contarlas de un vistazo
+        ctx.fillStyle = ACCENT;
+        datos.forEach((ms, i) => {
+          ctx.beginPath();
+          ctx.arc(enX(i + 1), enY(ms), 1.9, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // las ranuras sin medida se marcan abajo
+        ctx.fillStyle = "#4b5659";
+        for (let i = 0; i < ranuras; i++) {
+          if (i >= 1 && i <= datos.length) continue;
+          if (i === 0 && s.hecho > 0) continue;
+          if (i === s.hecho && s.vivo) continue;   // ahi va el aro en vuelo
+          puntoApagado(i);
+        }
+        // el paso 1 esta hecho, solo que sin duracion fiable: aro, no apagado
+        if (s.hecho > 0) puntoHueco(enX(0), suelo);
+
+        // El aro distingue el dato provisional del punto cerrado, aunque ya
+        // este conectado visualmente con el resto de la curva.
+        if (puntoEnCurso) puntoHueco(puntoEnCurso.x, puntoEnCurso.y);
+
+        // frontera entre lo hecho y lo que falta
+        if (datos.length + 1 < ranuras) {
+          ctx.setLineDash([2, 3]);
+          ctx.strokeStyle = "#3f4b4e";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          const fx = Math.round((enX(datos.length) + enX(datos.length + 1)) / 2) + 0.5;
+          ctx.moveTo(fx, gy); ctx.lineTo(fx, gy + gh);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
       } else {
+        // Durante el primer paso se conserva la linea horizontal de avance.
+        // La diagonal aparece al cerrarse la primera medida, no antes.
         ctx.setLineDash([3, 3]);
         ctx.strokeStyle = "#566164";
         ctx.beginPath(); ctx.moveTo(gx, gy + gh / 2); ctx.lineTo(gx + gw, gy + gh / 2); ctx.stroke();
         ctx.setLineDash([]);
+        // antes de la primera medida ya se ven las ranuras que va a haber
+        if (total > 1) {
+          ctx.fillStyle = "#4b5659";
+          for (let i = 0; i < ranuras; i++) {
+            if (i === 0 && s.hecho > 0) continue;
+            puntoApagado(i);
+          }
+        }
+        if (s.hecho > 0) puntoHueco(enX(0), suelo);
       }
       ctx.font = "8px 'IBM Plex Mono', Consolas, monospace";
       ctx.fillStyle = "#6f7d7e";
-      ctx.fillText(datos.length ? `máx ${(lento / 1000).toFixed(1)} s  ·  ${datos.length} medidas`
-                                : "máx 0.0 s  ·  0 medidas", gx, base + alto - 7);
+      ctx.fillText(datos.length
+        ? `máx ${(lento / 1000).toFixed(1)} s  ·  ${datos.length}/${ranuras} medidas`
+        : (total ? `máx 0.0 s  ·  0/${total} medidas`
+                 : "máx 0.0 s  ·  0 medidas"), gx, base + alto - 7);
 
       // resumen numerico. Solo calcula con tiempos observados, nunca inventa
       // sigma ni datos internos que ComfyUI no haya enviado.
