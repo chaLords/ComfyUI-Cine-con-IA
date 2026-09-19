@@ -44,8 +44,9 @@ test('H3 named shot buttons retain the full 360 and compound camera paths', () =
     {name: 'movimiento', value: 'sin especificar'},
   ], setDirtyCanvas() {}};
   vm.runInContext('aplicarTomaH3', context)(node, 'Órbita 360°');
-  assert.match(node.widgets[0].value, /complete 360-degree circle/);
-  assert.match(node.widgets[0].value, /returns to the frontal starting view/);
+  assert.match(node.widgets[0].value, /clockwise 360-degree arc shot/);
+  assert.match(node.widgets[0].value, /right profile.*rear view.*opposite left profile.*frontal opening viewpoint/);
+  assert.match(node.widgets[0].value, /same clockwise circuit/);
   assert.equal(node.widgets[3].value, 'orbita');
   vm.runInContext('aplicarTomaH3', context)(node, 'Dolly zoom');
   assert.match(node.widgets[0].value, /pushes in.*zooms out/);

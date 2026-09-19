@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.9] - 2026-09-19
+
+### Fixed
+
+- The 360° orbit recipe and AI-writing guide now specify one continuous direction through front, right profile, rear, opposite left profile, and front. A return through the same side no longer counts as a completed circle in the guidance.
+- The recipe remains an experiment: text prompting cannot guarantee a geometrically exact camera trajectory.
+
 ## [1.3.8] - 2026-09-19
 
 ### Added

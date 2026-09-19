@@ -152,6 +152,8 @@ El selector de cámara puede sustituir una toma ya escrita o insertar una nueva 
 
 Algunas recetas dependen de la escena: whip pan necesita dos blancos visibles, rack focus requiere planos de foco cercano y lejano, y seguimiento o grúa funcionan mejor si el sujeto se mueve. Pantalla dividida es experimental. Son ejemplos de prompting, no controles físicos garantizados. Render añade un botón de **20 pasos** para comparar resultados, sin cambiar los 8 pasos de los workflows existentes. LoopForge detalla sus condiciones de prueba en el [índice de tomas](https://github.com/loopforge0/minimaxh3-shots-skills/blob/main/.claude/skills/h3-camera-shots/shots/INDEX.md).
 
+Para comprobar de verdad «Órbita 360°», mira los cinco hitos en orden: frente → perfil derecho → espalda → perfil izquierdo → frente. Si la cámara vuelve de la espalda por el mismo costado, el recorrido **no** es de 360°, aunque termine de nuevo delante. La receta explicita estos hitos, pero MiniMax H3 sigue interpretando el texto de forma probabilística; para una trayectoria exacta haría falta un control espacial adicional.
+
 Para tomas H3 guiadas por imagen, **Escena** ofrece dos modos de guía:
 
 - `exacta · fija fotograma 0` conserva la guía conectada como fotograma latente exacto. Úsalo cuando el comienzo deba coincidir con precisión.

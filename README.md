@@ -150,6 +150,8 @@ The camera selector can replace an existing shot instruction or insert a new one
 
 Some recipes depend on the scene: whip pan needs two visible targets, rack focus needs near and far focal planes, and tracking or crane shots work best with a moving subject. Split screen is experimental. These are prompting examples, not guaranteed physical camera controls. The Render node now has a **20-step** shortcut for A/B tests; it does not change existing 8-step workflows. LoopForge reports its own testing conditions in the [shot index](https://github.com/loopforge0/minimaxh3-shots-skills/blob/main/.claude/skills/h3-camera-shots/shots/INDEX.md).
 
+To verify a true 360° orbit, look for five viewpoints in order: front → right profile → rear → opposite left profile → front. Returning from the rear along the same side is **not** a full circle, even if the shot ends in front. The recipe now names these waypoints, but MiniMax H3 interprets text probabilistically; an exact camera path would require additional spatial control.
+
 For image-guided H3 shots, **Scene** provides two guide modes:
 
 - `exact · locks frame 0` preserves the connected guide as an exact latent keyframe. Use it when the opening frame must match precisely.

@@ -8,6 +8,13 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.9] - 2026-09-19
+
+### Corregido
+
+- La receta de órbita 360° y la guía para la IA exigen ahora un solo sentido de giro con cinco hitos: frente, perfil derecho, espalda, perfil izquierdo opuesto y frente. Regresar por el mismo lado deja de considerarse una vuelta completa.
+- La receta sigue siendo una prueba: un prompt de texto no garantiza una trayectoria geométricamente exacta.
+
 ## [1.3.8] - 2026-09-19
 
 ### Añadido
