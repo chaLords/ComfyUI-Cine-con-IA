@@ -8,6 +8,27 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.4.0] - 2026-09-19
+
+### Añadido
+
+- Las catorce recetas repetidas con otro personaje, con lo que necesita cada una, en [docs/CAMERA_TESTS_ES.md](docs/CAMERA_TESTS_ES.md). La órbita de 360° se completa con 124 fotogramas y falla con 192, y el ángulo holandés solo salió correcto con una segunda semilla.
+- Releases en GitHub. Todas las versiones anteriores, de la 1.0.0 a la 1.3.9, tienen su tag en su propio commit, y al subir un tag `vX.Y.Z` se publica sola su Release con la entrada de esa versión en los dos historiales. El workflow rechaza un tag que no coincida con `pyproject.toml` o una versión sin entrada en el historial.
+
+### Cambiado
+
+- Las 14 recetas de cámara de MiniMax H3 llevan ahora, palabra por palabra, la frase de cámara publicada por LoopForge, con el encuadre de apertura y la acción del sujeto con los que se verificó cada toma. Las recetas anteriores eran paráfrasis: el eyes in se quedaba en "most of the final frame" en vez de llenar el cuadro con el ojo, el whip pan pedía desenfoque de movimiento (LoopForge comprobó que pedirlo no hace nada) y la grúa ascendente abría en plano general y desde arriba en vez de con el sujeto corriendo en plano medio.
+- Cuando la frase de LoopForge nombra su propia escena, la receta usa la versión general de sus recetas de tomas y deja `{HUECOS}` para la escena del usuario. La snorricam sigue la receta de caminata recta que LoopForge midió como la que mejor fija el rostro, no la versión de fiesta de su página.
+- Los pronombres de las recetas siguen al `<Subject 1>` de `subject_definitions` (he, she o they).
+- La instrucción copiada para la IA enumera las 14 recetas palabra por palabra, incluye la receta elegida en el nodo y explica las condiciones medidas por LoopForge: una lámina de identidad sin placa de fondo, `[reference generation]`, 124 o 192 fotogramas, 20 pasos sin turbo y ningún segundo marcado.
+
+### Corregido
+
+- La órbita de 360° volvía de frente → derecha → espalda por el mismo costado. Su receta había sustituido la frase verificada de LoopForge por hitos en sentido horario marcados al segundo, y H3 no coloca sucesos en el tiempo. La receta vuelve a ser la de LoopForge: *arc shot … with large amplitude at fast speed, sweeping a complete circle … and coming back to the front*.
+- La instrucción para la IA ya no pide hitos de cámara con tiempos y explica que `<Picture N>` sigue el orden de conexión de **Escena**.
+- Un prompt con un `{HUECO}` sin rellenar se rechaza con un mensaje que lo nombra, en lugar de mandar el marcador a un render de media hora. La vista previa del prompt enseña ese mensaje.
+- El nodo avisa cuando los fotogramas con los que se verificó una receta no coinciden con el nodo **Duración**.
+
 ## [1.3.9] - 2026-09-19
 
 ### Corregido

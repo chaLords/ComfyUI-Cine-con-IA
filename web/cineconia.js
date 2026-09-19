@@ -1358,6 +1358,8 @@ Aqui defines cada cosa referenciada que luego haya que seguir por separado. Una 
 <Video N> = un video de origen del que se edita, se continua, o del que se toma la estructura temporal.
 <Audio N> = una pista de audio que se copia o se referencia.
 
+<Picture N> es posicional: el numero es el orden en que la imagen entra en el nodo Escena H3 (referencia_1 = <Picture 1>, referencia_2 = <Picture 2>), no lo que diga el texto. Si la lamina del personaje entra segunda, es <Picture 2>. Preguntame el orden si no lo sabes.
+
 REGLA IMPORTANTE que casi todo el mundo se salta: si una imagen solo sirve para definir un personaje, un escenario, una ropa o un estilo, NO le crees una entrada <Picture N> propia. Cita esa imagen dentro de la definicion del <Subject N> que corresponda. Solo lleva entrada propia la imagen que sea de verdad un fotograma del video.
 
 Ejemplos correctos:
@@ -1437,7 +1439,7 @@ The dark wall lettering reads "Cine con IA" behind him.
 
 === 5. camera ===
 
-Este bloque no esta en el formato oficial de MiniMax: lo pide la herramienta que uso. Escribe aqui la camara y solo la camara, en una o dos frases, y la herramienta la coloca sola dentro de detailed_description, en la frase del plano, detras de [Shot 1], que es exactamente donde MiniMax la quiere. Si la escribes en los dos sitios, el plano acaba con dos instrucciones de camara peleandose.
+Este bloque no esta en el formato oficial de MiniMax: lo pide la herramienta que uso. Escribe aqui la camara y solo la camara, en una o dos frases (una receta de LoopForge va entera, aunque sea mas larga), y la herramienta la coloca sola dentro de detailed_description, en la frase del plano, detras de [Shot 1], que es exactamente donde MiniMax la quiere. Si la escribes en los dos sitios, el plano acaba con dos instrucciones de camara peleandose.
 
 La camara se escribe como ingles conjugado dentro de la accion, NUNCA como etiquetas sueltas entre corchetes: en H3 los corchetes ya significan [Shot 2] y [reference generation], y meter ahi Push in lo confunde. Eso de los corchetes es de otro modelo, el Hailuo Video-01 Director, que no es este.
 
@@ -1467,17 +1469,26 @@ Los tamanos de plano si van con su nombre normal, al principio: extreme close-up
 
 Los angulos MiniMax NO los documenta. Asi que describe la geometria en vez de usar jerga: the camera below him, looking up at him, mejor que low angle. Lo mismo con los efectos de objetivo: en vez de rack focus o 85mm, describe lo que se ve cambiar.
 
-Si pido una orbita, di ademas que el cuerpo del personaje no gira y que lo que corre es el fondo, con parallax: si no, el modelo gira a la persona en vez de la camara.
+Si pido una orbita, usa la receta Orbita 360 del final tal cual. No le anadas sentido de giro (clockwise), perfiles, cuartos de vuelta ni segundos: en las pruebas de LoopForge fue esa frase corta, con with large amplitude at fast speed, la que dio el circulo completo.
 
-Para una camara movil escribe una cadena concreta: posicion inicial, movimiento fisico, direccion, velocidad y amplitud pertinentes, sujeto seguido y trayectoria visible. Describe el final real de la toma. Una orbita de 360 grados o un yo-yo zoom pueden volver al encuadre inicial tras un gran recorrido; un crash zoom puede esperar y acelerar al final.
+Para una camara movil escribe una cadena concreta: encuadre de apertura, movimiento fisico, direccion si hace falta, amplitud y velocidad solo cuando la toma depende de ellas, y el resultado visible al final. Una orbita de 360 grados o un yo-yo zoom vuelven al encuadre inicial; un crash zoom espera y aterriza de golpe.
 
-Ata la camara a los momentos de la accion: cuando empieza, que ocurre a mitad y donde termina. Si la camara es la prioridad de la prueba, usa una accion corporal sencilla. Para whip pan hacen falta dos blancos visibles; rack focus necesita dos planos de profundidad; seguimiento y grua funcionan mejor si el sujeto se desplaza.
+Describe la SECUENCIA (primero, luego, al final), nunca los tiempos. H3 respeta el orden pero elige su propia ventana: pedir un hito a 1.5 s o a 3.0 s no lo coloca ahi. Si la camara es la prioridad de la prueba, el sujeto hace algo sencillo: de pie respirando y parpadeando con naturalidad, o caminando o corriendo si la toma lo pide. Nunca lo congeles (completely still, one rigid pose): en la orbita, esa instruccion imposible le quito el 80% del recorrido a la camara. Para whip pan hacen falta dos personajes; rack focus necesita tres y dos planos de profundidad; camara en mano, snorricam y grua ascendente necesitan que el sujeto corra.
 
 Solo si una imagen es realmente el primer fotograma, conserva su composicion en 0.00 segundos y luego sigue la trayectoria pedida. Si es una lamina de referencia de personaje o escenario, conserva su identidad y rasgos, pero NO la trates como primer fotograma ni fijes su encuadre.
 
-Recetas de camara que la herramienta ofrece como botones, inspiradas en las pruebas publicadas de LoopForge para MiniMax H3. Usa el nombre como guia, pero escribe la accion visible y la trayectoria en ingles: Crash zoom (pausa y Zoom In rapido), Yo-yo zoom (Zoom Out y regreso con Zoom In), Dolly zoom (Push In + Zoom Out coordinados), Snorricam (sujeto estable, entorno que se agita mientras se mueve), Rack focus (foco de plano cercano a lejano), Pantalla dividida (tres vistas simultaneas, experimental), Whip pan (panoramica veloz de un sujeto a otro), Angulo holandes (Roll Counterclockwise), Super dolly in (Push In de gran amplitud), Eyes in (Push In lento hasta un ojo), Aerial pullback (Pull Out + Pedestal Up), Camara en mano (Tracking Shot + Shake Strongly), Orbita 360 grados (Arc Shot de circulo completo que vuelve al frente) y Grua ascendente (Tracking Shot + Pedestal Up + Tilt Down). No prometas obediencia perfecta del modelo: estas son recetas de prueba, no controles mecanicos.
+RECETAS DE LOOPFORGE. La herramienta tiene 14 botones con las tomas que LoopForge verifico en H3 (loopforge.cc/projects/h3-camera-shots). Estan todas al final de estas instrucciones. Si te nombro una, el bloque camera es ESA receta copiada palabra por palabra: solo cambias he/him/his si <Subject 1> es mujer (she/her/her) o si no se sabe (they/them/their, con el verbo en plural), y sustituyes cada hueco en MAYUSCULAS entre llaves por cosas concretas de mi escena. No la resumas, no la traduzcas, no la mejores y no le anadas tiempos, direcciones ni hitos. El encuadre de apertura es parte de la receta: la toma sale mal si abre en otro tamano.
 
-Para una Orbita 360 grados exige una vuelta en una sola direccion: frente, perfil derecho, espalda, perfil izquierdo y frente. Menciona los dos perfiles opuestos y los fondos distintos que pasan detras de cada uno. Llegar a la espalda y regresar por el mismo lado NO completa una orbita de 360 grados. Distribuye esos hitos dentro de la duracion real del plano y conserva el mismo sentido de giro hasta cerrar el circulo.
+Con una receta, el resto del prompt sigue el formato de esas pruebas:
+- summary: [reference generation] The target video shows <Subject 1> <accion corta> in <lugar>, in <encuadre de apertura>, as the camera performs a <nombre de la toma>.
+- Una sola lamina de identidad por personaje y NINGUNA imagen del escenario: el entorno va solo en texto, con varias cosas concretas detras del sujeto. Una imagen del escenario reduce el movimiento de camara a la mitad.
+- La lamina nunca es first frame ni [keyframe completion]: eso fija el encuadre y tambien corta el movimiento a la mitad.
+- detailed_description: la frase de estilo y luego [Shot 1] con donde esta el sujeto y que hay detras de el, terminando con As the shot plays out, <Subject 1>'s <expresion que CAMBIA a lo largo del plano>. El encuadre, la accion base y la camara ya los pone la receta: no los repitas.
+- Objetivos y camaras (ARRI, Cooke, 35mm) son cosmeticos y no mueven la camara. Nunca nombres un arnes o rig que se veria en cuadro.
+- En overall_soundscape y non_diegetic_music nunca nombres la camara, el objetivo ni el movimiento. Si puedes, que el sonido acompane el gesto: en la orbita, A circling arpeggio that completes exactly one full turn and lands back on the note it started on.
+- Duracion: 124 fotogramas (5.17 s) para las tomas de un movimiento; 192 (8 s) para yo-yo zoom y pantalla dividida.
+
+No prometas obediencia perfecta del modelo: son recetas probadas, no controles mecanicos.
 
 Ejemplo de bloque camera bien escrito:
 The shot is framed as a medium shot, with the camera at his eye level. The camera pushes in toward his face with small amplitude at slow speed across the entire shot, ending on a close-up of his head and shoulders.
@@ -1534,13 +1545,32 @@ function duracionDelGrafo() {
   } catch (e) { return null; }
 }
 
+/**
+ * Las 14 recetas salen de la misma tabla que los botones, asi la IA recibe
+ * exactamente el texto que el boton escribiria. Si el nodo ya tiene una
+ * receta elegida, se le pide esa.
+ */
+function recetasParaIA(node) {
+  const lista = TOMAS_H3.slice(1).map(([, nombre, plantilla, , , , fotogramas, requisitos]) =>
+    `${nombre} (${fotogramas} fotogramas; ${requisitos}):\n${conjugarTomaH3(plantilla, PRONOMBRES_H3.el)}`);
+  let texto = "\n\n=== Recetas de camara de LoopForge, palabra por palabra ===\n\n" + lista.join("\n\n");
+  const elegida = String(findWidget(node, "toma_h3")?.value || "libre");
+  const caja = String(findWidget(node, "camara")?.value || "").trim();
+  if (TOMAS_H3.some(([, v]) => v === elegida && v !== "libre") && caja) {
+    texto += `\n\nReceta elegida en la herramienta: ${elegida}. Devuelve en camera exactamente este bloque, ` +
+             `sustituyendo solo los huecos en MAYUSCULAS entre llaves:\n${caja}`;
+  }
+  return texto;
+}
+
 /** Le pega a la receta la duracion concreta de este workflow. */
-function instruccionConDuracion() {
+function instruccionConDuracion(node) {
   const d = duracionDelGrafo();
-  if (!d) return INSTRUCCION_H3;
+  const recetas = node ? recetasParaIA(node) : "";
+  if (!d) return INSTRUCCION_H3 + recetas;
   const s = d.segundos;
   const palabras = Math.round(s * 2.3);
-  return INSTRUCCION_H3 +
+  return INSTRUCCION_H3 + recetas +
     `\n\nDatos de este plano en concreto:\n` +
     `- Duracion exacta: ${s.toFixed(2)} segundos (${d.fotogramas} fotogramas a ${d.fps} fps). ` +
     `Toda la accion tiene que caber ahi y terminar dentro del plano, sin quedar cortada ni sobrar tiempo al final.\n` +
@@ -1617,31 +1647,147 @@ const MOVIMIENTOS_CHIPS = [
   ["en mano fuerte", "camara en mano fuerte"],
 ];
 
-// Recetas editables, basadas en las 14 pruebas de LoopForge para H3. Los
-// controles simples siguen disponibles; una receta conserva su ruta completa.
-// Una receta puede necesitar sujetos/planos que la escena realmente contenga.
+// Recetas de las 14 tomas publicadas por LoopForge para H3
+// (loopforge.cc/projects/h3-camera-shots). Cada texto es el encuadre de
+// apertura, la accion que la toma exige y la frase de camara marcada en el
+// prompt de su pagina, palabra por palabra. Cuando esa frase nombra cosas de
+// su escena (una pista del bosque, una fiesta, un escritorio), se usa la
+// version general de la receta de su repositorio
+// (github.com/loopforge0/minimaxh3-shots-skills) y lo que depende de tu
+// escena queda como {HUECO}: el prompt no se construye hasta rellenarlo.
+//
+// {he} {him} {his} {He} {His} {is} {has} y el sufijo {s} se conjugan con el
+// <Subject 1> de subject_definitions al pulsar la receta.
+//
+// Fila: etiqueta, valor, texto, plano, angulo, movimiento, fotogramas con
+// los que se verifico, requisitos de la escena.
+const H3_QUIETO = "breathing softly, hair and clothing stirring in the air, blinking and shifting {his} weight a little as people naturally do";
+const H3_CORRE = "hair flying and clothing snapping with the movement";
 const TOMAS_H3 = [
   ["libre", "libre", "", "sin especificar", "sin especificar", "sin especificar"],
-  ["crash zoom", "Crash zoom", "The shot opens wide and holds briefly on the subject. Near the end, the camera zooms in on the subject with large amplitude at fast speed, landing on a tight close-up.", "plano general", "altura de los ojos", "zoom in"],
-  ["yo-yo zoom", "Yo-yo zoom", "The camera begins in a close-up, zooms out with increasing speed to reveal the wider scene, holds that wide view briefly, then zooms in with large amplitude at fast speed to return to the opening close-up.", "primer plano", "altura de los ojos", "zoom out"],
-  ["dolly zoom", "Dolly zoom", "The camera pushes in toward the subject while the lens zooms out at a matching rate. The subject stays approximately the same size as the background expands and shifts in perspective.", "plano medio", "altura de los ojos", "acercarse"],
-  ["snorricam", "Snorricam", "The moving subject stays the same size and position in the frame while the camera travels with them; the surrounding room swings and slides around the subject with visible parallax.", "plano medio", "altura de los ojos", "seguir"],
-  ["rack focus", "Rack focus", "The camera holds a static composition with one subject close to the lens and another farther behind. Focus starts sharp on the near subject, then shifts smoothly to the far subject while the framing stays fixed.", "plano medio", "altura de los ojos", "fijo"],
-  ["pantalla dividida", "Pantalla dividida", "The image forms three simultaneous panels showing the same moment from distinct viewpoints. Each panel keeps its own stable framing and the action remains synchronized across the three views.", "sin especificar", "sin especificar", "fijo"],
-  ["whip pan", "Whip pan", "The camera starts on the first subject, whips rapidly to the right with strong motion blur across the middle, and settles sharply on a second subject in a different part of the scene.", "plano medio", "altura de los ojos", "panoramica derecha"],
-  ["ángulo holandés", "Ángulo holandés", "The camera starts level, rolls counterclockwise around the lens axis until the horizon is visibly canted, then holds that tilted composition as the subject continues moving naturally.", "plano medio", "sin especificar", "giro antihorario"],
-  ["super dolly in", "Super dolly in", "The camera begins in an extreme wide shot and pushes in through the space with large amplitude at fast speed. Foreground landmarks sweep past the lens; the move ends close to the subject.", "gran plano general", "altura de los ojos", "acercarse"],
-  ["eyes in", "Eyes in", "The camera begins in a medium close view and pushes in slowly with large amplitude toward one eye. The face expands steadily until the eye fills most of the final frame.", "plano medio corto", "altura de los ojos", "acercarse"],
-  ["aerial pullback", "Aerial pullback", "The camera starts near the subject, pulls out with large amplitude at fast speed while pedestaling up, and reveals a high, wide view of the surrounding location.", "plano medio", "altura de los ojos", "alejarse"],
-  ["cámara en mano", "Cámara en mano", "The camera tracks the moving subject at fast speed with strong handheld shake and small irregular lurches; the subject remains recognizable while the background rushes by.", "plano medio", "altura de los ojos", "camara en mano fuerte"],
-  ["órbita 360°", "Órbita 360°", "The camera performs one continuous clockwise 360-degree arc shot around the subject with large amplitude at fast speed. Starting from the frontal view, it passes the subject's right profile at one quarter of the shot, reaches a centered rear view halfway through, continues past the opposite left profile at three quarters, then completes the same clockwise circuit back to the frontal opening viewpoint. Different background landmarks pass behind each profile with clear depth parallax while the subject stays in place and moves naturally.", "plano medio", "altura de los ojos", "orbita"],
-  ["grúa ascendente", "Grúa ascendente", "The camera begins low near the moving subject's feet, tracks alongside them, then pedestals up while tilting down until it reaches a high overhead view of the subject and the route behind them.", "plano general", "picado", "grua arriba"],
+  ["crash zoom", "Crash zoom",
+   "The shot opens wide, with <Subject 1> standing small and full-figure in frame. " +
+   "The camera is locked off and completely motionless, and the framing does not change at all for the first two seconds. " +
+   "At the two-second mark the camera performs a Zoom In with large amplitude at fast speed: a single violent crash zoom that travels the whole distance from the wide shot to a tight close-up of <Subject 1>'s face in about 200 milliseconds, in one continuous snap, with no easing at either end and nothing gradual about it. " +
+   "The instant the zoom lands the camera is locked off again in the tight close-up and the framing does not change for the remainder of the shot. " +
+   "{His} reaction begins only after the zoom has landed: {his} eyes widen and focus, {his} brow lifts and tightens, {his} lips part slightly, and {he} settle{s} into a held, wide-eyed stillness for the rest of the shot.",
+   "plano general", "altura de los ojos", "zoom in", 124,
+   "abre en plano general; la reacción llega cuando el zoom aterriza"],
+  ["yo-yo zoom", "Yo-yo zoom",
+   "A tight close-up fills the frame with <Subject 1>'s face. {He} {is} standing in place, " + H3_QUIETO + ". " +
+   "The camera begins in a tight close-up on <Subject 1>'s face, then zooms out, starting slowly and accelerating harder and harder as it goes until the whole view smears into motion blur and {he} {has} fallen away into the far distance, a tiny figure in the middle of {his} surroundings. " +
+   "The camera holds there for about a second, then zooms back in with large amplitude at fast speed, snapping across the entire distance in a single instant to land tight on {his} face again exactly as it began. " +
+   "<Subject 1> holds {his} ground throughout.",
+   "primer plano", "altura de los ojos", "zoom out", 192,
+   "tres fases: necesita 192 fotogramas (8 s)"],
+  ["dolly zoom", "Dolly zoom",
+   "A waist-up medium close-up frames <Subject 1> standing completely still. " +
+   "The camera pushes in while simultaneously zooming out, so that <Subject 1>'s size and position in frame stay exactly constant throughout, while {BACKGROUND_ELEMENTS} behind {him} recede, shrink, and spread apart into much greater depth as the lens's focal length changes.",
+   "plano medio", "altura de los ojos", "acercarse", 124,
+   "fondo con estructura: nombra 3 o 4 cosas detrás del sujeto"],
+  // La pagina ensena una version de fiesta con giros; su receta midio que la
+  // caminata recta mantiene mejor el rostro fijo, que es la toma entera.
+  ["snorricam", "Snorricam",
+   "A waist-up medium close-up frames <Subject 1> walking steadily forward, " + H3_CORRE + ". " +
+   "<Subject 1> walks steadily forward while the camera, fixed rigidly to {him}, holds {his} face locked dead-centre at exactly the same size and position throughout; the whole background lurches, sways and swings behind {him} with every stride. " +
+   "{He} never once look{s} at the camera.",
+   "plano medio", "altura de los ojos", "seguimiento", 124,
+   "camina en línea recta, sin giros; no nombres el arnés en el estilo"],
+  ["rack focus", "Rack focus",
+   "A medium-wide shot holds two distinct depth planes at once: <Subject 1> close to camera and the rest of the scene opening out well behind {him}. {He} {is} standing in place, " + H3_QUIETO + ". " +
+   "The camera holds a static shot. <Subject 1> stands close to camera in sharp focus while <Subject 2> and <Subject 3> stand talking together far behind {him}, soft and unfocused. " +
+   "<Subject 1> slowly turns {his} head to look back at them, and the focus racks from {his} face to the two of them - {he} fall{s} into soft blur exactly as they resolve sharply.",
+   "plano americano", "altura de los ojos", "fijo", 124,
+   "tres personajes: <Picture 2> y <Picture 3> conectadas"],
+  ["pantalla dividida", "Pantalla dividida",
+   "The frame is divided into three equal vertical panels side by side, separated by thin black gutters. " +
+   "The left panel holds <Subject 1>, {ACTION}. Every panel is locked off and completely static; nothing pans, zooms or moves at any point. " +
+   "The three panels open one after another. The left panel plays from the very first frame, showing {PANEL_1_ANGLE}, while the centre and right panels are solid black. " +
+   "The centre panel stays solid black and then comes on, showing the same moment from {PANEL_2_ANGLE}. " +
+   "The right panel stays solid black longer than the centre one and comes on last, showing {PANEL_3_ANGLE}. " +
+   "For the remainder of the shot all three panels play together in perfect sync, the same continuous {ACTION_SHORT} at the same instant from three different angles.",
+   "sin especificar", "sin especificar", "fijo", 192,
+   "necesita 192 fotogramas (8 s); el ritmo de aparición lo decide el modelo"],
+  ["whip pan", "Whip pan",
+   "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
+   "The camera starts framed on <Subject 1>, then whip pans right away from {him} and lands on <Subject 2> standing further away in the same place, everything between them smearing into streaked horizontal motion blur through the middle of the move, the frame settling and resolving sharply on <Subject 2>'s face. " +
+   "The shot ends held on <Subject 2>, not on <Subject 1>.",
+   "plano medio", "altura de los ojos", "panoramica derecha", 124,
+   "dos personajes: <Picture 2> conectada"],
+  ["ángulo holandés", "Ángulo holandés",
+   "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
+   "The camera rolls counterclockwise into a canted dutch angle and holds there, the horizon tilted, <Subject 1> off-axis.",
+   "plano medio", "sin especificar", "giro antihorario", 124,
+   "necesita un horizonte o verticales visibles"],
+  ["super dolly in", "Super dolly in",
+   "An extreme wide shot looks straight down {THE_SPACE}, {NEAR_OBJECTS} rising close at the left and right edges of frame, and places <Subject 1> small and distant at the far end of it, standing in place, " + H3_QUIETO + ". " +
+   "The camera pushes in with large amplitude at fast speed, charging the entire length of {THE_SPACE} toward {him}: {NEAR_OBJECTS} sweep outward past the edges of frame and out of shot as the camera passes them, {FURTHER_OBJECTS} rush by on both sides and {GROUND} streams underneath, and the move ends in a tight close-up with {his} face filling the frame.",
+   "gran plano general", "altura de los ojos", "acercarse", 124,
+   "gran plano general con dos objetos cerca del objetivo"],
+  ["eyes in", "Eyes in",
+   "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
+   "The camera pushes in with large amplitude at slow speed toward <Subject 1>'s face and keeps going past it until {his} right eye fills the entire frame edge to edge, the iris and pupil filling the view.",
+   "plano medio", "altura de los ojos", "acercarse", 124,
+   "el destino es el ojo derecho"],
+  ["aerial pullback", "Aerial pullback",
+   "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
+   "The camera pulls out with large amplitude at fast speed while pedestalling up, rising and retreating until <Subject 1> is a small lone figure far below and the whole {LOCATION} opens out around {him}.",
+   "plano medio", "altura de los ojos", "alejarse", 124,
+   "abre cerrado; el lugar se abre al final"],
+  ["cámara en mano", "Cámara en mano",
+   "A waist-up medium close-up frames <Subject 1> running, " + H3_CORRE + ". " +
+   "The camera shakes strongly at fast speed while performing a tracking shot alongside <Subject 1> as {he} run{s}, the frame lurching and correcting with every stride. " +
+   "<Subject 1> runs with urgent purpose, lips pressed closed and jaw set.",
+   "plano medio", "altura de los ojos", "camara en mano fuerte", 124,
+   "el sujeto tiene que correr"],
+  ["órbita 360°", "Órbita 360°",
+   "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
+   "The camera performs an arc shot around <Subject 1> with large amplitude at fast speed, sweeping a complete circle around {him} and coming back to the front. " +
+   "<Subject 1> stays where {he} {is} through the sweep, turning {his} head slightly to keep the camera in view.",
+   "plano medio", "altura de los ojos", "orbita", 124,
+   "sujeto quieto; una sola lámina de personaje, sin imagen del escenario"],
+  ["grúa ascendente", "Grúa ascendente",
+   "A waist-up medium close-up frames <Subject 1> running steadily, " + H3_CORRE + ". " +
+   "The camera starts low at <Subject 1>'s feet as {he} run{s}, then performs a tracking shot with large amplitude at fast speed, pedestalling up and tilting down to follow {him} from high overhead while {he} stay{s} centred and sharp in frame. " +
+   "<Subject 1> runs at a steady rhythm with {his} lips closed and {his} jaw relaxed.",
+   "plano medio", "altura de los ojos", "grua arriba", 124,
+   "el sujeto tiene que correr"],
 ];
+
+const PRONOMBRES_H3 = {
+  el: { he: "he", him: "him", his: "his", is: "is", has: "has", s: "s" },
+  ella: { he: "she", him: "her", his: "her", is: "is", has: "has", s: "s" },
+  neutro: { he: "they", him: "them", his: "their", is: "are", has: "have", s: "" },
+};
+
+/** Pronombres del <Subject 1>, leidos de su definicion. Si duda: they. */
+function pronombresH3(node) {
+  const def = String(findWidget(node, "subject_definitions")?.value || "");
+  const linea = (def.split(/\n+/).find((l) => /<Subject\s*1>/i.test(l)) || def).toLowerCase();
+  const el = /\b(man|boy|male|gentleman|guy|he|his|him)\b/.test(linea);
+  const ella = /\b(woman|girl|female|lady|she|her|hers)\b/.test(linea);
+  if (el && !ella) return PRONOMBRES_H3.el;
+  if (ella && !el) return PRONOMBRES_H3.ella;
+  return PRONOMBRES_H3.neutro;
+}
+
+function conjugarTomaH3(plantilla, pr) {
+  return plantilla.replace(/\{(he|him|his|He|His|is|has|s)\}/g, (_, k) => {
+    const v = pr[k.toLowerCase()];
+    return k === k.toLowerCase() ? v : v.charAt(0).toUpperCase() + v.slice(1);
+  });
+}
+
+/** Huecos {EN_MAYUSCULAS} que la escena todavia tiene que rellenar. */
+function huecosH3(texto) {
+  return [...new Set(String(texto || "").match(/\{[A-Z][A-Z0-9_]*\}/g) || [])];
+}
 
 function aplicarTomaH3(node, nombre) {
   const receta = TOMAS_H3.find(([, valor]) => valor === nombre);
   if (!receta || nombre === "libre") return;
-  const [, , texto, plano, angulo, movimiento] = receta;
+  const [, , plantilla, plano, angulo, movimiento] = receta;
+  const texto = conjugarTomaH3(plantilla, pronombresH3(node));
   ponerTexto(findWidget(node, "camara"), texto);
   for (const [campo, valor] of Object.entries({ plano, angulo, movimiento })) {
     const w = findWidget(node, campo);
@@ -2603,7 +2749,11 @@ async function consultarPrompt(node) {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify(campos),
   });
-  if (!response.ok) throw new Error("No se pudo preparar el prompt. Reinicia ComfyUI si acabas de actualizar.");
+  if (!response.ok) {
+    let detalle = "";
+    try { detalle = (await response.json())?.error || ""; } catch (e) { /* sin cuerpo */ }
+    throw new Error(detalle || "No se pudo preparar el prompt. Reinicia ComfyUI si acabas de actualizar.");
+  }
   return { ...(await response.json()), conectados };
 }
 
@@ -3419,11 +3569,26 @@ app.registerExtension({
             "puedes pedir un movimiento hacia el nuevo ángulo",
           ];
 
-          if (mano && modoToma !== "libre") return [
-            `✓ ${modoToma}: trayectoria completa conservada`,
-            cortar(mano, 58),
-            "los controles simples son orientativos; 🎥 crea una toma libre",
-          ];
+          if (mano && modoToma !== "libre") {
+            const huecos = huecosH3(mano);
+            if (huecos.length) return [
+              `⚠ ${modoToma}: completa en Cámara ${huecos.join(" ")}`,
+              cortar(mano, 58),
+              "el prompt no se construye con huecos sin rellenar",
+            ];
+            const receta = TOMAS_H3.find(([, v]) => v === modoToma);
+            const d = duracionDelGrafo();
+            if (receta?.[6] && d && d.fotogramas !== receta[6]) return [
+              `⚠ ${modoToma}: verificada con ${receta[6]} fotogramas, aquí hay ${d.fotogramas}`,
+              `pon ${(receta[6] / d.fps).toFixed(2)} s en Duración`,
+              receta[7],
+            ];
+            return [
+              `✓ ${modoToma}: trayectoria completa conservada`,
+              cortar(mano, 58),
+              receta?.[7] || "los controles simples son orientativos; 🎥 crea una toma libre",
+            ];
+          }
 
           // La caja ya NO anula las listas: al construir el prompt, el plano,
           // el angulo y el movimiento se sustituyen dentro de ella y el resto
@@ -3459,7 +3624,7 @@ app.registerExtension({
           // se copio, no cuando se pulsa. Si falla, se abre la ventana para
           // copiar a mano y no se miente diciendo que se copio.
           const cual = String(findWidget(nd, "modelo")?.value || "MiniMax H3");
-          let texto = instruccionConDuracion();
+          let texto = instruccionConDuracion(nd);
           if (cual === "LTX-2.5") texto = INSTRUCCION_LTX;
           if (PERFILES_PROMPT[cual]) texto = PERFILES_PROMPT[cual].instruccion;
           if (cual === "Libre") {

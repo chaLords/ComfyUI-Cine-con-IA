@@ -423,6 +423,26 @@ class CameraBoxTests(unittest.TestCase):
         self.assertIn(ruta, salida)
         self.assertNotIn("movement begins immediately", salida)
 
+    def test_loopforge_orbit_recipe_is_injected_verbatim(self):
+        ruta = ("A waist-up medium close-up frames <Subject 1> standing in place. "
+                "The camera performs an arc shot around <Subject 1> with large "
+                "amplitude at fast speed, sweeping a complete circle around him "
+                "and coming back to the front.")
+        salida, _ = NODES.CinePrompt6().armar(
+            detailed_description="Cinematic.\n[Shot 1] He stands in a study.",
+            camara=ruta, movimiento="orbita", toma_h3="Órbita 360°",
+            reglas_de_oficio=False)
+        self.assertIn("[Shot 1] " + ruta + " He stands in a study.", salida)
+
+    def test_recipe_with_unfilled_scene_slots_is_refused(self):
+        ruta = ("The camera pushes in with large amplitude at fast speed, "
+                "charging the entire length of {THE_SPACE} toward him.")
+        with self.assertRaises(ValueError) as error:
+            NODES.CinePrompt6().armar(
+                detailed_description="[Shot 1] He waits.", camara=ruta,
+                toma_h3="Super dolly in")
+        self.assertIn("{THE_SPACE}", str(error.exception))
+
     def test_static_camera_does_not_add_motion_priority_rules(self):
         descripcion = "[Shot 1] The shot begins from <Picture 1>. The man waits."
         salida = NODES._aplicar_camara(descripcion, "", "plano medio",

@@ -437,6 +437,7 @@ def _reforzar_trayectoria_camara(descripcion, bloque):
 
 
 _RE_SHOT1 = re.compile(r"\[Shot\s*1\](?:\s*At\s*[\d:.]+)?", re.IGNORECASE)
+_RE_HUECO = re.compile(r"\{[A-Z][A-Z0-9_]*\}")
 
 # --- sustitucion de la camara al construir el prompt ------------------------
 #
@@ -865,6 +866,15 @@ class CinePrompt6:
             return (salida, negativo)
 
         # --- MiniMax H3: el formato de seis secciones de siempre
+        # Las recetas de LoopForge dejan como {HUECO} lo que depende de la
+        # escena. Un hueco sin rellenar llega literal al modelo y estropea un
+        # render de media hora, asi que se para aqui.
+        huecos = sorted(set(_RE_HUECO.findall(camara or "")) |
+                        set(_RE_HUECO.findall(kwargs.get("detailed_description") or "")))
+        if huecos:
+            raise ValueError("Receta H3 incompleta: sustituye {} por cosas de tu escena "
+                             "en el campo Camara.".format(", ".join(huecos)))
+
         # La camara no es una seccion aparte del formato: H3 la quiere dentro
         # de la descripcion, en la frase del plano. Las listas seleccionadas
         # se aplican sobre la caja manual; 'libre' conserva esa dimension.

@@ -8,6 +8,27 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-09-19
+
+### Added
+
+- The fourteen recipes re-run on a different character, with what each one needs, in [docs/CAMERA_TESTS.md](docs/CAMERA_TESTS.md). The 360° orbit completes at 124 frames and fails at 192, and the dutch angle came out correct only on a second seed.
+- GitHub Releases. Every earlier version from 1.0.0 to 1.3.9 is tagged on its own commit, and pushing a `vX.Y.Z` tag now publishes its Release automatically with that version's entry from both changelogs. The workflow refuses a tag that does not match `pyproject.toml` or a version with no changelog entry.
+
+### Changed
+
+- The 14 MiniMax H3 camera recipes now carry LoopForge's published camera clauses word for word, each with the opening framing and the subject action that shot was verified with. Earlier recipes were paraphrases: the eyes-in stopped at "most of the final frame" instead of the eye filling it edge to edge, the whip pan asked for motion blur (LoopForge found that requesting blur does nothing), and the crane rise opened wide and from above instead of on a waist-up runner.
+- Where LoopForge's clause names its own scene, the recipe uses the generalised version from its shot recipes and leaves `{SLOTS}` for the user's scene. The snorricam follows the straight-walk recipe that LoopForge measured as holding the face best, not the party showcase on its page.
+- Recipe pronouns follow `<Subject 1>` in `subject_definitions` (he, she, or they).
+- The copied AI instruction now lists the 14 recipes word for word, includes the recipe selected in the node, and states LoopForge's measured conditions: one identity plate and no background plate, `[reference generation]`, 124 or 192 frames, 20 steps without turbo, and no timestamps.
+
+### Fixed
+
+- The 360° orbit reverted from front → right → rear back along the same side. Its recipe had replaced LoopForge's verified clause with clockwise waypoints timed to the second; H3 does not place events in time. The recipe is again LoopForge's: *arc shot … with large amplitude at fast speed, sweeping a complete circle … and coming back to the front*.
+- The AI instruction no longer asks for timed camera waypoints, and explains that `<Picture N>` follows the wiring order of **Scene**.
+- A prompt with an unfilled `{SLOT}` is refused with a message naming it, instead of sending the placeholder to a half-hour render. The prompt preview shows that message.
+- The node shows a warning when a recipe's verified frame count differs from the **Duration** node.
+
 ## [1.3.9] - 2026-09-19
 
 ### Fixed

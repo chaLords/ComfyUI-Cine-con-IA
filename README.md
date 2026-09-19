@@ -146,16 +146,23 @@ The prompt is organized into six sections:
 5. `overall_soundscape`
 6. `non_diegetic_music`
 
-The camera selector can replace an existing shot instruction or insert a new one into `detailed_description`. The H3 tab also offers 14 editable named-shot recipes based on [LoopForge's H3 camera experiments](https://loopforge.cc/projects/h3-camera-shots/). Select a recipe to fill the Camera box, then adapt its subject, timing, and destination to your scene. When you paste an AI-written camera route, or select a named recipe, its complete route is preserved in the final prompt. The simple framing/angle/motion buttons remain available for a free-form shot; **Change shot in text** intentionally replaces the recipe with those simple controls. Check **View final prompt** before rendering.
+The camera selector can replace an existing shot instruction or insert a new one into `detailed_description`. The H3 tab also offers the 14 named shots verified by [LoopForge](https://loopforge.cc/projects/h3-camera-shots/). A recipe writes the shot's opening framing, the subject action it needs, and the camera clause from LoopForge's published prompt word for word; pronouns follow `<Subject 1>` in `subject_definitions`. Where LoopForge's clause names its own scene, the recipe uses the generalised version from its [shot recipes](https://github.com/loopforge0/minimaxh3-shots-skills/tree/main/.claude/skills/h3-camera-shots/shots) and leaves `{SLOTS}` such as `{THE_SPACE}` for you to fill; the prompt is not built while a slot is empty. When you paste an AI-written camera route, or select a named recipe, its complete route is preserved in the final prompt. The simple framing/angle/motion buttons remain available for a free-form shot; **Change shot in text** intentionally replaces the recipe with those simple controls. Check **View final prompt** before rendering.
 
-Some recipes depend on the scene: whip pan needs two visible targets, rack focus needs near and far focal planes, and tracking or crane shots work best with a moving subject. Split screen is experimental. These are prompting examples, not guaranteed physical camera controls. The Render node now has a **20-step** shortcut for A/B tests; it does not change existing 8-step workflows. LoopForge reports its own testing conditions in the [shot index](https://github.com/loopforge0/minimaxh3-shots-skills/blob/main/.claude/skills/h3-camera-shots/shots/INDEX.md).
+The recipes only move the camera under LoopForge's test conditions, and several of them are load-bearing:
 
-To verify a true 360° orbit, look for five viewpoints in order: front → right profile → rear → opposite left profile → front. Returning from the rear along the same side is **not** a full circle, even if the shot ends in front. The recipe now names these waypoints, but MiniMax H3 interprets text probabilistically; an exact camera path would require additional spatial control.
+- **One identity plate per character and no background plate.** Describe the place in text. LoopForge measured that a background plate roughly halves the camera move. `<Picture N>` is positional: `referencia_1` is `<Picture 1>` whatever the text says.
+- **`[reference generation]`**, never `[keyframe completion]`, and never call the plate the first frame.
+- **124 frames** (5.17 s at 24 fps) for single moves; **192** (8 s) for yo-yo zoom and split screen.
+- **20 steps, `res_multistep` / `simple`, turbo LoRA off.** A 4-step turbo render suppresses camera motion almost entirely.
+- **No timestamps or waypoints.** H3 honours the order of events, not their timing.
+- A person who must stay put is written *standing in place, breathing softly…*, never *completely still*: an impossible pose cost the orbit about 80% of its travel.
+
+Whip pan needs a second character plate, rack focus a second and third; handheld, snorricam and crane rise need the subject walking or running. Every recipe was re-run here on a different character and different locations: the results, and what length and aspect ratio each one needs, are in [the recipe tests](docs/CAMERA_TESTS.md). These are prompting recipes, not guaranteed physical camera controls. Judge an orbit on its stills: facing camera → back to camera → facing camera. LoopForge notes that its end background does not exactly match the start.
 
 For image-guided H3 shots, **Scene** provides two guide modes:
 
 - `exact · locks frame 0` preserves the connected guide as an exact latent keyframe. Use it when the opening frame must match precisely.
-- `flexible · prioritizes camera` uses the image as a visual reference without the exact latent anchor. Use it to test large arcs, trucks, pedestals, and other viewpoint changes.
+- `flexible · prioritizes camera` uses the image as a visual reference without the exact latent anchor. Use it to test large arcs, trucks, pedestals, and other viewpoint changes. The image is then added as one more reference, after the connected ones, so it takes the next `<Picture N>`; if it shows the set, it acts as a background plate and halves the camera move.
 
 Only an image explicitly used as the first frame fixes the composition at `0.00 s`; a character reference plate does not. With a moving camera, identity and scene geometry remain consistent while viewpoint and parallax can change. A complete 360° orbit or yo-yo zoom may return to the opening composition, whereas a delayed crash zoom need not begin immediately. `wide and slow` remains available separately because a large slow arc is not equivalent to a fast marked move.
 
