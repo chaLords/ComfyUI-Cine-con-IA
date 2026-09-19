@@ -8,6 +8,12 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.4.1] - 2026-09-19
+
+### Añadido
+
+- `THIRD_PARTY_NOTICES.md`, con el aviso de copyright de Loop Forge y el texto de la licencia MIT bajo la que publican sus frases de cámara, y un reconocimiento a las guías de prompting de MiniMax. Las recetas reproducen esas frases palabra por palabra, un uso que la licencia permite con la condición de que su aviso viaje con ellas; un enlace en el README no basta. La tabla de recetas de `web/cineconia.js` lleva el mismo aviso.
+
 ## [1.4.0] - 2026-09-19
 
 ### Añadido

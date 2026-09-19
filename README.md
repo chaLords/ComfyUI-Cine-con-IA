@@ -252,3 +252,5 @@ This project is under active development. Keep a backup of important workflows b
 ## License
 
 Released under the [MIT License](LICENSE). You may use, modify, and redistribute the code as long as the copyright notice and license are retained.
+
+The fourteen MiniMax H3 camera recipes reproduce Loop Forge's published camera clauses word for word. That work is MIT licensed, Copyright (c) 2026 Loop Forge, and its notice and licence text are kept in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) along with the MiniMax guides this node's prompt format follows.

@@ -1648,7 +1648,14 @@ const MOVIMIENTOS_CHIPS = [
 ];
 
 // Recetas de las 14 tomas publicadas por LoopForge para H3
-// (loopforge.cc/projects/h3-camera-shots). Cada texto es el encuadre de
+// (loopforge.cc/projects/h3-camera-shots).
+//
+// Las frases de camara de abajo se reproducen palabra por palabra de
+// github.com/loopforge0/minimaxh3-shots-skills, Copyright (c) 2026 Loop Forge,
+// con licencia MIT. El aviso y el texto completo de esa licencia estan en
+// THIRD_PARTY_NOTICES.md, en la raiz de este repositorio.
+//
+// Cada texto es el encuadre de
 // apertura, la accion que la toma exige y la frase de camara marcada en el
 // prompt de su pagina, palabra por palabra. Cuando esa frase nombra cosas de
 // su escena (una pista del bosque, una fiesta, un escritorio), se usa la

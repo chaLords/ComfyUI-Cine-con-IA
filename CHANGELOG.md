@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.1] - 2026-09-19
+
+### Added
+
+- `THIRD_PARTY_NOTICES.md`, with Loop Forge's copyright notice and the MIT licence text its camera clauses are published under, and an acknowledgement of MiniMax's prompt writing guides. The recipes reproduce those clauses word for word, which is a use the licence allows on the condition that its notice travels with them; a link in the README does not satisfy it. The recipe table in `web/cineconia.js` carries the same notice.
+
 ## [1.4.0] - 2026-09-19
 
 ### Added
