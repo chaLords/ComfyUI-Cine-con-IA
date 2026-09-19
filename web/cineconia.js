@@ -90,6 +90,7 @@ const ETIQUETAS = {
   fps_base: "FPS base",
   tamano_referencia: "Calidad de referencias",
   fotograma_guia: "Fotograma de la guía",
+  modo_guia: "Modo de la guía",
   imagen_guia: "imagen guía",
   referencia_1: "referencia 1",
   referencia_2: "referencia 2",
@@ -1334,7 +1335,7 @@ function alCrear(nodeType, fn, anchoMin = 0) {
 // Va dentro del pack para no depender del formato de un GPT ajeno.
 const INSTRUCCION_H3 = `Vas a escribir prompts para el modelo de video MiniMax H3, en modo referencia completa (ref2va: imagenes de referencia + texto). Yo te describo la escena en lenguaje normal y tu me devuelves el prompt ya formateado.
 
-Estas reglas salen de las dos guias oficiales de MiniMax, las que vienen en la carpeta docs del repositorio del modelo. No te las inventes ni las mejores: el modelo fue entrenado con este formato exacto.
+La estructura y el vocabulario salen de las dos guias oficiales de MiniMax que vienen en la carpeta docs del modelo. Para Singularity aplica ademas su especificacion de prompting publicada por el autor: cadena de accion observable, cadena de camara completa y continuidad sin congelar el punto de vista.
 
 Devuelve SIEMPRE, y solo, este bloque, sin comentarios antes ni despues, sin markdown, sin negritas, sin numerar:
 
@@ -1362,6 +1363,8 @@ REGLA IMPORTANTE que casi todo el mundo se salta: si una imagen solo sirve para 
 Ejemplos correctos:
 <Subject 1> is the seated man whose appearance comes from <Picture 1> and whose facial identity comes from the second reference photograph: dark wavy hair greying at the temples, a full dark beard, a brown wool overcoat.
 <Picture 1> is the first frame of [Shot 1].
+
+Si <Picture 1> es el primer fotograma y la camara se mueve, su encuadre manda SOLO en 0.00 segundos. La identidad, la ropa, los objetos, la geometria del lugar y la luz se conservan despues, pero la posicion en pantalla, el lado visible del sujeto y la relacion entre primer plano y fondo deben cambiar con la camara. No escribas que el framing o la composition permanecen unchanged, hold o carried forward durante todo el plano.
 
 Una vez que le pones etiqueta a algo, esa etiqueta significa lo mismo en todas las secciones.
 
@@ -1397,6 +1400,8 @@ Y para el audio, estos cuatro:
 fully_copy, partially_copy, reference, weak_reference
 
 No escribas (S1) en esta seccion. Y que el personaje haga cosas nuevas en el video no es una perdida de fidelidad: no lo marques como partially_preserved por eso.
+
+Cuando hay movimiento de camara, fully_preserved conserva la IDENTIDAD y el CONTENIDO de la referencia, no el punto de vista inicial. La entrada de <Picture 1> debe decir que es el fotograma exacto de 0.00 segundos; no digas que su framing queda fijo o sin deriva durante todo el video.
 
 === 4. detailed_description ===
 
@@ -1462,6 +1467,12 @@ Los tamanos de plano si van con su nombre normal, al principio: extreme close-up
 Los angulos MiniMax NO los documenta. Asi que describe la geometria en vez de usar jerga: the camera below him, looking up at him, mejor que low angle. Lo mismo con los efectos de objetivo: en vez de rack focus o 85mm, describe lo que se ve cambiar.
 
 Si pido una orbita, di ademas que el cuerpo del personaje no gira y que lo que corre es el fondo, con parallax: si no, el modelo gira a la persona en vez de la camara.
+
+Para cualquier camara movil escribe una cadena completa: posicion inicial + movimiento fisico + direccion + velocidad y amplitud + sujeto que sigue + composicion final observable. La composicion final tiene que ser visiblemente distinta; "gran amplitud" no puede terminar en un cambio apenas perceptible.
+
+Ata la camara a los momentos de la accion: indica que inicia con la primera accion, donde llega a la mitad y con que estado final termina. Si la camara es la prioridad de la prueba, usa una sola accion corporal sencilla; no empaquetes a la vez manos complejas, objetos, miradas, parpadeos y varios cambios de pose.
+
+Si hay imagen inicial, escribe exactamente esta idea dentro del bloque camera, adaptada a la toma: The opening reference fixes the composition only at 0.00 seconds; from the next frame onward the viewpoint changes continuously along this camera path.
 
 Ejemplo de bloque camera bien escrito:
 The shot is framed as a medium shot, with the camera at his eye level. The camera pushes in toward his face with small amplitude at slow speed across the entire shot, ending on a close-up of his head and shoulders.
@@ -1631,6 +1642,7 @@ const MOVIMIENTOS_EN = {
 };
 const INTENSIDAD_EN = {
   "normal": "", "suave": "with small amplitude at slow speed",
+  "amplia y lenta": "with large amplitude at slow speed",
   "marcada": "with large amplitude at fast speed",
 };
 
@@ -1692,10 +1704,21 @@ function fraseCamara(node) {
   else if (p) fr.push(`The shot is framed as ${p}.`);
   else if (a) fr.push(`The shot is filmed with ${a}.`);
   if (m) {
-    const solo = m.startsWith("holds") || m.startsWith("takes") || m.includes(";");
-    fr.push(`The camera ${m}${solo || !i ? "" : " " + i}.`);
+    fr.push(`The camera ${movimientoConIntensidad(m, i)}.`);
   }
   return fr.join(" ");
+}
+
+/** Conserva la clausula de parallax de la orbita y aplica la intensidad. */
+function movimientoConIntensidad(movimiento, intensidad) {
+  if (!movimiento || !intensidad || movimiento.startsWith("holds") || movimiento.startsWith("takes")) {
+    return movimiento;
+  }
+  if (movimiento.includes(";")) {
+    const [principal, ...resto] = movimiento.split(";");
+    return `${principal.trim()} ${intensidad}; ${resto.join(";").trim()}`;
+  }
+  return `${movimiento} ${intensidad}`;
 }
 
 // --- leer la camara del texto y poder cambiarla ------------------------
@@ -1915,17 +1938,17 @@ function aplicarCamaraAlTexto(node) {
 
   const plano = PLANO_TXT[String(findWidget(node, "plano")?.value || "")] || "";
   const mov = MOVIMIENTOS_EN[String(findWidget(node, "movimiento")?.value || "")] || "";
+  const intensidad = INTENSIDAD_EN[String(findWidget(node, "intensidad")?.value || "")] || "";
+  const movCompleto = movimientoConIntensidad(mov, intensidad);
 
   if (plano && sustituir(PLANO_RE, plano)) hechos.push("plano");
-  if (mov && sustituir(MOV_RE, mov)) hechos.push("movimiento");
+  if (mov && sustituir(MOV_RE, movCompleto)) hechos.push("movimiento");
 
   // lo que no estaba escrito no se puede sustituir: se inserta entero
   const falta = [];
   if (plano && !hechos.includes("plano")) falta.push(`The shot is framed as ${/^[aeiou]/i.test(plano) ? "an" : "a"} ${plano}.`);
   if (mov && !hechos.includes("movimiento")) {
-    const solo = mov.startsWith("holds") || mov.startsWith("takes");
-    const i = INTENSIDAD_EN[String(findWidget(node, "intensidad")?.value || "")] || "";
-    falta.push(`The camera ${mov}${solo || !i ? "" : " " + i}.`);
+    falta.push(`The camera ${movCompleto}.`);
   }
   if (falta.length) {
     const m = t.match(/\[Shot\s*1\](?:\s*At\s*[\d:.]+)?/i);
@@ -2545,6 +2568,8 @@ function guiaInicialConectada(node) {
     const link = graph?.links?.[id] || graph?.links?.get?.(id);
     const escena = graph?.getNodeById?.(link?.target_id);
     if ((escena?.comfyClass || escena?.type) !== "CineEscenaH3") continue;
+    const modo = String(findWidget(escena, "modo_guia")?.value || "exacta");
+    if (modo.startsWith("flexible")) continue;
     if (escena.inputs?.some((i) => i.name === "imagen_guia" && i.link != null)
         && Number(findWidget(escena, "fotograma_guia")?.value || 0) === 0) return true;
   }

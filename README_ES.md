@@ -150,6 +150,13 @@ Organiza el prompt en seis apartados:
 
 El selector de cámara puede sustituir una toma ya escrita o insertar una nueva instrucción dentro de `detailed_description`. Las reglas de oficio opcionales ayudan a conservar manos, objetos, encuadre e identidad durante el plano.
 
+Para tomas H3 guiadas por imagen, **Escena** ofrece dos modos de guía:
+
+- `exacta · fija fotograma 0` conserva la guía conectada como fotograma latente exacto. Úsalo cuando el comienzo deba coincidir con precisión.
+- `flexible · prioriza cámara` usa la imagen como referencia visual sin el anclaje latente exacto. Úsalo para probar órbitas amplias, laterales, grúas y otros cambios de punto de vista.
+
+El constructor considera que una referencia inicial gobierna la composición solo en `0.00 s`. Cuando la cámara se mueve, la identidad y la geometría de la escena permanecen, pero deben cambiar el punto de vista, la posición en pantalla, las superficies visibles y el paralaje. La cámara se redacta con tipo, dirección, amplitud, velocidad, sujeto seguido y una composición final observable. `amplia y lenta` aparece como opción propia porque un arco amplio lento no equivale a un movimiento marcado rápido.
+
 ### LTX-2.5
 
 Produce un único párrafo continuo y adapta la terminología de cámara al vocabulario de LTX. El campo de audio se añade al final del mismo prompt.

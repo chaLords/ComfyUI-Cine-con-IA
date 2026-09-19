@@ -8,6 +8,19 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.7] - 2026-09-18
+
+### Añadido
+
+- Modos de guía en Escena: anclaje exacto del fotograma 0 o referencia visual flexible que prioriza la libertad de cámara.
+- Intensidad H3 `amplia y lenta` para órbitas grandes y controladas.
+
+### Corregido
+
+- Los prompts con cámara móvil limitan ahora la composición inicial a `0.00 s` y exigen un punto de vista que cambie continuamente hasta una composición final observable.
+- La intensidad de la órbita ya no se pierde por su cláusula de paralaje.
+- La receta para la IA evita que el texto de retención congele el punto de vista inicial y aplica la cadena de cámara publicada para Singularity.
+
 ## [1.3.6] - 2026-09-18
 
 ### Cambiado

@@ -148,6 +148,13 @@ The prompt is organized into six sections:
 
 The camera selector can replace an existing shot instruction or insert a new one into `detailed_description`. Optional craft rules help preserve hands, held objects, framing, and subject identity throughout the shot.
 
+For image-guided H3 shots, **Scene** provides two guide modes:
+
+- `exact · locks frame 0` preserves the connected guide as an exact latent keyframe. Use it when the opening frame must match precisely.
+- `flexible · prioritizes camera` uses the image as a visual reference without the exact latent anchor. Use it to test large arcs, trucks, pedestals, and other viewpoint changes.
+
+The prompt builder treats an opening reference as the composition for `0.00 s` only. With a moving camera, identity and scene geometry remain consistent while viewpoint, screen position, visible surfaces, and parallax are expected to change. Camera motion is written with type, direction, amplitude, speed, followed subject, and an observable final composition. `wide and slow` is available separately because a large slow arc is not equivalent to a fast marked move.
+
 ### LTX-2.5
 
 Produces a single continuous paragraph and adapts camera terminology to LTX vocabulary. The audio field is appended to the same prompt.

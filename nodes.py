@@ -270,6 +270,7 @@ MOVIMIENTOS = [
 INTENSIDADES = [
     ("normal", ""),
     ("suave", "with small amplitude at slow speed"),
+    ("amplia y lenta", "with large amplitude at slow speed"),
     ("marcada", "with large amplitude at fast speed"),
 ]
 
@@ -379,13 +380,75 @@ def _frase_camara(plano, angulo, movimiento, intensidad):
         frases.append("The shot is filmed with {}.".format(a))
 
     if m:
-        # "holds a static shot" y "takes the point of view" no admiten amplitud
-        # el ";" marca un movimiento que ya trae su propia explicacion larga
-        # (la orbita): pegarle " with small amplitude" al final queda fatal
-        sin_intensidad = m.startswith("holds") or m.startswith("takes") or ";" in m
-        frases.append("The camera {}{}.".format(m, "" if sin_intensidad or not i else " " + i))
+        fm = _movimiento_camara(m, i)
+        frases.append(fm[:1].upper() + fm[1:] + ".")
 
     return " ".join(frases)
+
+
+def _movimiento_camara(movimiento, intensidad=""):
+    """Conjuga movimiento + intensidad sin perder la explicacion de orbita.
+
+    La orbita trae una segunda clausula de parallax. Antes el punto y coma
+    hacia que se descartara por completo la intensidad, por lo que el boton
+    'marcada' seguia generando una orbita sin amplitud ni velocidad.
+    """
+    if not movimiento:
+        return ""
+    sin_intensidad = movimiento.startswith(("holds", "takes"))
+    if ";" in movimiento:
+        principal, detalle = (x.strip() for x in movimiento.split(";", 1))
+        return "the camera {}{}; {}".format(
+            principal, "" if not intensidad else " " + intensidad, detalle)
+    return "the camera {}{}".format(
+        movimiento, "" if sin_intensidad or not intensidad else " " + intensidad)
+
+
+_RE_CAMARA_MOVIL = re.compile(
+    r"\bthe camera\s+(?:push(?:es|ing)?|pull(?:s|ing)?|zoom(?:s|ing)?|"
+    r"pan(?:s|ning)?|tilt(?:s|ing)?|truck(?:s|ing)?|pedestal(?:s|ing)?|"
+    r"arc(?:s|ing)?|circles?|follows?|tracks?|shak(?:es|ing)?|roll(?:s|ing)?|"
+    r"moves?|travels?|swoops?|dives?|plunges?)\b", re.IGNORECASE)
+
+
+def _reforzar_trayectoria_camara(descripcion, bloque):
+    """Aclara que una imagen inicial no congela el resto del plano.
+
+    I2VA parte de una composicion exacta en 0.00 s y despues desarrolla un
+    camino visual. Si el prompt dice muchas veces que el encuadre se conserva,
+    el modelo suele ejecutar la accion del personaje pero deja la camara fija.
+    Este refuerzo solo aparece cuando hay una camara realmente movil.
+    """
+    bloque = (bloque or "").strip()
+    if not bloque or not _RE_CAMARA_MOVIL.search(bloque):
+        return bloque
+
+    extras = []
+    anclada = re.search(
+        r"<Picture\s*\d+>|first frame|opening frame|begins? from|0\.00 seconds",
+        descripcion or "", re.IGNORECASE)
+    if anclada and not re.search(r"only at 0\.00 seconds", bloque, re.IGNORECASE):
+        extras.append(
+            "The opening reference fixes the composition only at 0.00 seconds; "
+            "from the next frame onward the viewpoint changes continuously along "
+            "this camera path."
+        )
+
+    if not re.search(
+            r"throughout|whole (?:shot|video)|entire (?:shot|video)|"
+            r"by the (?:end|final frame)|ending (?:on|in|at)|final composition",
+            bloque, re.IGNORECASE):
+        extras.append(
+            "The movement begins immediately and reaches a visibly different "
+            "composition by the final frame."
+        )
+
+    if extras:
+        extras.append(
+            "Reference identity and scene geometry remain consistent while the "
+            "composition changes because of the requested camera motion."
+        )
+    return " ".join([bloque] + extras)
 
 
 _RE_SHOT1 = re.compile(r"\[Shot\s*1\](?:\s*At\s*[\d:.]+)?", re.IGNORECASE)
@@ -571,11 +634,9 @@ def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad, 
     tablaM = LTX_MOVIMIENTOS if ltx else dict(MOVIMIENTOS)
     plano_txt = tablaP.get(plano, "")
     mov = tablaM.get(movimiento, "")
-    mov_txt = ("the camera " + mov) if mov else ""
-    if mov_txt and not ltx and not (mov.startswith(("holds", "takes")) or ";" in mov):
-        intensidad_txt = _busca(INTENSIDADES, intensidad)
-        if intensidad_txt:
-            mov_txt += " " + intensidad_txt
+    intensidad_txt = _busca(INTENSIDADES, intensidad)
+    mov_txt = (_movimiento_camara(mov, intensidad_txt) if mov and not ltx
+               else (("the camera " + mov) if mov else ""))
     ang_txt = LTX_ANGULOS.get(angulo, "") if ltx else _busca(ANGULOS, angulo)
 
     def completar(texto):
@@ -585,6 +646,8 @@ def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad, 
         m = "sin especificar" if m_ok else movimiento
         falta = (_frase_camara_ltx(p, a, m) if ltx else
                  _frase_camara(p, a, m, intensidad))
+        if falta and not ltx:
+            falta = _reforzar_trayectoria_camara(texto, falta)
         return _inyectar_camara(texto, falta) if falta else texto
 
     if manual:
@@ -596,6 +659,8 @@ def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad, 
         # Ahora se sustituye en su sitio lo que las listas controlan -- plano,
         # angulo y movimiento -- y lo demas que escribio se queda tal cual.
         caja = completar(manual)
+        if not ltx:
+            caja = _reforzar_trayectoria_camara(descripcion, caja)
         # No borrar prosa completa: puede contener acciones o dialogo del
         # usuario. Sustituir las dimensiones seleccionadas tambien aqui.
         texto, _, _, _ = _camara_en_texto(descripcion, plano_txt, mov_txt, ang_txt)
@@ -1364,6 +1429,9 @@ class CineEscenaH3:
                                        "tooltip": "'max' lee la referencia a 2048 px de lado corto: conserva mucho mejor la cara y la textura, pero es mas lento. 'match' la baja al area del video: mas rapido, menos identidad."}),
                 "fotograma_guia": ("INT", {"default": 0, "min": 0, "max": 3600,
                                            "tooltip": "En que fotograma se ancla la imagen guia. 0 = primer fotograma."}),
+                "modo_guia": (["exacta  ·  fija fotograma 0", "flexible  ·  prioriza camara"],
+                               {"default": "exacta  ·  fija fotograma 0",
+                                "tooltip": "Exacta conserva el fotograma inicial pixel a pixel. Flexible usa la imagen como referencia visual sin fijar el latente y da mas libertad a la camara."}),
             },
             "optional": {
                 "referencia_1": ("IMAGE",),
@@ -1381,6 +1449,7 @@ class CineEscenaH3:
 
     def escena(self, clip, vae_video, vae_audio, prompt, width, height, length,
                tamano_referencia, fotograma_guia,
+               modo_guia="exacta  ·  fija fotograma 0",
                referencia_1=None, referencia_2=None, referencia_3=None, imagen_guia=None):
         import logging
 
@@ -1388,6 +1457,14 @@ class CineEscenaH3:
         for img in (referencia_1, referencia_2, referencia_3):
             if img is not None:
                 refs["ref_image_{}".format(len(refs))] = img
+
+        guia_flexible = str(modo_guia).startswith("flexible")
+        if guia_flexible and imagen_guia is not None:
+            # En modo flexible la imagen no entra como keyframe latente. Si no
+            # estaba ya conectada tambien como referencia, se agrega una sola
+            # vez para que siga guiando identidad, escena y estilo.
+            if not any(img is imagen_guia for img in refs.values()):
+                refs["ref_image_{}".format(len(refs))] = imagen_guia
 
         par = _llamar_nodo_todo(
             "MiniMaxH3ReferenceToVideo",
@@ -1408,7 +1485,7 @@ class CineEscenaH3:
         # sin guia, que es lo que debe alimentar a Escalar y Refinar.
         positivo_escalar = positivo
 
-        if imagen_guia is not None:
+        if imagen_guia is not None and not guia_flexible:
             guia = _ajustar(imagen_guia, int(width), int(height))
             nuevo = _llamar_nodo("MiniMaxH3AddGuide",
                                  positive=positivo, latent=latente,
@@ -1417,6 +1494,8 @@ class CineEscenaH3:
             if nuevo is not None:
                 positivo = nuevo
                 notas.append("guia en el fotograma {}".format(fotograma_guia))
+        elif imagen_guia is not None:
+            notas.append("guia flexible: referencia sin ancla exacta")
 
         if int(length) < 124:
             notas.append("OJO: {} fotogramas, bajo el rango entrenado de H3 (124-362)".format(length))

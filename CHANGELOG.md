@@ -8,6 +8,19 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.7] - 2026-09-18
+
+### Added
+
+- Scene guide modes: exact frame-0 anchoring or a flexible visual reference that prioritizes camera freedom.
+- A dedicated `wide and slow` H3 camera intensity for large controlled arcs.
+
+### Fixed
+
+- Moving-camera prompts now scope the opening composition to `0.00 s` and require a continuously changing viewpoint and an observable final composition.
+- Orbit intensity is no longer discarded by its parallax clause.
+- The AI-assistant recipe now prevents reference-retention text from freezing the initial viewpoint and follows Singularity's published camera-chain guidance.
+
 ## [1.3.6] - 2026-09-18
 
 ### Changed

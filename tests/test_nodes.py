@@ -381,6 +381,26 @@ class CameraBoxTests(unittest.TestCase):
             "sin especificar", "zoom in", "suave")
         self.assertIn("small amplitude at slow speed", salida)
 
+    def test_orbit_keeps_large_slow_intensity_and_parallax(self):
+        salida = NODES._aplicar_camara(self.DESC, "", "plano medio",
+            "sin especificar", "orbita", "amplia y lenta")
+        self.assertIn("large amplitude at slow speed", salida)
+        self.assertIn("visible parallax", salida)
+
+    def test_moving_camera_scopes_the_opening_reference_to_zero_seconds(self):
+        descripcion = ("[Shot 1] The shot begins from <Picture 1>. "
+                       "The man raises one hand.")
+        salida = NODES._aplicar_camara(descripcion, "", "plano medio",
+            "sin especificar", "orbita", "amplia y lenta")
+        self.assertIn("only at 0.00 seconds", salida)
+        self.assertIn("viewpoint changes continuously", salida)
+
+    def test_static_camera_does_not_add_motion_priority_rules(self):
+        descripcion = "[Shot 1] The shot begins from <Picture 1>. The man waits."
+        salida = NODES._aplicar_camara(descripcion, "", "plano medio",
+            "sin especificar", "fijo", "normal")
+        self.assertNotIn("viewpoint changes continuously", salida)
+
 
     def _aplicar(self, angulo="tres cuartos", movimiento="zoom in"):
         return NODES._aplicar_camara(self.DESC, self.CAJA, "plano americano",
@@ -426,6 +446,47 @@ class CameraBoxTests(unittest.TestCase):
         self.assertIn("close-up", salida)
         self.assertIn("looking up", salida)
         self.assertIn("zoom", salida.lower())
+
+
+class SceneGuideModeTests(unittest.TestCase):
+    """La guia exacta y la referencia flexible no deben mezclarse."""
+
+    def _run(self, modo, guide, referencia=None):
+        seen = {}
+
+        def all_node(name, **kwargs):
+            seen["name"] = name
+            seen["kwargs"] = kwargs
+            return ("positive", "latent")
+
+        with patch.object(NODES, "_llamar_nodo_todo", side_effect=all_node), \
+             patch.object(NODES, "_llamar_nodo", return_value="anchored") as add_guide, \
+             patch.object(NODES, "_ajustar", return_value=guide):
+            result = NODES.CineEscenaH3().escena(
+                clip=object(), vae_video=object(), vae_audio=object(),
+                prompt="prompt", width=416, height=736, length=192,
+                tamano_referencia="max", fotograma_guia=0, modo_guia=modo,
+                referencia_1=referencia, imagen_guia=guide,
+            )
+        return seen, add_guide, result
+
+    def test_flexible_guide_is_one_reference_and_not_a_keyframe(self):
+        guide = object()
+        seen, add_guide, result = self._run(
+            "flexible  ·  prioriza camara", guide, referencia=guide)
+        self.assertEqual(len(seen["kwargs"]["ref_images"]), 1)
+        add_guide.assert_not_called()
+        self.assertEqual(result[0], "positive")
+        self.assertIn("sin ancla exacta", result[3])
+
+    def test_exact_guide_is_anchored_at_the_requested_frame(self):
+        guide = object()
+        _, add_guide, result = self._run(
+            "exacta  ·  fija fotograma 0", guide, referencia=guide)
+        add_guide.assert_called_once()
+        self.assertEqual(add_guide.call_args.kwargs["frame_idx"], 0)
+        self.assertEqual(result[0], "anchored")
+        self.assertIn("guia en el fotograma 0", result[3])
 
 
 class PromptPreviewRouteTests(unittest.TestCase):

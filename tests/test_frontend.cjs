@@ -52,12 +52,16 @@ test('preview reports a server failure instead of displaying stale text', async 
 test('guide warning requires a connected image anchored at frame zero', () => {
   const ctx = setup({});
   const frame = {name: 'fotograma_guia', value: 0};
+  const mode = {name: 'modo_guia', value: 'exacta  ·  fija fotograma 0'};
   const input = {name: 'imagen_guia', link: 13};
-  const scene = {type: 'CineEscenaH3', widgets: [frame], inputs: [input]};
+  const scene = {type: 'CineEscenaH3', widgets: [frame, mode], inputs: [input]};
   const node = {outputs: [{links: [14]}], graph: {
     links: {14: {target_id: 504}}, getNodeById: () => scene,
   }};
   assert.equal(ctx.guiaInicialConectada(node), true);
+  mode.value = 'flexible  ·  prioriza camara';
+  assert.equal(ctx.guiaInicialConectada(node), false);
+  mode.value = 'exacta  ·  fija fotograma 0';
   frame.value = 24;
   assert.equal(ctx.guiaInicialConectada(node), false);
   frame.value = 0;
