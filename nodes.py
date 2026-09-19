@@ -265,6 +265,8 @@ MOVIMIENTOS = [
     ("camara en mano", "shakes slightly, handheld"),
     ("punto de vista", "takes the point of view of the subject"),
     ("giro de horizonte", "rolls clockwise"),
+    ("giro antihorario", "rolls counterclockwise"),
+    ("camara en mano fuerte", "shakes strongly, handheld"),
 ]
 
 INTENSIDADES = [
@@ -412,52 +414,35 @@ _RE_CAMARA_MOVIL = re.compile(
 
 
 def _reforzar_trayectoria_camara(descripcion, bloque):
-    """Aclara que una imagen inicial no congela el resto del plano.
+    """Una guia que SI es primer fotograma no inmoviliza la camara.
 
-    I2VA parte de una composicion exacta en 0.00 s y despues desarrolla un
-    camino visual. Si el prompt dice muchas veces que el encuadre se conserva,
-    el modelo suele ejecutar la accion del personaje pero deja la camara fija.
-    Este refuerzo solo aparece cuando hay una camara realmente movil.
+    Una referencia de personaje o escenario no es un fotograma clave. Tampoco
+    se impone un final distinto ni un comienzo inmediato: una orbita completa
+    vuelve al frente y un crash zoom puede empezar tras una pausa.
     """
     bloque = (bloque or "").strip()
     if not bloque or not _RE_CAMARA_MOVIL.search(bloque):
         return bloque
 
-    extras = []
     anclada = re.search(
-        r"<Picture\s*\d+>|first frame|opening frame|begins? from|0\.00 seconds",
+        r"(?:shot begins from\s*<Picture\s*\d+>|"
+        r"<Picture\s*\d+>\s+is\s+the\s+first frame|"
+        r"first frame[^.]*<Picture\s*\d+>)",
         descripcion or "", re.IGNORECASE)
-    if anclada and not re.search(r"only at 0\.00 seconds", bloque, re.IGNORECASE):
-        extras.append(
-            "The opening reference fixes the composition only at 0.00 seconds; "
-            "from the next frame onward the viewpoint changes continuously along "
-            "this camera path."
-        )
-
-    if not re.search(
-            r"throughout|whole (?:shot|video)|entire (?:shot|video)|"
-            r"by the (?:end|final frame)|ending (?:on|in|at)|final composition",
-            bloque, re.IGNORECASE):
-        extras.append(
-            "The movement begins immediately and reaches a visibly different "
-            "composition by the final frame."
-        )
-
-    if extras:
-        extras.append(
-            "Reference identity and scene geometry remain consistent while the "
-            "composition changes because of the requested camera motion."
-        )
-    return " ".join([bloque] + extras)
+    if anclada and not re.search(r"0\.00 seconds", bloque, re.IGNORECASE):
+        return (bloque + " The opening reference determines the composition "
+                "at 0.00 seconds; later viewpoints follow the described camera "
+                "path while identity and scene geometry remain consistent.")
+    return bloque
 
 
 _RE_SHOT1 = re.compile(r"\[Shot\s*1\](?:\s*At\s*[\d:.]+)?", re.IGNORECASE)
 
 # --- sustitucion de la camara al construir el prompt ------------------------
 #
-# Los chips mandan siempre. Si el texto ya trae una camara escrita, se quita
-# DE UNA COPIA y se pone la nueva. El texto que ve el usuario no se toca: si
-# el recorte saliera mal, se ve en el render y el prompt sigue intacto.
+# En modo libre mandan los chips y se modifica una copia del texto. En una
+# receta o texto de IA se conserva la trayectoria completa: los chips solo
+# son un resumen visual. El texto editable original no se toca.
 #
 # El movimiento se come hasta el final de SU frase a proposito: lo que venia
 # detras describia el movimiento viejo ("directly in front of him, at his eye
@@ -622,14 +607,21 @@ def _inyectar_camara(descripcion, bloque):
     return _pulir(descripcion.rstrip() + "\n\n" + bloque)
 
 
-def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad, ltx=False):
-    """Deja la descripcion con la camara que dicen los chips (o la caja).
+def _aplicar_camara(descripcion, manual, plano, angulo, movimiento, intensidad,
+                   ltx=False, preservar_manual=False):
+    """Aplica controles simples o conserva una trayectoria H3 completa.
 
     Trabaja SOBRE UNA COPIA: el texto que ve el usuario no se modifica nunca.
     Si el texto ya traia camara, el tamano de plano se sustituye en su sitio y
     el movimiento viejo se borra; luego se inserta solo lo que falte.
     """
     manual = (manual or "").strip()
+    if manual and preservar_manual and not ltx:
+        # Los chips que reconocieron una respuesta de IA son indicadores, no
+        # autorizacion para borrar el recorrido y el destino de esa respuesta.
+        if manual in descripcion:
+            return _pulir(descripcion)
+        return _inyectar_camara(_pulir(descripcion), manual)
     tablaP = _PLANO_TXT_LTX if ltx else _PLANO_TXT
     tablaM = LTX_MOVIMIENTOS if ltx else dict(MOVIMIENTOS)
     plano_txt = tablaP.get(plano, "")
@@ -686,10 +678,10 @@ class CinePrompt6:
     """Arma prompts editables para las principales familias locales de video."""
 
     SECCIONES = [
-        ("subject_definitions", "Etiqueta cada elemento: <Subject 1> es..., <Picture 1> es el primer fotograma de [Shot 1]."),
+        ("subject_definitions", "Etiqueta cada elemento: <Subject 1> identifica; <Picture 1> solo es primer fotograma si realmente fija ese fotograma."),
         ("summary", "Un parrafo. Empieza con el prefijo: [reference generation], [keyframe completion], [video editing], [video continuation], [audio reuse], [audio reference]."),
         ("retention_analysis", "Una linea por etiqueta: que se conserva de cada una."),
-        ("detailed_description", "El cuerpo, 350-500 palabras. Empieza con el estilo, luego [Shot 1] sin timestamp. Los siguientes: [Shot N] At MM:SS.mmm."),
+        ("detailed_description", "Accion y estilo concretos, sin longitud fija. Empieza con el estilo, luego [Shot 1] sin timestamp. Los siguientes: [Shot N] At MM:SS.mmm."),
         ("overall_soundscape", "Ambiente y sonido diegetico."),
         ("non_diegetic_music", "Musica de fondo, o N/A."),
     ]
@@ -711,8 +703,8 @@ class CinePrompt6:
                          "tooltip": "Desde donde mira la camara. MiniMax no documenta los angulos, "
                                     "asi que se escriben describiendo la geometria, no con jerga."})
         req["movimiento"] = ([k for k, _ in MOVIMIENTOS], {"default": "sin especificar",
-                             "tooltip": "Los doce movimientos que MiniMax tabula en su guia. "
-                                        "Uno solo por plano: dos movimientos a la vez se emborronan."})
+                             "tooltip": "Movimientos basicos de la guia MiniMax. Las tomas "
+                                        "compuestas pueden combinar varios con una trayectoria precisa."})
         req["intensidad"] = ([k for k, _ in INTENSIDADES], {"default": "normal",
                              "tooltip": "Amplitud y velocidad del movimiento. 'normal' no escribe nada, "
                                         "que es lo que pide la guia."})
@@ -780,6 +772,15 @@ class CinePrompt6:
         for nombre in ("sujeto", "accion", "entorno", "camara",
                        "luz_estilo", "negativo"):
             req["mochi_" + nombre] = ("STRING", {"multiline": True, "default": ""})
+        # Al final: los workflows antiguos guardan widgets_values por posicion.
+        req["toma_h3"] = ([
+            "libre", "texto IA · conservar", "Crash zoom", "Yo-yo zoom",
+            "Dolly zoom", "Snorricam", "Rack focus", "Pantalla dividida",
+            "Whip pan", "Ángulo holandés", "Super dolly in", "Eyes in",
+            "Aerial pullback", "Cámara en mano", "Órbita 360°", "Grúa ascendente",
+        ], {"default": "libre", "tooltip":
+            "Las tomas H3 y el texto de IA conservan su recorrido completo; "
+            "libre usa los controles de cámara simples."})
         return {"required": {}, "optional": req}
 
     RETURN_TYPES = ("STRING", "STRING")
@@ -868,11 +869,13 @@ class CinePrompt6:
         # de la descripcion, en la frase del plano. Las listas seleccionadas
         # se aplican sobre la caja manual; 'libre' conserva esa dimension.
         partes = []
+        conservar_toma = kwargs.get("toma_h3", "libre") != "libre"
         for nombre, _ in self.SECCIONES:
             texto = (kwargs.get(nombre) or "").strip()
             if nombre == "detailed_description":
                 texto = _aplicar_camara(texto, camara, plano, angulo,
-                                        movimiento, intensidad).strip()
+                                        movimiento, intensidad,
+                                        preservar_manual=conservar_toma).strip()
             if not texto and omitir_vacias:
                 continue
             partes.append("{}:\n{}".format(nombre, texto if texto else "N/A"))

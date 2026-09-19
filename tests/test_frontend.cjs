@@ -9,6 +9,8 @@ const helpers = source.slice(source.indexOf('async function consultarPrompt('),
   source.indexOf('/**\n * Boton dibujado', source.indexOf('async function consultarPrompt(')));
 const cameraHelpers = source.slice(source.indexOf('const PLANOS_EN = {'),
   source.indexOf('// --- leer la camara', source.indexOf('const PLANOS_EN = {')));
+const shotRecipes = source.slice(source.indexOf('const TOMAS_H3 = ['),
+  source.indexOf('const PLANOS_EN = {', source.indexOf('const TOMAS_H3 = [')));
 
 function setup(api) {
   const context = vm.createContext({ api,
@@ -26,6 +28,28 @@ function setupCamera() {
   vm.runInContext(cameraHelpers, context);
   return context;
 }
+
+test('H3 named shot buttons retain the full 360 and compound camera paths', () => {
+  const context = vm.createContext({
+    findWidget: (node, name) => node.widgets.find((w) => w.name === name),
+    ponerTexto: (w, value) => { w.value = value; },
+  });
+  vm.runInContext(shotRecipes, context);
+  const names = vm.runInContext('TOMAS_H3.map((r) => r[1])', context);
+  assert.equal(names.length, 15); // free mode + LoopForge's 14 examples
+  const node = {widgets: [
+    {name: 'camara', value: ''},
+    {name: 'plano', value: 'sin especificar'},
+    {name: 'angulo', value: 'sin especificar'},
+    {name: 'movimiento', value: 'sin especificar'},
+  ], setDirtyCanvas() {}};
+  vm.runInContext('aplicarTomaH3', context)(node, 'Órbita 360°');
+  assert.match(node.widgets[0].value, /complete 360-degree circle/);
+  assert.match(node.widgets[0].value, /returns to the frontal starting view/);
+  assert.equal(node.widgets[3].value, 'orbita');
+  vm.runInContext('aplicarTomaH3', context)(node, 'Dolly zoom');
+  assert.match(node.widgets[0].value, /pushes in.*zooms out/);
+});
 
 test('preview excludes decorative controls and marks connected values as unavailable', async () => {
   let sent;

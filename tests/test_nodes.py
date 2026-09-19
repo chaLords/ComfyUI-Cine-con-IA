@@ -392,8 +392,36 @@ class CameraBoxTests(unittest.TestCase):
                        "The man raises one hand.")
         salida = NODES._aplicar_camara(descripcion, "", "plano medio",
             "sin especificar", "orbita", "amplia y lenta")
-        self.assertIn("only at 0.00 seconds", salida)
-        self.assertIn("viewpoint changes continuously", salida)
+        self.assertIn("composition at 0.00 seconds", salida)
+        self.assertIn("later viewpoints follow", salida)
+
+    def test_character_plate_is_not_forced_to_be_first_frame(self):
+        descripcion = ("[Shot 1] The subject from <Picture 1> sits quietly. ")
+        salida = NODES._aplicar_camara(descripcion, "", "plano medio",
+            "sin especificar", "orbita", "amplia y lenta")
+        self.assertNotIn("0.00 seconds", salida)
+
+    def test_ai_camera_route_is_preserved_despite_matching_chips(self):
+        ruta = ("The camera arcs around the subject in a complete 360-degree "
+                "circle with large amplitude at fast speed and returns to the "
+                "frontal starting view.")
+        salida, _ = NODES.CinePrompt6().armar(
+            detailed_description="[Shot 1] The man meditates.", camara=ruta,
+            plano="plano medio", angulo="altura de los ojos",
+            movimiento="orbita", toma_h3="texto IA · conservar",
+            reglas_de_oficio=False)
+        self.assertIn(ruta, salida)
+        self.assertEqual(salida.count("arcs around"), 1)
+        self.assertIn("returns to the frontal starting view", salida)
+
+    def test_named_shot_preserves_delayed_crash_zoom(self):
+        ruta = ("The camera holds a wide view, then zooms in with large "
+                "amplitude at fast speed near the end.")
+        salida, _ = NODES.CinePrompt6().armar(
+            detailed_description="[Shot 1] The actor looks up.", camara=ruta,
+            movimiento="zoom in", toma_h3="Crash zoom", reglas_de_oficio=False)
+        self.assertIn(ruta, salida)
+        self.assertNotIn("movement begins immediately", salida)
 
     def test_static_camera_does_not_add_motion_priority_rules(self):
         descripcion = "[Shot 1] The shot begins from <Picture 1>. The man waits."

@@ -8,6 +8,21 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.8] - 2026-09-19
+
+### Añadido
+
+- Catorce botones con recetas de cámara editables para MiniMax H3, basadas en las [pruebas publicadas de LoopForge](https://loopforge.cc/projects/h3-camera-shots/): crash zoom, yo-yo zoom, dolly zoom, Snorricam, rack focus, pantalla dividida, whip pan, ángulo holandés, super dolly in, eyes in, aerial pullback, cámara en mano, órbita 360° y grúa ascendente.
+- Acceso rápido a 20 pasos en Render para comparar pruebas; no se modifica el valor de los workflows existentes.
+
+### Corregido
+
+- Las trayectorias de cámara pegadas desde una IA o elegidas como receta conservan su ritmo, movimientos combinados y punto de vista final; los controles simples ya no las reducen a una sola frase.
+- La instrucción para la IA ya no obliga a iniciar todo movimiento inmediatamente ni a terminar en una composición distinta: una órbita completa y un yo-yo zoom pueden volver al encuadre inicial.
+- Una lámina de personaje no se considera primer fotograma exacto solo por estar etiquetada como `<Picture 1>`.
+
+Estas recetas son puntos de partida, no controles garantizados del modelo. Algunas necesitan dos sujetos, varios planos de profundidad o un sujeto en movimiento. Las condiciones de prueba de LoopForge figuran en su [índice de tomas](https://github.com/loopforge0/minimaxh3-shots-skills/blob/main/.claude/skills/h3-camera-shots/shots/INDEX.md).
+
 ## [1.3.7] - 2026-09-18
 
 ### Añadido

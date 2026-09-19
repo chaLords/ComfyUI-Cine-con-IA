@@ -8,6 +8,21 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.8] - 2026-09-19
+
+### Added
+
+- Fourteen editable MiniMax H3 camera-shot recipe buttons, aligned with [LoopForge's published H3 experiments](https://loopforge.cc/projects/h3-camera-shots/): crash zoom, yo-yo zoom, dolly zoom, Snorricam, rack focus, split screen, whip pan, Dutch angle, super dolly in, eyes in, aerial pullback, handheld, 360° orbit, and crane rise.
+- A 20-step Render shortcut for comparison tests; existing workflow step values are unchanged.
+
+### Fixed
+
+- AI-generated and named-shot camera routes now retain their timing, compound moves, and final viewpoint instead of being flattened by the simple camera controls.
+- The AI instruction no longer forces every move to start immediately or finish on a different composition; a full 360° orbit and a yo-yo zoom can return to their starting view.
+- A character reference plate is no longer treated as an exact first-frame guide merely because it is labelled `<Picture 1>`.
+
+These recipes are starting points, not guaranteed model controls. Some require two subjects, multiple depth planes, or a moving subject. LoopForge's test conditions are documented in its [shot index](https://github.com/loopforge0/minimaxh3-shots-skills/blob/main/.claude/skills/h3-camera-shots/shots/INDEX.md).
+
 ## [1.3.7] - 2026-09-18
 
 ### Added

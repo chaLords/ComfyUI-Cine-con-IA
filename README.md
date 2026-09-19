@@ -146,14 +146,16 @@ The prompt is organized into six sections:
 5. `overall_soundscape`
 6. `non_diegetic_music`
 
-The camera selector can replace an existing shot instruction or insert a new one into `detailed_description`. Optional craft rules help preserve hands, held objects, framing, and subject identity throughout the shot.
+The camera selector can replace an existing shot instruction or insert a new one into `detailed_description`. The H3 tab also offers 14 editable named-shot recipes based on [LoopForge's H3 camera experiments](https://loopforge.cc/projects/h3-camera-shots/). Select a recipe to fill the Camera box, then adapt its subject, timing, and destination to your scene. When you paste an AI-written camera route, or select a named recipe, its complete route is preserved in the final prompt. The simple framing/angle/motion buttons remain available for a free-form shot; **Change shot in text** intentionally replaces the recipe with those simple controls. Check **View final prompt** before rendering.
+
+Some recipes depend on the scene: whip pan needs two visible targets, rack focus needs near and far focal planes, and tracking or crane shots work best with a moving subject. Split screen is experimental. These are prompting examples, not guaranteed physical camera controls. The Render node now has a **20-step** shortcut for A/B tests; it does not change existing 8-step workflows. LoopForge reports its own testing conditions in the [shot index](https://github.com/loopforge0/minimaxh3-shots-skills/blob/main/.claude/skills/h3-camera-shots/shots/INDEX.md).
 
 For image-guided H3 shots, **Scene** provides two guide modes:
 
 - `exact · locks frame 0` preserves the connected guide as an exact latent keyframe. Use it when the opening frame must match precisely.
 - `flexible · prioritizes camera` uses the image as a visual reference without the exact latent anchor. Use it to test large arcs, trucks, pedestals, and other viewpoint changes.
 
-The prompt builder treats an opening reference as the composition for `0.00 s` only. With a moving camera, identity and scene geometry remain consistent while viewpoint, screen position, visible surfaces, and parallax are expected to change. Camera motion is written with type, direction, amplitude, speed, followed subject, and an observable final composition. `wide and slow` is available separately because a large slow arc is not equivalent to a fast marked move.
+Only an image explicitly used as the first frame fixes the composition at `0.00 s`; a character reference plate does not. With a moving camera, identity and scene geometry remain consistent while viewpoint and parallax can change. A complete 360° orbit or yo-yo zoom may return to the opening composition, whereas a delayed crash zoom need not begin immediately. `wide and slow` remains available separately because a large slow arc is not equivalent to a fast marked move.
 
 ### LTX-2.5
 

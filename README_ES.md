@@ -148,14 +148,16 @@ Organiza el prompt en seis apartados:
 5. `overall_soundscape`
 6. `non_diegetic_music`
 
-El selector de cámara puede sustituir una toma ya escrita o insertar una nueva instrucción dentro de `detailed_description`. Las reglas de oficio opcionales ayudan a conservar manos, objetos, encuadre e identidad durante el plano.
+El selector de cámara puede sustituir una toma ya escrita o insertar una nueva instrucción dentro de `detailed_description`. La pestaña H3 ofrece además 14 recetas de tomas editables basadas en las [pruebas de cámara de LoopForge](https://loopforge.cc/projects/h3-camera-shots/). Al elegir una receta se rellena la caja Cámara: adapta el sujeto, los tiempos y el destino a tu escena. Tanto la receta como la trayectoria pegada desde una IA se conservan completas en el prompt final. Los botones simples de plano, ángulo y movimiento siguen disponibles para una toma libre; **Cambiar la toma en el texto** sustituye deliberadamente la receta por esos controles. Comprueba **Ver prompt final** antes de renderizar.
+
+Algunas recetas dependen de la escena: whip pan necesita dos blancos visibles, rack focus requiere planos de foco cercano y lejano, y seguimiento o grúa funcionan mejor si el sujeto se mueve. Pantalla dividida es experimental. Son ejemplos de prompting, no controles físicos garantizados. Render añade un botón de **20 pasos** para comparar resultados, sin cambiar los 8 pasos de los workflows existentes. LoopForge detalla sus condiciones de prueba en el [índice de tomas](https://github.com/loopforge0/minimaxh3-shots-skills/blob/main/.claude/skills/h3-camera-shots/shots/INDEX.md).
 
 Para tomas H3 guiadas por imagen, **Escena** ofrece dos modos de guía:
 
 - `exacta · fija fotograma 0` conserva la guía conectada como fotograma latente exacto. Úsalo cuando el comienzo deba coincidir con precisión.
 - `flexible · prioriza cámara` usa la imagen como referencia visual sin el anclaje latente exacto. Úsalo para probar órbitas amplias, laterales, grúas y otros cambios de punto de vista.
 
-El constructor considera que una referencia inicial gobierna la composición solo en `0.00 s`. Cuando la cámara se mueve, la identidad y la geometría de la escena permanecen, pero deben cambiar el punto de vista, la posición en pantalla, las superficies visibles y el paralaje. La cámara se redacta con tipo, dirección, amplitud, velocidad, sujeto seguido y una composición final observable. `amplia y lenta` aparece como opción propia porque un arco amplio lento no equivale a un movimiento marcado rápido.
+Solo una imagen indicada expresamente como primer fotograma fija la composición en `0.00 s`; una lámina de referencia de personaje no la fija. Cuando se mueve la cámara, la identidad y la geometría de la escena permanecen, pero el punto de vista y el paralaje pueden cambiar. Una órbita completa de 360° o un yo-yo zoom pueden volver al encuadre inicial, mientras que un crash zoom puede empezar después de una pausa. `amplia y lenta` sigue siendo una opción propia porque un arco amplio lento no equivale a un movimiento marcado rápido.
 
 ### LTX-2.5
 

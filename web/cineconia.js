@@ -1363,6 +1363,7 @@ REGLA IMPORTANTE que casi todo el mundo se salta: si una imagen solo sirve para 
 Ejemplos correctos:
 <Subject 1> is the seated man whose appearance comes from <Picture 1> and whose facial identity comes from the second reference photograph: dark wavy hair greying at the temples, a full dark beard, a brown wool overcoat.
 <Picture 1> is the first frame of [Shot 1].
+El segundo renglon solo corresponde si <Picture 1> de verdad es el fotograma inicial. Si es una lamina de personaje, escribe solo la definicion del sujeto y deja la composicion de apertura libre.
 
 Si <Picture 1> es el primer fotograma y la camara se mueve, su encuadre manda SOLO en 0.00 segundos. La identidad, la ropa, los objetos, la geometria del lugar y la luz se conservan despues, pero la posicion en pantalla, el lado visible del sujeto y la relacion entre primer plano y fondo deben cambiar con la camara. No escribas que el framing o la composition permanecen unchanged, hold o carried forward durante todo el plano.
 
@@ -1401,11 +1402,11 @@ fully_copy, partially_copy, reference, weak_reference
 
 No escribas (S1) en esta seccion. Y que el personaje haga cosas nuevas en el video no es una perdida de fidelidad: no lo marques como partially_preserved por eso.
 
-Cuando hay movimiento de camara, fully_preserved conserva la IDENTIDAD y el CONTENIDO de la referencia, no el punto de vista inicial. La entrada de <Picture 1> debe decir que es el fotograma exacto de 0.00 segundos; no digas que su framing queda fijo o sin deriva durante todo el video.
+Cuando hay movimiento de camara, fully_preserved conserva la IDENTIDAD y el CONTENIDO de la referencia, no el punto de vista inicial. Solo si una imagen realmente es el primer fotograma, su entrada debe decir que corresponde exactamente a 0.00 segundos; no digas que su framing queda fijo durante todo el video.
 
 === 4. detailed_description ===
 
-Es el cuerpo. Entre 350 y 500 palabras.
+Es el cuerpo. Escribe solo el detalle que ayude a ver la accion y conservar la identidad; no rellenes hasta una cantidad fija de palabras. Para una prueba de camara, una accion sencilla y una trayectoria precisa suelen ser mas utiles que mucha prosa.
 
 Empieza con UNA O DOS FRASES DE ESTILO, ANTES del marcador [Shot 1]. Ahi va el estilo visual y la luz. Palabras de estilo que el modelo conoce: cinematic, live-action, 2D-animated, 3D CG, claymation, watercolor, vintage film.
 
@@ -1442,7 +1443,7 @@ La camara se escribe como ingles conjugado dentro de la accion, NUNCA como etiqu
 
 Tres dimensiones: tipo de movimiento, amplitud y velocidad. La amplitud y la velocidad solo se escriben cuando dicen algo; amplitud media y velocidad normal se omiten.
 
-Los tipos de movimiento son EXACTAMENTE estos doce, con las palabras de MiniMax y no con sus sinonimos de cine:
+Usa como vocabulario base estos movimientos de la guia de MiniMax; las tomas compuestas de abajo combinan movimientos y efectos cuando hace falta:
 Zoom In / Zoom Out           el objetivo cambia, la camara no se mueve
 Push In / Pull Out           la camara avanza o retrocede
 Pan Left / Pan Right         la camara gira sobre si misma en horizontal
@@ -1460,7 +1461,7 @@ Di pushes in y no dolly in. Pedestals up y no crane up. Arcs around y no orbit. 
 
 Amplitud: with small amplitude / with large amplitude. Velocidad: at slow speed / at fast speed.
 
-Un solo movimiento principal por plano. Dos a la vez se emborronan.
+Prefiere un movimiento claro. Combina dos solo cuando la toma lo exige: el dolly zoom coordina Push In y Zoom Out; la grua ascendente coordina Tracking Shot, Pedestal Up y Tilt Down. La camara en mano anade Shake Strongly al seguimiento. Describe la secuencia temporal, no solo los nombres.
 
 Los tamanos de plano si van con su nombre normal, al principio: extreme close-up, close-up, close shot, medium shot, medium-wide shot, wide shot, extreme wide shot.
 
@@ -1468,11 +1469,13 @@ Los angulos MiniMax NO los documenta. Asi que describe la geometria en vez de us
 
 Si pido una orbita, di ademas que el cuerpo del personaje no gira y que lo que corre es el fondo, con parallax: si no, el modelo gira a la persona en vez de la camara.
 
-Para cualquier camara movil escribe una cadena completa: posicion inicial + movimiento fisico + direccion + velocidad y amplitud + sujeto que sigue + composicion final observable. La composicion final tiene que ser visiblemente distinta; "gran amplitud" no puede terminar en un cambio apenas perceptible.
+Para una camara movil escribe una cadena concreta: posicion inicial, movimiento fisico, direccion, velocidad y amplitud pertinentes, sujeto seguido y trayectoria visible. Describe el final real de la toma. Una orbita de 360 grados o un yo-yo zoom pueden volver al encuadre inicial tras un gran recorrido; un crash zoom puede esperar y acelerar al final.
 
-Ata la camara a los momentos de la accion: indica que inicia con la primera accion, donde llega a la mitad y con que estado final termina. Si la camara es la prioridad de la prueba, usa una sola accion corporal sencilla; no empaquetes a la vez manos complejas, objetos, miradas, parpadeos y varios cambios de pose.
+Ata la camara a los momentos de la accion: cuando empieza, que ocurre a mitad y donde termina. Si la camara es la prioridad de la prueba, usa una accion corporal sencilla. Para whip pan hacen falta dos blancos visibles; rack focus necesita dos planos de profundidad; seguimiento y grua funcionan mejor si el sujeto se desplaza.
 
-Si hay imagen inicial, escribe exactamente esta idea dentro del bloque camera, adaptada a la toma: The opening reference fixes the composition only at 0.00 seconds; from the next frame onward the viewpoint changes continuously along this camera path.
+Solo si una imagen es realmente el primer fotograma, conserva su composicion en 0.00 segundos y luego sigue la trayectoria pedida. Si es una lamina de referencia de personaje o escenario, conserva su identidad y rasgos, pero NO la trates como primer fotograma ni fijes su encuadre.
+
+Recetas de camara que la herramienta ofrece como botones, inspiradas en las pruebas publicadas de LoopForge para MiniMax H3. Usa el nombre como guia, pero escribe la accion visible y la trayectoria en ingles: Crash zoom (pausa y Zoom In rapido), Yo-yo zoom (Zoom Out y regreso con Zoom In), Dolly zoom (Push In + Zoom Out coordinados), Snorricam (sujeto estable, entorno que se agita mientras se mueve), Rack focus (foco de plano cercano a lejano), Pantalla dividida (tres vistas simultaneas, experimental), Whip pan (panoramica veloz de un sujeto a otro), Angulo holandes (Roll Counterclockwise), Super dolly in (Push In de gran amplitud), Eyes in (Push In lento hasta un ojo), Aerial pullback (Pull Out + Pedestal Up), Camara en mano (Tracking Shot + Shake Strongly), Orbita 360 grados (Arc Shot de circulo completo que vuelve al frente) y Grua ascendente (Tracking Shot + Pedestal Up + Tilt Down). No prometas obediencia perfecta del modelo: estas son recetas de prueba, no controles mecanicos.
 
 Ejemplo de bloque camera bien escrito:
 The shot is framed as a medium shot, with the camera at his eye level. The camera pushes in toward his face with small amplitude at slow speed across the entire shot, ending on a close-up of his head and shoulders.
@@ -1550,13 +1553,13 @@ function instruccionConDuracion() {
 // escrito encima que se espera dentro.
 const TITULOS_P6 = [
   ["subject_definitions", "1  ·  quién y qué sale",
-   "<Subject 1> es…, <Picture 1> es el primer fotograma"],
+   "<Subject 1> identifica; <Picture 1> solo si fija un fotograma"],
   ["summary", "2  ·  resumen en un párrafo",
    "Empieza por el prefijo: [reference generation]"],
   ["retention_analysis", "3  ·  qué manda cada imagen",
    "Una línea por etiqueta: qué se conserva de cada una"],
   ["detailed_description", "4  ·  la escena",
-   "El cuerpo del prompt, 350-500 palabras. Aquí entra la cámara"],
+   "Acción concreta, sin longitud fija. Aquí entra la cámara"],
   ["overall_soundscape", "5  ·  sonido del lugar",
    "Ambiente y sonido diegético"],
   ["non_diegetic_music", "6  ·  música de fondo",
@@ -1608,7 +1611,43 @@ const MOVIMIENTOS_CHIPS = [
   ["en mano", "camara en mano"],
   ["POV", "punto de vista"],
   ["giro", "giro de horizonte"],
+  ["giro ↶", "giro antihorario"],
+  ["en mano fuerte", "camara en mano fuerte"],
 ];
+
+// Recetas editables, basadas en las 14 pruebas de LoopForge para H3. Los
+// controles simples siguen disponibles; una receta conserva su ruta completa.
+// Una receta puede necesitar sujetos/planos que la escena realmente contenga.
+const TOMAS_H3 = [
+  ["libre", "libre", "", "sin especificar", "sin especificar", "sin especificar"],
+  ["crash zoom", "Crash zoom", "The shot opens wide and holds briefly on the subject. Near the end, the camera zooms in on the subject with large amplitude at fast speed, landing on a tight close-up.", "plano general", "altura de los ojos", "zoom in"],
+  ["yo-yo zoom", "Yo-yo zoom", "The camera begins in a close-up, zooms out with increasing speed to reveal the wider scene, holds that wide view briefly, then zooms in with large amplitude at fast speed to return to the opening close-up.", "primer plano", "altura de los ojos", "zoom out"],
+  ["dolly zoom", "Dolly zoom", "The camera pushes in toward the subject while the lens zooms out at a matching rate. The subject stays approximately the same size as the background expands and shifts in perspective.", "plano medio", "altura de los ojos", "acercarse"],
+  ["snorricam", "Snorricam", "The moving subject stays the same size and position in the frame while the camera travels with them; the surrounding room swings and slides around the subject with visible parallax.", "plano medio", "altura de los ojos", "seguir"],
+  ["rack focus", "Rack focus", "The camera holds a static composition with one subject close to the lens and another farther behind. Focus starts sharp on the near subject, then shifts smoothly to the far subject while the framing stays fixed.", "plano medio", "altura de los ojos", "fijo"],
+  ["pantalla dividida", "Pantalla dividida", "The image forms three simultaneous panels showing the same moment from distinct viewpoints. Each panel keeps its own stable framing and the action remains synchronized across the three views.", "sin especificar", "sin especificar", "fijo"],
+  ["whip pan", "Whip pan", "The camera starts on the first subject, whips rapidly to the right with strong motion blur across the middle, and settles sharply on a second subject in a different part of the scene.", "plano medio", "altura de los ojos", "panoramica derecha"],
+  ["ángulo holandés", "Ángulo holandés", "The camera starts level, rolls counterclockwise around the lens axis until the horizon is visibly canted, then holds that tilted composition as the subject continues moving naturally.", "plano medio", "sin especificar", "giro antihorario"],
+  ["super dolly in", "Super dolly in", "The camera begins in an extreme wide shot and pushes in through the space with large amplitude at fast speed. Foreground landmarks sweep past the lens; the move ends close to the subject.", "gran plano general", "altura de los ojos", "acercarse"],
+  ["eyes in", "Eyes in", "The camera begins in a medium close view and pushes in slowly with large amplitude toward one eye. The face expands steadily until the eye fills most of the final frame.", "plano medio corto", "altura de los ojos", "acercarse"],
+  ["aerial pullback", "Aerial pullback", "The camera starts near the subject, pulls out with large amplitude at fast speed while pedestaling up, and reveals a high, wide view of the surrounding location.", "plano medio", "altura de los ojos", "alejarse"],
+  ["cámara en mano", "Cámara en mano", "The camera tracks the moving subject at fast speed with strong handheld shake and small irregular lurches; the subject remains recognizable while the background rushes by.", "plano medio", "altura de los ojos", "camara en mano fuerte"],
+  ["órbita 360°", "Órbita 360°", "The camera arcs around the subject in a complete 360-degree circle with large amplitude at fast speed. The background passes behind the subject with clear parallax; the camera returns to the frontal starting view while the subject moves naturally.", "plano medio", "altura de los ojos", "orbita"],
+  ["grúa ascendente", "Grúa ascendente", "The camera begins low near the moving subject's feet, tracks alongside them, then pedestals up while tilting down until it reaches a high overhead view of the subject and the route behind them.", "plano general", "picado", "grua arriba"],
+];
+
+function aplicarTomaH3(node, nombre) {
+  const receta = TOMAS_H3.find(([, valor]) => valor === nombre);
+  if (!receta || nombre === "libre") return;
+  const [, , texto, plano, angulo, movimiento] = receta;
+  ponerTexto(findWidget(node, "camara"), texto);
+  for (const [campo, valor] of Object.entries({ plano, angulo, movimiento })) {
+    const w = findWidget(node, campo);
+    if (w) w.value = valor;
+  }
+  node.__camara = { hechos: ["receta " + nombre], frase: texto };
+  node.setDirtyCanvas?.(true, true);
+}
 
 const PLANOS_EN = {
   "sin especificar": "", "primerisimo primer plano": "an extreme close-up",
@@ -1639,6 +1678,8 @@ const MOVIMIENTOS_EN = {
   "camara en mano": "shakes slightly, handheld",
   "punto de vista": "takes the point of view of the subject",
   "giro de horizonte": "rolls clockwise",
+  "giro antihorario": "rolls counterclockwise",
+  "camara en mano fuerte": "shakes strongly, handheld",
 };
 const INTENSIDAD_EN = {
   "normal": "", "suave": "with small amplitude at slow speed",
@@ -1762,8 +1803,10 @@ const MOV_RE = [
   [/pedestal(?:s|ing)? down[^.]*/i, "grua abajo"],
   [/arc(?:s|ing)? around[^.]*/i, "orbita"],
   [/tracking shot[^.]*/i, "seguimiento"],
+  [/shak(?:es|ing) strongly[^.]*/i, "camara en mano fuerte"],
   [/shak(?:es|ing)[^.]*/i, "camara en mano"],
-  [/roll(?:s|ing)? (?:clockwise|counterclockwise)[^.]*/i, "giro de horizonte"],
+  [/roll(?:s|ing)? counterclockwise[^.]*/i, "giro antihorario"],
+  [/roll(?:s|ing)? clockwise[^.]*/i, "giro de horizonte"],
 ];
 
 const ANG_RE = [
@@ -3232,7 +3275,7 @@ app.registerExtension({
         // en este nodo "pasos" son los del primer pase, no los del refinado
         const wp = findWidget(this, "pasos");
         if (wp) wp.label = "Pasos";
-        addChips(this, "pasos", [4, 6, 8, 10, 12].map((v) => [String(v), v]), "pasos");
+        addChips(this, "pasos", [4, 6, 8, 10, 12, 20].map((v) => [String(v), v]), "pasos");
         addProgreso(this, "primer pase", (nd) =>
           Number(findWidget(nd, "pasos")?.value ?? 0));
       }, 420);
@@ -3295,6 +3338,18 @@ app.registerExtension({
         }
         grupoPorNombre(this, ["plano", "angulo", "movimiento", "camara"], "camara");
         grupoPorNombre(this, ["intensidad"], "h3");   // amplitud y velocidad son de MiniMax
+        const tomaH3 = findWidget(this, "toma_h3");
+        // Debe estar visible: ComfyUI puede omitir widgets hidden del prompt.
+        grupo(tomaH3, "h3");
+        const thisNode = this;
+        if (tomaH3) {
+          tomaH3.label = "Receta H3 activa";
+          const previo = tomaH3.callback;
+          tomaH3.callback = function (valor) {
+            previo?.call(this, valor);
+            aplicarTomaH3(thisNode, valor);
+          };
+        }
 
         // un titulo encima de cada caja, para saber que va en cada una
         for (const [sec, tit, ayuda] of TITULOS_P6) grupo(addTitulo(this, sec, tit, ayuda), "h3");
@@ -3312,7 +3367,14 @@ app.registerExtension({
           }
         }
 
-        // el bloque de camara: listas visibles a modo de guia de tomas
+        // Tomas compuestas verificadas como ejemplos de H3. La caja que se
+        // rellena queda editable y no se aplana a un unico movimiento.
+        const tituloRecetas = grupo(addTitulo(this, "plano", "recetas de cámara · MiniMax H3",
+                        "Elige una trayectoria completa; comprueba que tu escena tenga los sujetos necesarios."), "h3");
+        grupo(reubicar(this, addChips(this, "toma_h3",
+          TOMAS_H3.map(([etiqueta, valor]) => [etiqueta, valor]), null, null, null), tituloRecetas.name), "h3");
+
+        // el bloque de camara: controles simples para crear una toma libre
         grupo(addTitulo(this, "plano", "cámara", "Elige la toma. Se escribe sola, en inglés."), "camara");
         grupo(reubicar(this, addChips(this, "plano", PLANOS_CHIPS, null, null,
           (nd, v) => tomaUsada(nd, "plano", v)), "plano"), "camara");
@@ -3323,6 +3385,8 @@ app.registerExtension({
         grupo(reubicar(this, addBoton(this, "🎥  Cambiar la toma en el texto", function (nd) {
           const frase = fraseCamara(nd).trim();
           if (!frase) return "⚠ Elige al menos un plano, ángulo o movimiento";
+          const selector = findWidget(nd, "toma_h3");
+          if (selector) selector.value = "libre";
           ponerTexto(findWidget(nd, "camara"), frase);
           const n = apuntarToma(nd);
           nd.__camara = { hechos: ["caja de cámara"], frase };
@@ -3345,11 +3409,18 @@ app.registerExtension({
           const enTexto = camaraEnTexto(nd);
           const mano = String(findWidget(nd, "camara")?.value || "").trim();
           const chips = fraseCamara(nd);
+          const modoToma = String(findWidget(nd, "toma_h3")?.value || "libre");
 
           if (guiaInicialConectada(nd)) return [
             "⚠ imagen guía fija la composición del fotograma 0",
             "otro ángulo inicial requiere una guía con esa vista",
             "puedes pedir un movimiento hacia el nuevo ángulo",
+          ];
+
+          if (mano && modoToma !== "libre") return [
+            `✓ ${modoToma}: trayectoria completa conservada`,
+            cortar(mano, 58),
+            "los controles simples son orientativos; 🎥 crea una toma libre",
           ];
 
           // La caja ya NO anula las listas: al construir el prompt, el plano,
@@ -3470,6 +3541,9 @@ app.registerExtension({
             }
             // los chips pasan a reflejar la camara que eligio la IA
             const leidos = chipsDesdeTexto(nd);
+            const toma = findWidget(nd, "toma_h3");
+            if (toma) toma.value = String(findWidget(nd, "camara")?.value || "").trim()
+              ? "texto IA · conservar" : "libre";
             // prompt nuevo = escena nueva: las tomas de la anterior ya no valen
             if (nd.properties) nd.properties.tomasUsadas = [];
             nd.__cargaP6 = { puestas, fallidas, vaciadas, leidos, total: texto.length };
