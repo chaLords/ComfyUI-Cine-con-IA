@@ -118,6 +118,27 @@ test('scene slots are proposed from what is already written', () => {
   }
 });
 
+test('a scene written for another shot proposes nothing rather than nonsense', () => {
+  // Caso real: la escena era una órbita y su [Shot 1] empieza por el sillón,
+  // no por el hombre. Proponer esa frase escribió "<Subjecting" en el prompt.
+  const context = setupRecipes();
+  const node = recipeNode('<Subject 1> is one complete adult man based on <Picture 1>.');
+  node.widgets.push(
+    {name: 'summary', value: '[reference generation] <Subject 1> sits down in <Subject 2>.'},
+    {name: 'detailed_description', value: 'Photorealistic cinematic live-action.\n\n' +
+      '[Shot 1] <Subject 2> stands at the centre of the room, directly before the dark bookshelves. ' +
+      'Rows of books fill the shelves behind it. <Subject 1> stands immediately in front of the chair.'});
+  const apply = vm.runInContext('aplicarTomaH3', context);
+  apply(node, 'Pantalla dividida');
+  const slots = vm.runInContext('huecosH3', context)(node.widgets[0].value);
+  const sugeridos = vm.runInContext('sugerenciasHuecos', context)(
+    node, slots, vm.runInContext('PRONOMBRES_H3', context).el);
+  assert.equal(sugeridos['{ACTION}'], 'stands immediately in front of the chair');
+  assert.equal(sugeridos['{ACTION_SHORT}'], 'standing');
+  assert.equal(vm.runInContext('gerundio', context)('<Subject'), '');
+  assert.equal(vm.runInContext('limpiarAccion', context)('sits down in <Subject 2>.'), '');
+});
+
 test('H3 recipes that depend on the scene expose their slots', () => {
   const context = setupRecipes();
   const node = recipeNode('<Subject 1> is the woman in <Picture 1>.');

@@ -1727,7 +1727,7 @@ const TOMAS_H3 = [
    "The right panel stays solid black longer than the centre one and comes on last, showing {PANEL_3_ANGLE}. " +
    "For the remainder of the shot all three panels play together in perfect sync, the same continuous {ACTION_SHORT} at the same instant from three different angles.",
    "sin especificar", "sin especificar", "fijo", 192,
-   "necesita 192 fotogramas (8 s); el ritmo de aparición lo decide el modelo"],
+   "192 fotogramas; describe al personaje sin nombrar los paneles de su lámina"],
   ["whip pan", "Whip pan",
    "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
    "The camera starts framed on <Subject 1>, then whip pans right away from {him} and lands on <Subject 2> standing further away in the same place, everything between them smearing into streaked horizontal motion blur through the middle of the move, the frame settling and resolving sharply on <Subject 2>'s face. " +
@@ -1857,16 +1857,29 @@ const HUECOS_H3 = {
   },
 };
 
-/** La primera frase de [Shot 1], sin el sujeto: sirve de accion. */
+/**
+ * Que hace el personaje, sacado de [Shot 1]. La primera frase del plano
+ * puede hablar de un mueble o del decorado, asi que se busca la primera que
+ * hable de <Subject 1>. Si ninguna lo hace, mejor no proponer nada que
+ * proponer la frase equivocada.
+ */
 function accionDelPlano(node) {
   const d = String(findWidget(node, "detailed_description")?.value || "");
-  const m = /\[Shot\s*1\][^.]*?(?:\.|$)/i.exec(d);
-  if (!m) return "";
-  return m[0]
-    .replace(/\[Shot\s*1\](?:\s*At\s*[\d:.]+)?\s*/i, "")
-    .replace(/^(?:<Subject\s*1>|He|She|They|The\s+\w+)\s+/i, "")
-    .replace(/\.$/, "")
-    .trim();
+  const marca = d.search(/\[Shot\s*1\]/i);
+  if (marca < 0) return "";
+  const plano = d.slice(marca).replace(/\[Shot\s*1\](?:\s*At\s*[\d:.]+)?\s*/i, "");
+  const frases = plano.split(/(?<=\.)\s+/);
+  for (const frase of frases) {
+    const sujeto = /^\s*(?:<Subject\s*1>|He|She|They)\s+(.+)/i.exec(frase);
+    if (sujeto) return limpiarAccion(sujeto[1]);
+  }
+  return "";
+}
+
+/** Sin punto final y sin etiquetas: lo que se propone tiene que leerse solo. */
+function limpiarAccion(texto) {
+  const limpio = String(texto).replace(/\.\s*$/, "").trim();
+  return /<Subject|<Picture|\{/.test(limpio) ? "" : limpio;
 }
 
 /** Lo que la descripcion dice que hay detras del personaje. */
@@ -1886,7 +1899,8 @@ function lugarDelResumen(node) {
 /** writes -> writing, sits -> sitting, seated at a desk -> seated. */
 function gerundio(accion) {
   const palabra = String(accion || "").trim().split(/\s+/)[0] || "";
-  if (!palabra || /ing$/i.test(palabra) || /ed$/i.test(palabra)) return palabra;
+  if (!/^[a-z]+$/i.test(palabra)) return "";     // una etiqueta no es un verbo
+  if (/ing$/i.test(palabra) || /ed$/i.test(palabra)) return palabra;
   // De la tercera persona al infinitivo: carries -> carry, watches -> watch,
   // writes -> write, sits -> sit. Solo despues se forma el gerundio.
   let raiz = /ies$/i.test(palabra) ? palabra.replace(/ies$/i, "y")
@@ -3791,6 +3805,14 @@ app.registerExtension({
               `⚠ ${modoToma}: hay una LoRA turbo cargada`,
               "suprime casi todo el movimiento de cámara, sea cual sea el texto",
               "quítala en Cargar modelo y usa 20 pasos",
+            ];
+            // Una lamina de varios paneles compite con los tres paneles de la
+            // toma: el modelo acaba copiando los de la lamina.
+            if (modoToma === "Pantalla dividida"
+                && /\bpanels?\b/i.test(String(findWidget(nd, "subject_definitions")?.value || ""))) return [
+              "⚠ Pantalla dividida: tu lámina también habla de paneles",
+              "el modelo copia los paneles de la lámina en vez de los de la toma",
+              "describe al personaje sin nombrarlos, o usa una lámina de un solo encuadre",
             ];
             const receta = TOMAS_H3.find(([, v]) => v === modoToma);
             const d = duracionDelGrafo();

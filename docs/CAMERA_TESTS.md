@@ -33,7 +33,7 @@ the camera behaviour**, only the detail in the image.
 | 360° orbit | ✅ | Front → one profile → rear → the **opposite** profile → front, in one direction. |
 | Crane rise | ✅ | Starts at foot level, climbs and tilts down. It does not reach straight overhead. |
 
-## Four things we learned here
+## Five things we learned here
 
 **Length decides the orbit.** At 124 frames (5.17 s) the circle completes. The same recipe at 192
 frames (8 s) does not close it: it reaches the rear and comes back along the same side. The model
@@ -47,6 +47,10 @@ It is the same effect LoopForge measured with a background plate and with imposs
 things: backwards, canted from the start, and correct. It is the only one of the fourteen that
 needed the first result watched and re-run. Changing the seed is enough; the text does not need
 touching.
+
+**A multi-panel plate breaks the split screen.** With a three-panel character sheet wired in, and a
+definition that names its panels, the model renders those panels instead of the shot's three angles.
+For this recipe, describe the character without mentioning panels, or use a single-frame plate.
 
 **The recipe works on a seated subject.** The orbit circles someone sitting in an armchair, as long
 as they are already seated when the shot starts. Put the act of sitting down inside the shot and it

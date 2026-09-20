@@ -8,6 +8,13 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.4.3] - 2026-09-20
+
+### Corregido
+
+- La propuesta para `{ACTION}` tomaba la primera frase de `[Shot 1]` aunque esa frase hablara de un sillón, y convertía `<Subject 2>` en `<Subjecting`. Ahora busca la primera frase que hable de `<Subject 1>`, y si no la encuentra no propone nada: una escena escrita para una toma no describe otra.
+- El nodo avisa cuando una pantalla dividida se junta con una lámina de personaje cuya definición nombra sus propios paneles. El modelo pinta los paneles de la lámina en vez de los tres ángulos de la toma.
+
 ## [1.4.2] - 2026-09-20
 
 ### Añadido

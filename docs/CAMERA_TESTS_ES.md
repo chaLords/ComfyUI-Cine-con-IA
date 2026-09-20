@@ -33,7 +33,7 @@ Las pruebas de cámara se rindieron a 288x512 (9:16, 0.15 MP) y la órbita se co
 | Órbita 360° | ✅ | Frente → un perfil → espalda → el perfil **opuesto** → frente, en un solo sentido. |
 | Grúa ascendente | ✅ | Arranca a la altura de los pies, sube e inclina hacia abajo. No llega a cenital puro. |
 
-## Cuatro cosas que aprendimos aquí
+## Cinco cosas que aprendimos aquí
 
 **La duración manda en la órbita.** A 124 fotogramas (5,17 s) el giro sale completo. La misma
 receta a 192 fotogramas (8 s) no cierra el círculo: llega a la espalda y regresa por el mismo lado.
@@ -46,6 +46,11 @@ Es el mismo efecto que LoopForge midió con la lámina de escenario y con las po
 **El ángulo holandés depende de la semilla.** Tres renders con la misma receta dieron tres cosas
 distintas: al revés, inclinado desde el principio, y correcto. Es la única de las catorce que exigió
 mirar el primer resultado y repetir. Cambiar la semilla basta; no hace falta tocar el texto.
+
+**Una lámina de varios paneles rompe la pantalla dividida.** Con una hoja de personaje de tres
+paneles (cara, frente, espalda) conectada, y una definición que los nombra, el modelo pinta esos
+paneles en lugar de los tres ángulos de la toma. Para esta receta, describe al personaje sin
+mencionar los paneles, o usa una lámina de un solo encuadre.
 
 **La receta funciona con el personaje sentado.** La órbita da la vuelta completa alrededor de alguien
 sentado en un sillón, siempre que ya esté sentado al empezar. Si el plano incluye la acción de

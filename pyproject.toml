@@ -1,6 +1,6 @@
 [project]
 name = "cine-con-ia"
-version = "1.4.2"
+version = "1.4.3"
 description = "Model-friendly cinematic workflow nodes for creating, refining, and exporting AI video in ComfyUI."
 license = { file = "LICENSE" }
 requires-python = ">=3.10"

@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.3] - 2026-09-20
+
+### Fixed
+
+- The proposal for `{ACTION}` took the first sentence of `[Shot 1]` even when that sentence was about a chair, and turned `<Subject 2>` into `<Subjecting`. It now looks for the first sentence about `<Subject 1>`, and proposes nothing rather than something wrong: a scene written for one shot does not describe another.
+- The node warns when a split screen meets a character sheet whose definition names its own panels. The model renders the plate's panels instead of the shot's three angles.
+
 ## [1.4.2] - 2026-09-20
 
 ### Added
