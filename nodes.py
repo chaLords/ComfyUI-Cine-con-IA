@@ -439,6 +439,23 @@ def _reforzar_trayectoria_camara(descripcion, bloque):
 _RE_SHOT1 = re.compile(r"\[Shot\s*1\](?:\s*At\s*[\d:.]+)?", re.IGNORECASE)
 _RE_HUECO = re.compile(r"\{[A-Z][A-Z0-9_]*\}")
 
+# Que espera cada hueco de las recetas. Espejo de HUECOS_H3 en cineconia.js:
+# el mensaje de error tiene que explicarse solo aunque el prompt venga pegado
+# de una IA y el usuario no haya pulsado el boton.
+HUECOS_AYUDA = {
+    "{ACTION}": "que hace el personaje y que hay a su alrededor, en ingles",
+    "{ACTION_SHORT}": "la misma accion en una o dos palabras",
+    "{PANEL_1_ANGLE}": "que se ve en el panel izquierdo",
+    "{PANEL_2_ANGLE}": "que se ve en el panel central",
+    "{PANEL_3_ANGLE}": "que se ve en el panel derecho",
+    "{BACKGROUND_ELEMENTS}": "tres o cuatro cosas concretas detras del personaje",
+    "{LOCATION}": "el lugar que se abre al final, en una o dos palabras",
+    "{THE_SPACE}": "el espacio alargado por el que carga la camara",
+    "{NEAR_OBJECTS}": "dos cosas pegadas al objetivo que la camara va a rebasar",
+    "{FURTHER_OBJECTS}": "lo que pasa volando a media distancia",
+    "{GROUND}": "el suelo que corre por debajo",
+}
+
 # --- sustitucion de la camara al construir el prompt ------------------------
 #
 # En modo libre mandan los chips y se modifica una copia del texto. En una
@@ -872,8 +889,11 @@ class CinePrompt6:
         huecos = sorted(set(_RE_HUECO.findall(camara or "")) |
                         set(_RE_HUECO.findall(kwargs.get("detailed_description") or "")))
         if huecos:
-            raise ValueError("Receta H3 incompleta: sustituye {} por cosas de tu escena "
-                             "en el campo Camara.".format(", ".join(huecos)))
+            raise ValueError(
+                "Receta H3 incompleta. Vuelve a pulsar la receta en el nodo y rellena "
+                "lo que te pregunte, o escribelo a mano en el campo Camara:\n" +
+                "\n".join("  {} = {}".format(h, HUECOS_AYUDA.get(h, "algo de tu escena"))
+                          for h in huecos))
 
         # La camara no es una seccion aparte del formato: H3 la quiere dentro
         # de la descripcion, en la frase del plano. Las listas seleccionadas

@@ -441,7 +441,19 @@ class CameraBoxTests(unittest.TestCase):
             NODES.CinePrompt6().armar(
                 detailed_description="[Shot 1] He waits.", camara=ruta,
                 toma_h3="Super dolly in")
-        self.assertIn("{THE_SPACE}", str(error.exception))
+        mensaje = str(error.exception)
+        self.assertIn("{THE_SPACE}", mensaje)
+        self.assertIn(NODES.HUECOS_AYUDA["{THE_SPACE}"], mensaje)
+
+    def test_every_slot_in_the_recipes_is_explained(self):
+        # El mensaje de error es lo unico que ve quien pega un prompt de una IA
+        # con un hueco dentro: ningun hueco de las recetas puede quedarse mudo.
+        import pathlib
+        js = (pathlib.Path(__file__).resolve().parent.parent / "web" / "cineconia.js"
+              ).read_text(encoding="utf-8")
+        recetas = js[js.index("const TOMAS_H3 = ["):js.index("const PRONOMBRES_H3")]
+        for hueco in sorted(set(NODES._RE_HUECO.findall(recetas))):
+            self.assertIn(hueco, NODES.HUECOS_AYUDA, hueco)
 
     def test_static_camera_does_not_add_motion_priority_rules(self):
         descripcion = "[Shot 1] The shot begins from <Picture 1>. The man waits."

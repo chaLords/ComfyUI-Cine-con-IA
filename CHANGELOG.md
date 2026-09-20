@@ -8,6 +8,17 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.2] - 2026-09-20
+
+### Added
+
+- Picking a recipe that depends on the scene now asks for what it needs, one field per `{SLOT}`, each already filled in with a proposal read from the six sections: the action comes from the first sentence of `[Shot 1]`, what is behind the subject from its `with … behind him` clause, and the panel angles from a default that fits any scene. Cancelling leaves the slots in place.
+- The node warns when a turbo LoRA is loaded in **Load Model**. A turbo render suppresses almost all camera motion whatever the prompt says, which is the one setting that silently undoes every recipe.
+
+### Fixed
+
+- The refusal message for an unfilled slot now explains what each one expects, because a prompt pasted from an AI can carry a slot without the button ever being pressed. A test keeps both sides of that list in step.
+
 ## [1.4.1] - 2026-09-19
 
 ### Added

@@ -1563,6 +1563,19 @@ function recetasParaIA(node) {
   return texto;
 }
 
+/**
+ * Una LoRA turbo en el cargador. LoopForge midio que un render turbo de 4
+ * pasos suprime casi todo el movimiento de camara, por bueno que sea el texto.
+ */
+function loraTurbo() {
+  try {
+    const nodos = (app.graph?._nodes || app.graph?.nodes || []);
+    return nodos.some((n) => (n.type === "CineCargarH3" || n.comfyClass === "CineCargarH3")
+      && (n.widgets || []).some((w) => /^lora/.test(w.name || "")
+        && /turbo|distill|lightning|lightx2v/i.test(String(w.value || ""))));
+  } catch (e) { return false; }
+}
+
 /** Le pega a la receta la duracion concreta de este workflow. */
 function instruccionConDuracion(node) {
   const d = duracionDelGrafo();
@@ -1790,11 +1803,119 @@ function huecosH3(texto) {
   return [...new Set(String(texto || "").match(/\{[A-Z][A-Z0-9_]*\}/g) || [])];
 }
 
+// Que espera cada hueco y de donde se puede proponer un valor. 'saca' lee lo
+// que el usuario ya escribio en las seis secciones; 'fijo' es una propuesta
+// que vale para cualquier escena. Todo es editable en la ventana.
+const HUECOS_H3 = {
+  "{ACTION}": {
+    ayuda: "Qué hace el personaje y qué hay a su alrededor, en inglés. Es la acción que se ve en los tres paneles.",
+    ejemplo: "seated at a cluttered desk writing in a notebook, a lamp in front of him and a dark room behind him",
+    saca: (n) => accionDelPlano(n),
+  },
+  "{ACTION_SHORT}": {
+    ayuda: "La misma acción en una o dos palabras.",
+    ejemplo: "writing",
+    saca: (n) => gerundio(accionDelPlano(n)),
+  },
+  "{PANEL_1_ANGLE}": {
+    ayuda: "Qué se ve en el panel izquierdo: el primer ángulo.",
+    fijo: (pr) => `${pr.him} from ${pr.his} left side in profile`,
+  },
+  "{PANEL_2_ANGLE}": {
+    ayuda: "Qué se ve en el panel central: otro ángulo del mismo momento.",
+    fijo: (pr) => `the front, with the light on ${pr.his} face`,
+  },
+  "{PANEL_3_ANGLE}": {
+    ayuda: "Qué se ve en el panel derecho: el tercer ángulo.",
+    fijo: (pr) => `${pr.him} from behind in full`,
+  },
+  "{BACKGROUND_ELEMENTS}": {
+    ayuda: "Tres o cuatro cosas concretas detrás del personaje. Son las que se ven estirarse en el dolly zoom.",
+    ejemplo: "the brick facades, the iron street lamps and the distant clock tower",
+    saca: (n) => loQueHayDetras(n),
+  },
+  "{LOCATION}": {
+    ayuda: "El lugar que se abre al final, en una o dos palabras.",
+    ejemplo: "forest",
+    saca: (n) => lugarDelResumen(n),
+  },
+  "{THE_SPACE}": {
+    ayuda: "El espacio alargado por el que carga la cámara.",
+    ejemplo: "a forest track",
+  },
+  "{NEAR_OBJECTS}": {
+    ayuda: "Dos cosas pegadas al objetivo, a izquierda y derecha, que la cámara va a rebasar.",
+    ejemplo: "the trunks of two near pines",
+  },
+  "{FURTHER_OBJECTS}": {
+    ayuda: "Lo que pasa volando a media distancia.",
+    ejemplo: "further trunks",
+  },
+  "{GROUND}": {
+    ayuda: "El suelo que corre por debajo.",
+    ejemplo: "the snow",
+  },
+};
+
+/** La primera frase de [Shot 1], sin el sujeto: sirve de accion. */
+function accionDelPlano(node) {
+  const d = String(findWidget(node, "detailed_description")?.value || "");
+  const m = /\[Shot\s*1\][^.]*?(?:\.|$)/i.exec(d);
+  if (!m) return "";
+  return m[0]
+    .replace(/\[Shot\s*1\](?:\s*At\s*[\d:.]+)?\s*/i, "")
+    .replace(/^(?:<Subject\s*1>|He|She|They|The\s+\w+)\s+/i, "")
+    .replace(/\.$/, "")
+    .trim();
+}
+
+/** Lo que la descripcion dice que hay detras del personaje. */
+function loQueHayDetras(node) {
+  const d = String(findWidget(node, "detailed_description")?.value || "");
+  const m = /\bwith ([^.]*?) (?:behind|around) (?:him|her|them)\b/i.exec(d);
+  return m ? m[1].trim() : "";
+}
+
+/** El lugar que nombra el resumen, sin su articulo. */
+function lugarDelResumen(node) {
+  const s = String(findWidget(node, "summary")?.value || "");
+  const m = /\b(?:in|on) (?:a|an|the) ([^,.]{3,60})/i.exec(s);
+  return m ? m[1].trim() : "";
+}
+
+/** writes -> writing, sits -> sitting, seated at a desk -> seated. */
+function gerundio(accion) {
+  const palabra = String(accion || "").trim().split(/\s+/)[0] || "";
+  if (!palabra || /ing$/i.test(palabra) || /ed$/i.test(palabra)) return palabra;
+  // De la tercera persona al infinitivo: carries -> carry, watches -> watch,
+  // writes -> write, sits -> sit. Solo despues se forma el gerundio.
+  let raiz = /ies$/i.test(palabra) ? palabra.replace(/ies$/i, "y")
+    : /(?:ch|sh|ss|x|z|o)es$/i.test(palabra) ? palabra.slice(0, -2)
+    : palabra.replace(/s$/i, "");
+  if (/[^aeiou]e$/i.test(raiz)) raiz = raiz.slice(0, -1);              // write -> writ
+  else if (/^[^aeiou]*[aeiou][bdgklmnprt]$/i.test(raiz)) raiz += raiz.slice(-1);  // sit -> sitt
+  return raiz + "ing";
+}
+
+/** Propone un valor para cada hueco: primero lo escrito, luego lo fijo. */
+function sugerenciasHuecos(node, huecos, pr) {
+  const fuera = {};
+  for (const h of huecos) {
+    const d = HUECOS_H3[h] || {};
+    let valor = "";
+    try { valor = d.saca ? d.saca(node) || "" : ""; } catch (e) { valor = ""; }
+    if (!valor && d.fijo) valor = d.fijo(pr);
+    fuera[h] = valor;
+  }
+  return fuera;
+}
+
 function aplicarTomaH3(node, nombre) {
   const receta = TOMAS_H3.find(([, valor]) => valor === nombre);
   if (!receta || nombre === "libre") return;
   const [, , plantilla, plano, angulo, movimiento] = receta;
-  const texto = conjugarTomaH3(plantilla, pronombresH3(node));
+  const pr = pronombresH3(node);
+  const texto = conjugarTomaH3(plantilla, pr);
   ponerTexto(findWidget(node, "camara"), texto);
   for (const [campo, valor] of Object.entries({ plano, angulo, movimiento })) {
     const w = findWidget(node, campo);
@@ -1802,6 +1923,89 @@ function aplicarTomaH3(node, nombre) {
   }
   node.__camara = { hechos: ["receta " + nombre], frase: texto };
   node.setDirtyCanvas?.(true, true);
+
+  // Las recetas que dependen de la escena se preguntan aqui mismo, con lo que
+  // ya haya escrito en las seis secciones como propuesta. Si se cancela, el
+  // texto se queda con sus huecos y el aviso sigue a la vista.
+  const huecos = huecosH3(texto);
+  if (!huecos.length || typeof document === "undefined") return;
+  ventanaHuecos(nombre, huecos, sugerenciasHuecos(node, huecos, pr), (valores) => {
+    let relleno = texto;
+    for (const [h, v] of Object.entries(valores)) {
+      if (v.trim()) relleno = relleno.split(h).join(v.trim());
+    }
+    ponerTexto(findWidget(node, "camara"), relleno);
+    node.__camara = { hechos: ["receta " + nombre], frase: relleno };
+    node.setDirtyCanvas?.(true, true);
+  });
+}
+
+/** Un campo por hueco, con su ayuda y la propuesta ya escrita dentro. */
+function ventanaHuecos(nombre, huecos, sugeridos, alAceptar) {
+  const fondo = document.createElement("div");
+  fondo.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;" +
+    "display:flex;align-items:center;justify-content:center;";
+  const caja = document.createElement("div");
+  caja.style.cssText = "background:#20282a;border:1px solid #3a4547;border-radius:10px;padding:18px;" +
+    "width:min(760px,92vw);max-height:88vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,.6);" +
+    "font-family:system-ui,sans-serif;color:#cfdadb;";
+  const titulo = document.createElement("div");
+  titulo.textContent = nombre + ": completa lo que depende de tu escena";
+  titulo.style.cssText = "font-size:15px;font-weight:600;margin-bottom:4px;color:#e8eeee;";
+  const ayuda = document.createElement("div");
+  ayuda.textContent = "En inglés. Lo propuesto sale de lo que ya escribiste en las seis secciones; " +
+    "cámbialo si no encaja. El resto de la receta no se toca.";
+  ayuda.style.cssText = "font-size:12px;color:#8b9a9b;margin-bottom:14px;";
+  caja.append(titulo, ayuda);
+
+  const campos = {};
+  for (const h of huecos) {
+    const def = HUECOS_H3[h] || {};
+    const etiqueta = document.createElement("div");
+    etiqueta.textContent = h;
+    etiqueta.style.cssText = "font-size:12px;font-weight:600;color:" + ACCENT + ";margin-top:12px;";
+    const pista = document.createElement("div");
+    pista.textContent = def.ayuda || "Sustitúyelo por algo de tu escena.";
+    pista.style.cssText = "font-size:11px;color:#8b9a9b;margin:2px 0 4px;";
+    const campo = document.createElement("textarea");
+    campo.rows = 2;
+    campo.value = sugeridos[h] || "";
+    campo.placeholder = def.ejemplo ? "por ejemplo: " + def.ejemplo : "";
+    campo.style.cssText = "width:100%;background:#161d1f;color:#dfe8e8;border:1px solid #3a4547;" +
+      "border-radius:6px;padding:8px;font-family:Consolas,monospace;font-size:12px;" +
+      "resize:vertical;box-sizing:border-box;";
+    campos[h] = campo;
+    caja.append(etiqueta, pista, campo);
+  }
+
+  const pie = document.createElement("div");
+  pie.style.cssText = "display:flex;gap:8px;justify-content:flex-end;margin-top:16px;";
+  const btn = (txt, principal) => {
+    const b = document.createElement("button");
+    b.textContent = txt;
+    b.style.cssText = "padding:8px 16px;border-radius:6px;border:1px solid #3a4547;cursor:pointer;font-size:13px;" +
+      (principal ? "background:" + ACCENT + ";color:#12181a;font-weight:600;border-color:" + ACCENT + ";"
+                 : "background:#2b3335;color:#cfdadb;");
+    return b;
+  };
+  const cancelar = btn("Dejar los huecos", false);
+  const aceptar = btn("Escribir en Cámara", true);
+  pie.append(cancelar, aceptar);
+  caja.append(pie);
+  fondo.append(caja);
+  document.body.append(fondo);
+  Object.values(campos)[0]?.focus();
+
+  const cerrar = () => fondo.remove();
+  cancelar.onclick = cerrar;
+  fondo.onclick = (e) => { if (e.target === fondo) cerrar(); };
+  fondo.onkeydown = (e) => { if (e.key === "Escape") cerrar(); e.stopPropagation(); };
+  aceptar.onclick = () => {
+    const valores = {};
+    for (const [h, c] of Object.entries(campos)) valores[h] = c.value;
+    cerrar();
+    alAceptar(valores);
+  };
 }
 
 const PLANOS_EN = {
@@ -3580,8 +3784,13 @@ app.registerExtension({
             const huecos = huecosH3(mano);
             if (huecos.length) return [
               `⚠ ${modoToma}: completa en Cámara ${huecos.join(" ")}`,
-              cortar(mano, 58),
-              "el prompt no se construye con huecos sin rellenar",
+              HUECOS_H3[huecos[0]]?.ayuda || cortar(mano, 58),
+              "vuelve a pulsar la receta para que te los pregunte",
+            ];
+            if (loraTurbo()) return [
+              `⚠ ${modoToma}: hay una LoRA turbo cargada`,
+              "suprime casi todo el movimiento de cámara, sea cual sea el texto",
+              "quítala en Cargar modelo y usa 20 pasos",
             ];
             const receta = TOMAS_H3.find(([, v]) => v === modoToma);
             const d = duracionDelGrafo();

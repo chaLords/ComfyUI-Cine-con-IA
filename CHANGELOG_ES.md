@@ -8,6 +8,17 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.4.2] - 2026-09-20
+
+### Añadido
+
+- Al elegir una receta que depende de la escena, el nodo pregunta lo que necesita: un campo por `{HUECO}`, cada uno ya rellenado con una propuesta leída de las seis secciones. La acción sale de la primera frase de `[Shot 1]`, lo que hay detrás del personaje de su cláusula `with … behind him`, y los ángulos de los paneles de un valor que sirve para cualquier escena. Si cancelas, los huecos se quedan como estaban.
+- El nodo avisa cuando hay una LoRA turbo cargada en **Cargar modelo**. Un render turbo suprime casi todo el movimiento de cámara diga lo que diga el prompt, y es el único ajuste que echa a perder cualquier receta sin decir nada.
+
+### Corregido
+
+- El mensaje que rechaza un hueco sin rellenar explica ahora qué espera cada uno, porque un prompt pegado de una IA puede traer un hueco sin que se haya pulsado el botón. Un test mantiene las dos listas sincronizadas.
+
 ## [1.4.1] - 2026-09-19
 
 ### Añadido

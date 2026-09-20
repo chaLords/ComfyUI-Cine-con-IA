@@ -89,6 +89,35 @@ test('H3 recipes follow the pronouns of Subject 1 and leave no pronoun tokens', 
   assert.match(node.widgets[0].value, /stays where they are through the sweep/);
 });
 
+test('scene slots are proposed from what is already written', () => {
+  const context = setupRecipes();
+  const node = recipeNode('<Subject 1> is the man in <Picture 1>: dark hair.');
+  node.widgets.push(
+    {name: 'summary', value: '[reference generation] The target video shows <Subject 1> seated at a desk in a dim study at night.'},
+    {name: 'detailed_description', value: 'Cinematic.\n[Shot 1] He writes in a leather notebook at a cluttered desk, ' +
+      'with a brass lamp and a rain-streaked window behind him. As the shot plays out, his expression softens.'});
+  const apply = vm.runInContext('aplicarTomaH3', context);
+  apply(node, 'Pantalla dividida');
+  const slots = vm.runInContext('huecosH3', context)(node.widgets[0].value);
+  const sugeridos = vm.runInContext('sugerenciasHuecos', context)(
+    node, slots, vm.runInContext('PRONOMBRES_H3', context).el);
+  assert.equal(sugeridos['{ACTION}'],
+    'writes in a leather notebook at a cluttered desk, with a brass lamp and a rain-streaked window behind him');
+  assert.equal(sugeridos['{ACTION_SHORT}'], 'writing');
+  assert.equal(sugeridos['{PANEL_1_ANGLE}'], 'him from his left side in profile');
+  assert.equal(sugeridos['{PANEL_3_ANGLE}'], 'him from behind in full');
+
+  apply(node, 'Dolly zoom');
+  assert.equal(vm.runInContext('loQueHayDetras', context)(node),
+    'a brass lamp and a rain-streaked window');
+  const gerundio = vm.runInContext('gerundio', context);
+  for (const [verbo, esperado] of [['sits', 'sitting'], ['writes', 'writing'], ['types', 'typing'],
+                                   ['runs', 'running'], ['carries', 'carrying'], ['seated', 'seated'],
+                                   ['walking', 'walking']]) {
+    assert.equal(gerundio(verbo), esperado, verbo);
+  }
+});
+
 test('H3 recipes that depend on the scene expose their slots', () => {
   const context = setupRecipes();
   const node = recipeNode('<Subject 1> is the woman in <Picture 1>.');
