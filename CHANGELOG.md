@@ -8,6 +8,17 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.5.2] - 2026-09-20
+
+### Added
+
+- Recipes that leave gaps can now be filled while thinking in your own language. The recipe needs its text in English, but almost nobody using this describes their shot in English. Two new buttons in that window: one copies an instruction that asks your AI to interview you in Spanish and hand back only the English values, and the other reads that answer and spreads it across the fields. The paste keeps the `{GAP} = value` lines and ignores whatever the AI writes around them.
+- The Models node footer carries the channel and repository links as branded buttons, drawn with `Path2D` instead of images: there is no file to load and they stay sharp at any canvas zoom. The follow request sits between them and hides itself when the node gets narrow, rather than running over the icons.
+
+### Fixed
+
+- The Models node header no longer overlaps itself. The body logo occupies a fixed band and the tabs started flush against the top edge, so they ran underneath both the logo and the `info` output slot. The tabs now reserve that band. Only this node was affected: the others that combine a body logo with tabs have enough outputs that their widgets already started lower.
+
 ## [1.5.1] - 2026-09-20
 
 ### Added

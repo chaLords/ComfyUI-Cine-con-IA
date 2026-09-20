@@ -702,7 +702,7 @@ function addTitulo(node, antesDe, texto, sub) {
  * se quedan atenuadas, que es la misma idea que los chips y no mete un tono
  * nuevo en el nodo.
  */
-function addPestanas(node, targetName, items) {
+function addPestanas(node, targetName, items, margenSuperior = 0) {
   const alto = 26, gap = 6, pad = 10;
   const filasPara = (width) => width < 760 && items.length > 5 ? 2 : 1;
   const state = { rects: [] };
@@ -714,11 +714,16 @@ function addPestanas(node, targetName, items) {
     serialize: false,
     computeSize(width) {
       const filas = filasPara(width);
-      return [width, filas * (alto + gap) + 12];
+      return [width, margenSuperior + filas * (alto + gap) + 12];
     },
     draw(ctx, n, width, y) {
       const t = findWidget(n, targetName);
       if (!t) return;
+      // Deja libre la banda de arriba cuando el nodo dibuja el logo dentro
+      // del cuerpo. Sin esto las pestanas pasan por debajo del logo y del
+      // primer slot de salida. Los rects de raton se calculan aqui abajo,
+      // asi que el area pulsable se mueve sola con el dibujo.
+      y += margenSuperior;
       ctx.save();
       ctx.font = "600 11px system-ui, sans-serif";
       ctx.textBaseline = "middle";
@@ -1218,6 +1223,11 @@ LOGO.src = new URL("./logo.png", import.meta.url).href;
 const LOGO_H_CUERPO = 38;   // hay hueco libre a la izquierda: logo grande
 const LOGO_H_TITULO = 20;   // no hay hueco: logo chico colgado del titulo
 const LOGO_X = 11;          // margen izquierdo dentro del cuerpo
+
+// El logo del cuerpo ocupa de y=8 a y=46, y el primer slot de salida cae en
+// esa misma franja por la derecha. Un widget que empiece pegado arriba se
+// dibuja encima de los dos. Los que ocupan todo el ancho piden esta banda.
+const BANDA_LOGO = LOGO_H_CUERPO + 8;
 
 /**
  * Entradas de verdad: las que se conectan con un cable.
@@ -2055,17 +2065,106 @@ function escenaDelNodo(node, ficha) {
   };
 }
 
+/**
+ * La instruccion que se lleva el usuario a su IA. Los huecos hay que
+ * rellenarlos en ingles, pero la mayoria de quien usa esto escribe en
+ * espanol: esto deja que lo cuente en su idioma y que la IA devuelva el
+ * ingles ya con el formato que sabemos leer de vuelta.
+ */
+function instruccionHuecos(nombre, huecos) {
+  const fichas = huecos.map((h) => {
+    const d = HUECOS_H3[h] || {};
+    return `${h}\n   qué es: ${d.ayuda || "un elemento de la escena"}` +
+           `\n   ejemplo en inglés: ${d.ejemplo || "—"}`;
+  });
+  return [
+    "Eres mi ayudante para escribir un prompt de vídeo con MiniMax H3.",
+    "",
+    `Estoy usando la receta de cámara «${nombre}». La receta ya está escrita en inglés y`,
+    "no se toca: solo tengo que rellenar unos huecos con elementos de MI escena.",
+    "",
+    "HUECOS QUE HAY QUE RELLENAR",
+    ...fichas,
+    "",
+    "CÓMO QUIERO QUE TRABAJES",
+    "1. Pregúntame en español qué sale en mi plano: quién aparece, dónde está,",
+    "   qué hay cerca y qué hay al fondo. Pregunta lo que te falte, de una en una.",
+    "2. Yo te contesto en español. Tú te encargas de pasarlo a inglés.",
+    "3. Cuando lo tengas claro, devuélveme SOLO el bloque final, sin explicaciones.",
+    "",
+    "FORMATO EXACTO DE TU RESPUESTA FINAL, una línea por hueco:",
+    ...huecos.map((h) => `${h} = el valor en inglés`),
+    "",
+    "REGLAS DE LOS VALORES",
+    "- Van en INGLÉS, aunque la conversación sea en español.",
+    "- Cada uno es un sintagma corto en minúsculas, sin punto final.",
+    "- Se insertan dentro de una frase ya escrita: nada de frases completas.",
+    "- No pongas comillas, ni numeración, ni texto antes o después del bloque.",
+  ].join("\n");
+}
+
+/** Lee «{HUECO} = valor» y los reparte. Devuelve cuántos colocó. */
+function repartirHuecos(texto, cajas) {
+  let puestos = 0;
+  for (const linea of String(texto || "").split(/\r?\n/)) {
+    const m = /^\s*(\{[A-Z_]+\})\s*[=:]\s*(.+?)\s*$/.exec(linea);
+    if (!m) continue;
+    const campo = cajas[m[1]];
+    if (!campo) continue;
+    campo.value = m[2].replace(/^["'«]|["'»]$/g, "").trim();
+    puestos++;
+  }
+  return puestos;
+}
+
 /** Un campo por hueco, con su ayuda y la propuesta ya escrita dentro. */
 function ventanaHuecos(nombre, huecos, sugeridos, alAceptar) {
+  const avisar = (b, txt, vuelve) => {
+    b.textContent = txt;
+    setTimeout(() => { b.textContent = vuelve; }, 2600);
+  };
+  const COPIAR = "📄  Copiar instrucción para tu IA";
+  const PEGAR = "📋  Pegar respuesta";
+
   ventanaCampos(nombre + ": completa lo que depende de tu escena",
     "En inglés. Lo propuesto sale de lo que ya escribiste en las seis secciones; " +
-    "cámbialo si no encaja. El resto de la receta no se toca.",
+    "cámbialo si no encaja. El resto de la receta no se toca. " +
+    "Si prefieres contarlo en español, copia la instrucción y pásasela a tu IA.",
     huecos.map((h) => ({
       clave: h, etiqueta: h,
       pista: HUECOS_H3[h]?.ayuda || "Sustitúyelo por algo de tu escena.",
       ejemplo: HUECOS_H3[h]?.ejemplo || "", valor: sugeridos[h] || "",
     })),
-    alAceptar, "Dejar los huecos", "Escribir en Cámara");
+    alAceptar, "Dejar los huecos", "Escribir en Cámara",
+    [
+      {
+        txt: COPIAR,
+        onClick: (cajas, b) => {
+          const texto = instruccionHuecos(nombre, huecos);
+          // El aviso se da cuando el portapapeles confirma, no al pulsar. Si
+          // no deja copiar, se abre la ventana para hacerlo a mano.
+          try {
+            navigator.clipboard.writeText(texto)
+              .then(() => avisar(b, "✓   Copiado · pégalo en tu IA", COPIAR))
+              .catch(() => verInstruccion(texto));
+          } catch (e) { verInstruccion(texto); }
+        },
+      },
+      {
+        txt: PEGAR,
+        onClick: (cajas, b) => {
+          const meter = (t) => {
+            const n = repartirHuecos(t, cajas);
+            avisar(b, n ? `✓   ${n} hueco${n > 1 ? "s" : ""} repartido${n > 1 ? "s" : ""}`
+                        : "⚠   No encontré líneas «{HUECO} = valor»", PEGAR);
+          };
+          try {
+            navigator.clipboard.readText().then(meter)
+              .catch(() => avisar(b, "⚠   Pega tú el texto en los campos", PEGAR));
+          } catch (e) { avisar(b, "⚠   Pega tú el texto en los campos", PEGAR); }
+        },
+      },
+    ]);
 }
 
 /**
@@ -2131,7 +2230,7 @@ function armarEscenaH3(node, nombre) {
 }
 
 /** Ventana de varios campos de texto, cada uno con su ayuda y su ejemplo. */
-function ventanaCampos(tituloTexto, ayudaTexto, campos, alAceptar, txtCancelar, txtAceptar) {
+function ventanaCampos(tituloTexto, ayudaTexto, campos, alAceptar, txtCancelar, txtAceptar, extras = []) {
   const fondo = document.createElement("div");
   fondo.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;" +
     "display:flex;align-items:center;justify-content:center;";
@@ -2167,7 +2266,7 @@ function ventanaCampos(tituloTexto, ayudaTexto, campos, alAceptar, txtCancelar, 
   }
 
   const pie = document.createElement("div");
-  pie.style.cssText = "display:flex;gap:8px;justify-content:flex-end;margin-top:16px;";
+  pie.style.cssText = "display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:16px;";
   const btn = (txt, principal) => {
     const b = document.createElement("button");
     b.textContent = txt;
@@ -2176,9 +2275,22 @@ function ventanaCampos(tituloTexto, ayudaTexto, campos, alAceptar, txtCancelar, 
                  : "background:#2b3335;color:#cfdadb;");
     return b;
   };
+
+  // Los extras van a la izquierda y no cierran la ventana: son ayudas para
+  // rellenar los campos, no salidas.
+  const zonaIzq = document.createElement("div");
+  zonaIzq.style.cssText = "display:flex;gap:8px;align-items:center;";
+  for (const ex of extras) {
+    const b = btn(ex.txt, false);
+    b.onclick = () => ex.onClick(cajas, b);
+    zonaIzq.append(b);
+  }
+  const zonaDer = document.createElement("div");
+  zonaDer.style.cssText = "display:flex;gap:8px;";
   const cancelar = btn(txtCancelar || "Cancelar", false);
   const aceptar = btn(txtAceptar || "Aceptar", true);
-  pie.append(cancelar, aceptar);
+  zonaDer.append(cancelar, aceptar);
+  pie.append(zonaIzq, zonaDer);
   caja.append(pie);
   fondo.append(caja);
   document.body.append(fondo);
@@ -3251,8 +3363,42 @@ function addBoton(node, etiqueta, fn) {
 // --- nodo Modelos: lista de descargas ------------------------------------
 
 // Enlaces del pie. CANAL vacio = no se dibuja ese boton.
-const CANAL = "";
+const CANAL = "https://www.youtube.com/@cineconia.oficial";
 const REPO = "https://github.com/chaLords/ComfyUI-Cine-con-IA";
+
+// Marcas oficiales, en un solo trazo cada una (viewBox 24x24). Se dibujan con
+// Path2D en vez de traer imagenes: no hay archivo que cargar ni que falle, y
+// se ven nitidas a cualquier zoom del lienzo.
+const ICONO_YT_D = "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 " +
+  "3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 " +
+  "5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 " +
+  "3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 " +
+  "12l-6.273 3.568z";
+const ICONO_GH_D = "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 " +
+  "0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 " +
+  "17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 " +
+  "3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 " +
+  "1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 " +
+  "3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 " +
+  "3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 " +
+  "1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12";
+
+const ICONOS = (() => {
+  try {
+    return { yt: new Path2D(ICONO_YT_D), gh: new Path2D(ICONO_GH_D) };
+  } catch (e) { return null; }   // navegador sin Path2D: se cae al texto
+})();
+
+function dibujarIcono(ctx, path, x, y, tam, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(tam / 24, tam / 24);
+  ctx.fillStyle = color;
+  ctx.fill(path);
+  ctx.restore();
+}
+
+const PIE_TEXTO = "Si te sirve, sígueme: me ayuda a seguir haciéndolos";
 
 const gb = (n) => (Number(n) || 0) >= 10 ? `${Math.round(n)} GB` : `${(Number(n) || 0).toFixed(2)} GB`;
 const bytesGB = (n) => (Number(n) || 0) / 1e9;
@@ -3371,10 +3517,28 @@ function addListaModelos(node, estado) {
   return w;
 }
 
-/** Pie con el logo y los enlaces. */
+/**
+ * Pie con los dos enlaces. YouTube a la izquierda, GitHub a la derecha y en
+ * medio la peticion de seguir el canal. El logo no se repite aqui: ya esta
+ * arriba, en la cabecera del nodo.
+ */
 function addPie(node) {
   const alto = 46, pad = 10;
+  const bw = 40, bh = 24, ico = 15;   // boton cuadradito con la marca dentro
   const state = { rects: [] };
+
+  const pintarBoton = (ctx, x, y, clave, color, etiqueta) => {
+    ctx.fillStyle = CHIP_BG;
+    roundRect(ctx, x, y, bw, bh, 5); ctx.fill();
+    if (ICONOS) {
+      dibujarIcono(ctx, ICONOS[clave], x + (bw - ico) / 2, y + (bh - ico) / 2, ico, color);
+    } else {
+      ctx.fillStyle = color; ctx.textAlign = "center";
+      ctx.font = "600 10px system-ui, sans-serif";
+      ctx.fillText(etiqueta, x + bw / 2, y + bh / 2 + 0.5);
+    }
+  };
+
   const w = {
     type: "cineconia_pie",
     name: "__pie",
@@ -3387,29 +3551,28 @@ function addPie(node) {
       ctx.strokeStyle = "#394446"; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(pad, y + 4.5); ctx.lineTo(width - pad, y + 4.5); ctx.stroke();
 
-      if (LOGO_OK) {
-        const h = 26, w2 = h * (LOGO.width / Math.max(1, LOGO.height));
-        ctx.globalAlpha = 0.9;
-        ctx.drawImage(LOGO, pad, y + 12, w2, h);
-        ctx.globalAlpha = 1;
-      }
-
       state.rects = [];
       ctx.textBaseline = "middle";
-      ctx.font = "600 10px system-ui, sans-serif";
-      let x = width - pad;
-      const botones = [];
-      if (CANAL) botones.push(["YouTube", CANAL]);
-      botones.push(["GitHub", REPO]);
-      for (const [etq, url] of botones.reverse()) {
-        const bw = Math.ceil(ctx.measureText(etq).width) + 20;
-        x -= bw;
-        ctx.fillStyle = CHIP_BG;
-        roundRect(ctx, x, y + 14, bw, 22, 4); ctx.fill();
-        ctx.fillStyle = "#9fb0b2"; ctx.textAlign = "center";
-        ctx.fillText(etq, x + bw / 2, y + 25.5);
-        state.rects.push({ x, y: y + 14, w: bw, h: 22, url });
-        x -= 6;
+      const by = y + 13;
+
+      const izq = pad;
+      if (CANAL) {
+        pintarBoton(ctx, izq, by, "yt", "#ff0033", "YT");
+        state.rects.push({ x: izq, y: by, w: bw, h: bh, url: CANAL });
+      }
+
+      const der = width - pad - bw;
+      pintarBoton(ctx, der, by, "gh", "#d7e0e1", "GH");
+      state.rects.push({ x: der, y: by, w: bw, h: bh, url: REPO });
+
+      // El texto solo entra si de verdad cabe entre los dos botones. Si el
+      // nodo esta estrecho se calla en vez de salirse o pisar los iconos.
+      const desde = (CANAL ? izq + bw : izq) + 12;
+      const hasta = der - 12;
+      ctx.font = "11px system-ui, sans-serif";
+      if (hasta - desde >= ctx.measureText(PIE_TEXTO).width) {
+        ctx.fillStyle = "#8b9a9b"; ctx.textAlign = "left";
+        ctx.fillText(PIE_TEXTO, desde, by + bh / 2 + 0.5);
       }
       ctx.restore();
     },
@@ -3511,7 +3674,8 @@ app.registerExtension({
           aviso: "", token: false,
         };
 
-        const pestanas = addPestanas(this, "familia", ["Todas"].concat(MODELOS_CATALOGO));
+        const pestanas = addPestanas(
+          this, "familia", ["Todas"].concat(MODELOS_CATALOGO), BANDA_LOGO);
         this.widgets.splice(this.widgets.indexOf(pestanas), 1);
         this.widgets.unshift(pestanas);
 

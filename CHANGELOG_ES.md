@@ -8,6 +8,17 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.5.2] - 2026-09-20
+
+### Añadido
+
+- Las recetas que dejan huecos se pueden rellenar hablando en español. La receta pide su texto en inglés, pero casi nadie que use esto piensa en inglés mientras describe su plano. Dos botones nuevos en esa ventana: uno copia una instrucción que le pide a tu IA que te entreviste en español y te devuelva solo los valores en inglés, y el otro lee esa respuesta y la reparte por los campos. El pegado se queda con las líneas `{HUECO} = valor` e ignora lo que la IA escriba alrededor.
+- El pie del nodo Modelos lleva los enlaces al canal y al repositorio como botones con su marca, dibujados con `Path2D` en vez de imágenes: no hay archivo que cargar y se ven nítidos a cualquier zoom. Entre los dos queda la petición de seguir el canal, que desaparece sola si el nodo se estrecha en lugar de pisar los iconos.
+
+### Corregido
+
+- La cabecera del nodo Modelos ya no se pisa. El logo del cuerpo ocupa una banda fija y las pestañas empezaban pegadas al borde superior, así que pasaban por debajo del logo y del slot de salida `info`. Ahora las pestañas reservan esa banda. Solo le pasaba a este nodo: los demás que combinan logo y pestañas tienen bastantes salidas como para que los widgets ya empezaran más abajo.
+
 ## [1.5.1] - 2026-09-20
 
 ### Añadido
