@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-09-20
+
+### Added
+
+- **Armar el prompt con la receta elegida**: a button that writes the whole prompt. Pick a shot, answer who is in it, where they are, what is behind them and what changes in them, and the node fills the six sections in MiniMax's format — identity lock, `[reference generation]` summary, retention analysis, style line, shot, soundscape and music — with the camera, the opening framing and the subject action the shot was verified with already in place. Recipes that need a second or third character, or details of their own, ask for them in the same window. Fields come prefilled from whatever the node already holds, and each carries an example.
+
 ## [1.4.4] - 2026-09-20
 
 ### Changed

@@ -8,6 +8,12 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.5.0] - 2026-09-20
+
+### Añadido
+
+- **Armar el prompt con la receta elegida**: un botón que escribe el prompt entero. Eliges la toma, respondes quién sale, dónde está, qué hay detrás y qué le pasa por dentro, y el nodo rellena las seis secciones con el formato de MiniMax —bloqueo de identidad, resumen con `[reference generation]`, análisis de retención, frase de estilo, plano, sonido y música— con la cámara, el encuadre de apertura y la acción con que se verificó esa toma ya puestos. Las recetas que necesitan un segundo o tercer personaje, o datos propios, los piden en la misma ventana. Los campos llegan rellenados con lo que ya hubiera en el nodo, y cada uno trae un ejemplo.
+
 ## [1.4.4] - 2026-09-20
 
 ### Cambiado

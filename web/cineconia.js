@@ -1692,19 +1692,22 @@ const TOMAS_H3 = [
    "The instant the zoom lands the camera is locked off again in the tight close-up and the framing does not change for the remainder of the shot. " +
    "{His} reaction begins only after the zoom has landed: {his} eyes widen and focus, {his} brow lifts and tightens, {his} lips part slightly, and {he} settle{s} into a held, wide-eyed stillness for the rest of the shot.",
    "plano general", "altura de los ojos", "zoom in", 124,
-   "abre en plano general; la reacción llega cuando el zoom aterriza"],
+   "abre en plano general; la reacción llega cuando el zoom aterriza",
+   {nombre: "crash zoom", accion: "standing still", encuadre: "a wide shot", gear: "an ARRI Alexa with a zoom lens, locked off on a tripod", musica: "Silence through the opening. One sharp percussive stab on a single frame, then silence again."}],
   ["yo-yo zoom", "Yo-yo zoom",
    "A tight close-up fills the frame with <Subject 1>'s face. {He} {is} standing in place, " + H3_QUIETO + ". " +
    "The camera begins in a tight close-up on <Subject 1>'s face, then zooms out, starting slowly and accelerating harder and harder as it goes until the whole view smears into motion blur and {he} {has} fallen away into the far distance, a tiny figure in the middle of {his} surroundings. " +
    "The camera holds there for about a second, then zooms back in with large amplitude at fast speed, snapping across the entire distance in a single instant to land tight on {his} face again exactly as it began. " +
    "<Subject 1> holds {his} ground throughout.",
    "primer plano", "altura de los ojos", "zoom out", 192,
-   "tres fases: necesita 192 fotogramas (8 s)"],
+   "tres fases: necesita 192 fotogramas (8 s)",
+   {nombre: "yoyo zoom", accion: "standing still", encuadre: "a tight close-up", gear: "an ARRI Alexa with a zoom lens, locked off on a tripod", musica: "A tone that bends downward and stretches as everything races away, then snaps back up to pitch in one beat."}],
   ["dolly zoom", "Dolly zoom",
    "A waist-up medium close-up frames <Subject 1> standing completely still. " +
    "The camera pushes in while simultaneously zooming out, so that <Subject 1>'s size and position in frame stay exactly constant throughout, while {BACKGROUND_ELEMENTS} behind {him} recede, shrink, and spread apart into much greater depth as the lens's focal length changes.",
    "plano medio", "altura de los ojos", "acercarse", 124,
-   "fondo con estructura: nombra 3 o 4 cosas detrás del sujeto"],
+   "fondo con estructura: nombra 3 o 4 cosas detrás del sujeto",
+   {nombre: "dolly zoom", accion: "standing still", encuadre: "a waist-up medium close-up", gear: "an ARRI Alexa with a Cooke S4 lens at 50mm", musica: "A single sustained low string note swells partway through the shot, then fades toward the end."}],
   // La pagina ensena una version de fiesta con giros; su receta midio que la
   // caminata recta mantiene mejor el rostro fijo, que es la toma entera.
   ["snorricam", "Snorricam",
@@ -1712,13 +1715,15 @@ const TOMAS_H3 = [
    "<Subject 1> walks steadily forward while the camera, fixed rigidly to {him}, holds {his} face locked dead-centre at exactly the same size and position throughout; the whole background lurches, sways and swings behind {him} with every stride. " +
    "{He} never once look{s} at the camera.",
    "plano medio", "altura de los ojos", "seguimiento", 124,
-   "camina en línea recta, sin giros; no nombres el arnés en el estilo"],
+   "camina en línea recta, sin giros; no nombres el arnés en el estilo",
+   {nombre: "snorricam shot", accion: "walking steadily forward", encuadre: "a waist-up medium close-up", gear: "an ARRI Alexa Mini with a wide prime", musica: "A relentless two-note pulse locked exactly to the stride, one hit per footfall."}],
   ["rack focus", "Rack focus",
    "A medium-wide shot holds two distinct depth planes at once: <Subject 1> close to camera and the rest of the scene opening out well behind {him}. {He} {is} standing in place, " + H3_QUIETO + ". " +
    "The camera holds a static shot. <Subject 1> stands close to camera in sharp focus while <Subject 2> and <Subject 3> stand talking together far behind {him}, soft and unfocused. " +
    "<Subject 1> slowly turns {his} head to look back at them, and the focus racks from {his} face to the two of them - {he} fall{s} into soft blur exactly as they resolve sharply.",
    "plano americano", "altura de los ojos", "fijo", 124,
-   "tres personajes: <Picture 2> y <Picture 3> conectadas"],
+   "tres personajes: <Picture 2> y <Picture 3> conectadas",
+   {nombre: "rack focus", accion: "standing still", encuadre: "a medium-wide shot holding two depth planes", gear: "an ARRI Alexa with a 75mm prime wide open, locked off", musica: "A faint sustained pad that shifts harmony once, midway through the shot.", sujetos: 3}],
   ["pantalla dividida", "Pantalla dividida",
    "The frame is divided into three equal vertical panels side by side, separated by thin black gutters. " +
    "The left panel holds <Subject 1>, {ACTION}. Every panel is locked off and completely static; nothing pans, zooms or moves at any point. " +
@@ -1727,51 +1732,60 @@ const TOMAS_H3 = [
    "The right panel stays solid black longer than the centre one and comes on last, showing {PANEL_3_ANGLE}. " +
    "For the remainder of the shot all three panels play together in perfect sync, the same continuous {ACTION_SHORT} at the same instant from three different angles.",
    "sin especificar", "sin especificar", "fijo", 192,
-   "192 fotogramas; describe al personaje sin nombrar los paneles de su lámina"],
+   "192 fotogramas; describe al personaje sin nombrar los paneles de su lámina",
+   {nombre: "three-panel split screen", accion: "in a three-panel split screen", encuadre: "a three-panel split screen", gear: "an ARRI Alexa Mini with a 35mm prime, locked off", musica: "A tight rhythmic pulse locked to the action, a new layer entering each time another panel opens.", sinLugar: true}],
   ["whip pan", "Whip pan",
    "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
    "The camera starts framed on <Subject 1>, then whip pans right away from {him} and lands on <Subject 2> standing further away in the same place, everything between them smearing into streaked horizontal motion blur through the middle of the move, the frame settling and resolving sharply on <Subject 2>'s face. " +
    "The shot ends held on <Subject 2>, not on <Subject 1>.",
    "plano medio", "altura de los ojos", "panoramica derecha", 124,
-   "dos personajes: <Picture 2> conectada"],
+   "dos personajes: <Picture 2> conectada",
+   {nombre: "whip pan", accion: "standing still", encuadre: "waist-up medium close-ups", gear: "an ARRI Alexa Mini with a Zeiss Ultra Prime 35mm, on a fluid-head tripod", musica: "A single sustained low string note swells partway through the shot, then fades toward the end.", sujetos: 2}],
   ["ángulo holandés", "Ángulo holandés",
    "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
    "The camera rolls counterclockwise into a canted dutch angle and holds there, the horizon tilted, <Subject 1> off-axis.",
    "plano medio", "sin especificar", "giro antihorario", 124,
-   "necesita un horizonte o verticales visibles"],
+   "necesita un horizonte o verticales visibles",
+   {nombre: "dutch angle shot", accion: "standing still", encuadre: "a waist-up medium close-up", gear: "an ARRI Alexa with a 35mm prime, on a tripod with the head canted over", musica: "A single sustained low string note swells partway through the shot, then fades toward the end."}],
   ["super dolly in", "Super dolly in",
    "An extreme wide shot looks straight down {THE_SPACE}, {NEAR_OBJECTS} rising close at the left and right edges of frame, and places <Subject 1> small and distant at the far end of it, standing in place, " + H3_QUIETO + ". " +
    "The camera pushes in with large amplitude at fast speed, charging the entire length of {THE_SPACE} toward {him}: {NEAR_OBJECTS} sweep outward past the edges of frame and out of shot as the camera passes them, {FURTHER_OBJECTS} rush by on both sides and {GROUND} streams underneath, and the move ends in a tight close-up with {his} face filling the frame.",
    "gran plano general", "altura de los ojos", "acercarse", 124,
-   "gran plano general con dos objetos cerca del objetivo"],
+   "gran plano general con dos objetos cerca del objetivo",
+   {nombre: "super dolly in", accion: "standing still", encuadre: "an extreme wide shot", gear: "an ARRI Alexa with a 35mm prime, on a dolly running on track", musica: "A low sustained bass tone climbing steadily in pitch and volume, cut off dead on the final frame."}],
   ["eyes in", "Eyes in",
    "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
    "The camera pushes in with large amplitude at slow speed toward <Subject 1>'s face and keeps going past it until {his} right eye fills the entire frame edge to edge, the iris and pupil filling the view.",
    "plano medio", "altura de los ojos", "acercarse", 124,
-   "el destino es el ojo derecho"],
+   "el destino es el ojo derecho",
+   {nombre: "slow push in to the eyes", accion: "standing still", encuadre: "a waist-up medium close-up", gear: "an ARRI Alexa with a 75mm prime, on a slider for a slow push", musica: "A high sustained string that tightens and narrows as the shot goes on, thinning to a single thread."}],
   ["aerial pullback", "Aerial pullback",
    "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
    "The camera pulls out with large amplitude at fast speed while pedestalling up, rising and retreating until <Subject 1> is a small lone figure far below and the whole {LOCATION} opens out around {him}.",
    "plano medio", "altura de los ojos", "alejarse", 124,
-   "abre cerrado; el lugar se abre al final"],
+   "abre cerrado; el lugar se abre al final",
+   {nombre: "aerial pullback", accion: "standing still", encuadre: "a waist-up medium close-up", gear: "a RED V-Raptor with a wide prime, flown on a drone", musica: "A single sustained low string note swells partway through the shot, then fades toward the end."}],
   ["cámara en mano", "Cámara en mano",
    "A waist-up medium close-up frames <Subject 1> running, " + H3_CORRE + ". " +
    "The camera shakes strongly at fast speed while performing a tracking shot alongside <Subject 1> as {he} run{s}, the frame lurching and correcting with every stride. " +
    "<Subject 1> runs with urgent purpose, lips pressed closed and jaw set.",
    "plano medio", "altura de los ojos", "camara en mano fuerte", 124,
-   "el sujeto tiene que correr"],
+   "el sujeto tiene que correr",
+   {nombre: "handheld shot", accion: "running", encuadre: "a waist-up medium close-up", gear: "an ARRI Alexa Mini with a 35mm prime, handheld and running alongside", musica: "A single sustained low string note swells partway through the shot, then fades toward the end."}],
   ["órbita 360°", "Órbita 360°",
    "A waist-up medium close-up frames <Subject 1> standing in place, " + H3_QUIETO + ". " +
    "The camera performs an arc shot around <Subject 1> with large amplitude at fast speed, sweeping a complete circle around {him} and coming back to the front. " +
    "<Subject 1> stays where {he} {is} through the sweep, turning {his} head slightly to keep the camera in view.",
    "plano medio", "altura de los ojos", "orbita", 124,
-   "sujeto quieto; una sola lámina de personaje, sin imagen del escenario"],
+   "sujeto quieto; una sola lámina de personaje, sin imagen del escenario",
+   {nombre: "360 orbit", accion: "standing still", encuadre: "a waist-up medium close-up", gear: "an ARRI Alexa Mini with a Zeiss Ultra Prime 35mm, on a gimbal circling the subject", musica: "A circling arpeggio that completes exactly one full turn and lands back on the note it started on."}],
   ["grúa ascendente", "Grúa ascendente",
    "A waist-up medium close-up frames <Subject 1> running steadily, " + H3_CORRE + ". " +
    "The camera starts low at <Subject 1>'s feet as {he} run{s}, then performs a tracking shot with large amplitude at fast speed, pedestalling up and tilting down to follow {him} from high overhead while {he} stay{s} centred and sharp in frame. " +
    "<Subject 1> runs at a steady rhythm with {his} lips closed and {his} jaw relaxed.",
    "plano medio", "altura de los ojos", "grua arriba", 124,
-   "el sujeto tiene que correr"],
+   "el sujeto tiene que correr",
+   {nombre: "crane shot over the head", accion: "running", encuadre: "a waist-up medium close-up", gear: "a RED V-Raptor with a 35mm prime, flown on a drone tracking alongside", musica: "A single held note that opens outward into a wide major chord across the shot."}],
 ];
 
 const PRONOMBRES_H3 = {
@@ -1954,8 +1968,163 @@ function aplicarTomaH3(node, nombre) {
   });
 }
 
+// --- armar el prompt entero desde la escena --------------------------------
+//
+// El mismo andamiaje que LoopForge rellena en su generador: la receta pone la
+// camara, el encuadre y la accion; esto pone quien sale, donde esta y que le
+// pasa por dentro. Las seis secciones salen con el formato de MiniMax.
+
+const CAMPOS_ESCENA = [
+  ["personaje", "Quién sale", "Pelo, barba, piel y cada prenda. Se escribe detrás de «<Subject 1> is».",
+   "the adult man in <Picture 1>: dark side-swept hair and a full dark beard, wearing a grey collared knit pullover, dark charcoal trousers and brown shoes"],
+  ["lugar", "Dónde pasa", "El sitio en pocas palabras. Va en el resumen.",
+   "a quiet private study"],
+  ["sitio", "Dónde está exactamente", "Con su preposición. Va dentro de la frase del plano.",
+   "on the worn rug in the middle of the study"],
+  ["alrededor", "Qué hay detrás", "Tres o cuatro cosas concretas: son contra lo que se mide el movimiento.",
+   "a wall of dark bookshelves, a framed photograph and a tall bright window"],
+  ["actuacion", "Qué le pasa por dentro", "Una expresión que CAMBIA durante el plano. Un estado fijo sale congelado.",
+   "expression eases from quiet preoccupation into calm, a slow private smile spreading by the end"],
+  ["luz", "Luz", "", "soft daylight from a tall window"],
+  ["paleta", "Paleta", "", "a restrained, warm-neutral palette"],
+  ["sonido", "Sonido del lugar", "Ambiente y sonidos de la acción. Nunca nombres la cámara ni el movimiento.",
+   "quiet room tone, faint traffic beyond the window, the soft rustle of his pullover"],
+  ["musica", "Música de fondo", "La que no suena dentro de la escena, o N/A.", ""],
+];
+
+/** Texto de las seis secciones a partir de la escena y la receta. */
+function promptDesdeEscena(receta, v, pr) {
+  const ficha = receta[8] || {};
+  const sujetos = ficha.sujetos || 1;
+  const may = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const fin = (s) => (/[.!?]$/.test(s.trim()) ? s.trim() : s.trim() + ".");
+
+  const definiciones = [`<Subject 1> is ${fin(v.personaje)} ${may(pr.his)} exact facial structure, ` +
+    `features and proportions stay identical to <Picture 1> in every frame.`];
+  const retencion = [`<Subject 1> (appears in [Shot 1]): fully_preserved - ${pr.his} face, identity ` +
+    `and clothing are held identical to <Picture 1> in every frame with zero drift.`];
+  for (let n = 2; n <= sujetos; n++) {
+    definiciones.push(`<Subject ${n}> is ${fin(v["personaje" + n] || "the second person in <Picture " + n + ">")} ` +
+      `Their exact facial structure, features and proportions stay identical to <Picture ${n}> in every frame.`);
+    retencion.push(`<Subject ${n}> (appears in [Shot 1]): fully_preserved - their face, identity and ` +
+      `clothing are held identical to <Picture ${n}> in every frame with zero drift.`);
+  }
+
+  const resumen = `[reference generation] The target video shows <Subject 1> ${ficha.accion} in ` +
+    `${v.lugar}, in ${ficha.encuadre}, as the camera performs a ${ficha.nombre}.`;
+
+  const estilo = `The target video is live-action and cinematic, shot on ${ficha.gear}, ${v.luz}, ${v.paleta}.`;
+  const plano = ficha.sinLugar
+    ? `[Shot 1] <Subject 1> ${fin(v.actuacion)}`
+    : `[Shot 1] ${may(pr.he)} ${v.sitio}, with ${v.alrededor} behind ${pr.him}. ` +
+      `As the shot plays out, <Subject 1>'s ${fin(v.actuacion)}`;
+
+  return {
+    subject_definitions: definiciones.join("\n"),
+    summary: resumen,
+    retention_analysis: retencion.join("\n"),
+    detailed_description: estilo + "\n" + plano,
+    overall_soundscape: fin(v.sonido),
+    non_diegetic_music: (v.musica || "").trim() || "N/A",
+  };
+}
+
+/** Lo que ya hay escrito en el nodo, para no empezar de cero. */
+function escenaDelNodo(node, ficha) {
+  const lee = (n) => String(findWidget(node, n)?.value || "").trim();
+  const def = lee("subject_definitions").split("\n")[0] || "";
+  const desc = lee("detailed_description");
+  const actuacion = /As the shot plays out, <Subject 1>'s ([^]*?)(?:\n|$)/i.exec(desc);
+  const sitio = /\[Shot\s*1\][^.]*?\b(?:He|She|They|<Subject\s*1>)\s+([^,.]*)/i.exec(desc);
+  return {
+    personaje: def.replace(/^<Subject\s*1>\s+is\s+/i, "").replace(/\s*(?:His|Her|Their) exact facial[^]*$/i, "").trim(),
+    lugar: lugarDelResumen(node),
+    sitio: sitio ? sitio[1].trim() : "",
+    alrededor: loQueHayDetras(node),
+    actuacion: actuacion ? actuacion[1].replace(/\.$/, "").trim() : "",
+    luz: "", paleta: "",
+    sonido: lee("overall_soundscape"),
+    musica: lee("non_diegetic_music") === "N/A" ? "" : lee("non_diegetic_music"),
+  };
+}
+
 /** Un campo por hueco, con su ayuda y la propuesta ya escrita dentro. */
 function ventanaHuecos(nombre, huecos, sugeridos, alAceptar) {
+  ventanaCampos(nombre + ": completa lo que depende de tu escena",
+    "En inglés. Lo propuesto sale de lo que ya escribiste en las seis secciones; " +
+    "cámbialo si no encaja. El resto de la receta no se toca.",
+    huecos.map((h) => ({
+      clave: h, etiqueta: h,
+      pista: HUECOS_H3[h]?.ayuda || "Sustitúyelo por algo de tu escena.",
+      ejemplo: HUECOS_H3[h]?.ejemplo || "", valor: sugeridos[h] || "",
+    })),
+    alAceptar, "Dejar los huecos", "Escribir en Cámara");
+}
+
+/**
+ * Pregunta la escena y escribe las seis secciones, la camara y los chips.
+ * Es el camino corto: elegir receta, decir quien sale y donde, y generar.
+ */
+function armarEscenaH3(node, nombre) {
+  const receta = TOMAS_H3.find(([, valor]) => valor === nombre);
+  if (!receta || nombre === "libre") return "⚠ Elige antes una receta de cámara";
+  const ficha = receta[8] || {};
+  const pr = pronombresH3(node);
+  const camara = conjugarTomaH3(receta[2], pr);
+  const ya = escenaDelNodo(node, ficha);
+
+  const campos = CAMPOS_ESCENA.map(([clave, etiqueta, pista, ejemplo]) => ({
+    clave, etiqueta, pista, ejemplo,
+    valor: ya[clave] || (clave === "musica" ? ficha.musica || "" : ""),
+  }));
+  for (let n = 2; n <= (ficha.sujetos || 1); n++) {
+    campos.splice(n - 1, 0, {
+      clave: "personaje" + n, etiqueta: "Quién sale · <Subject " + n + ">",
+      pista: "Esta receta necesita otro personaje, con su lámina en referencia_" + n + ".",
+      ejemplo: "the young woman in <Picture " + n + ">: shoulder-length dark hair, a cream wool sweater",
+      valor: "",
+    });
+  }
+  for (const h of huecosH3(camara)) {
+    campos.push({
+      clave: h, etiqueta: h, pista: HUECOS_H3[h]?.ayuda || "Algo de tu escena.",
+      ejemplo: HUECOS_H3[h]?.ejemplo || "", valor: "",
+    });
+  }
+
+  ventanaCampos(
+    `${nombre}: tu escena`,
+    "En inglés. La receta ya pone la cámara, el encuadre y la acción; esto pone quién sale, " +
+    "dónde está y qué le pasa. Al aceptar se escriben las seis secciones.",
+    campos,
+    (v) => {
+      for (const [clave, , , ejemplo] of CAMPOS_ESCENA) {
+        if (!String(v[clave] || "").trim() && clave !== "musica") v[clave] = ejemplo;
+      }
+      const secciones = promptDesdeEscena(receta, v, pr);
+      for (const [campo, texto] of Object.entries(secciones)) ponerTexto(findWidget(node, campo), texto);
+      let conCamara = camara;
+      for (const h of huecosH3(camara)) {
+        if (String(v[h] || "").trim()) conCamara = conCamara.split(h).join(v[h].trim());
+      }
+      ponerTexto(findWidget(node, "camara"), conCamara);
+      const toma = findWidget(node, "toma_h3");
+      if (toma) toma.value = nombre;
+      for (const [campo, valor] of Object.entries(
+        { plano: receta[3], angulo: receta[4], movimiento: receta[5] })) {
+        const w = findWidget(node, campo);
+        if (w) w.value = valor;
+      }
+      if (node.properties) node.properties.tomasUsadas = [];
+      node.__camara = { hechos: ["escena armada con " + nombre], frase: conCamara };
+      node.setDirtyCanvas?.(true, true);
+    },
+    "Cancelar", "Escribir las seis secciones");
+  return "Completa tu escena en la ventana";
+}
+
+/** Ventana de varios campos de texto, cada uno con su ayuda y su ejemplo. */
+function ventanaCampos(tituloTexto, ayudaTexto, campos, alAceptar, txtCancelar, txtAceptar) {
   const fondo = document.createElement("div");
   fondo.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;" +
     "display:flex;align-items:center;justify-content:center;";
@@ -1964,31 +2133,29 @@ function ventanaHuecos(nombre, huecos, sugeridos, alAceptar) {
     "width:min(760px,92vw);max-height:88vh;overflow:auto;box-shadow:0 12px 48px rgba(0,0,0,.6);" +
     "font-family:system-ui,sans-serif;color:#cfdadb;";
   const titulo = document.createElement("div");
-  titulo.textContent = nombre + ": completa lo que depende de tu escena";
+  titulo.textContent = tituloTexto;
   titulo.style.cssText = "font-size:15px;font-weight:600;margin-bottom:4px;color:#e8eeee;";
   const ayuda = document.createElement("div");
-  ayuda.textContent = "En inglés. Lo propuesto sale de lo que ya escribiste en las seis secciones; " +
-    "cámbialo si no encaja. El resto de la receta no se toca.";
+  ayuda.textContent = ayudaTexto;
   ayuda.style.cssText = "font-size:12px;color:#8b9a9b;margin-bottom:14px;";
   caja.append(titulo, ayuda);
 
-  const campos = {};
-  for (const h of huecos) {
-    const def = HUECOS_H3[h] || {};
+  const cajas = {};
+  for (const def of campos) {
     const etiqueta = document.createElement("div");
-    etiqueta.textContent = h;
+    etiqueta.textContent = def.etiqueta;
     etiqueta.style.cssText = "font-size:12px;font-weight:600;color:" + ACCENT + ";margin-top:12px;";
     const pista = document.createElement("div");
-    pista.textContent = def.ayuda || "Sustitúyelo por algo de tu escena.";
+    pista.textContent = def.pista || "";
     pista.style.cssText = "font-size:11px;color:#8b9a9b;margin:2px 0 4px;";
     const campo = document.createElement("textarea");
     campo.rows = 2;
-    campo.value = sugeridos[h] || "";
+    campo.value = def.valor || "";
     campo.placeholder = def.ejemplo ? "por ejemplo: " + def.ejemplo : "";
     campo.style.cssText = "width:100%;background:#161d1f;color:#dfe8e8;border:1px solid #3a4547;" +
       "border-radius:6px;padding:8px;font-family:Consolas,monospace;font-size:12px;" +
       "resize:vertical;box-sizing:border-box;";
-    campos[h] = campo;
+    cajas[def.clave] = campo;
     caja.append(etiqueta, pista, campo);
   }
 
@@ -2002,13 +2169,13 @@ function ventanaHuecos(nombre, huecos, sugeridos, alAceptar) {
                  : "background:#2b3335;color:#cfdadb;");
     return b;
   };
-  const cancelar = btn("Dejar los huecos", false);
-  const aceptar = btn("Escribir en Cámara", true);
+  const cancelar = btn(txtCancelar || "Cancelar", false);
+  const aceptar = btn(txtAceptar || "Aceptar", true);
   pie.append(cancelar, aceptar);
   caja.append(pie);
   fondo.append(caja);
   document.body.append(fondo);
-  Object.values(campos)[0]?.focus();
+  Object.values(cajas)[0]?.focus();
 
   const cerrar = () => fondo.remove();
   cancelar.onclick = cerrar;
@@ -2016,7 +2183,7 @@ function ventanaHuecos(nombre, huecos, sugeridos, alAceptar) {
   fondo.onkeydown = (e) => { if (e.key === "Escape") cerrar(); e.stopPropagation(); };
   aceptar.onclick = () => {
     const valores = {};
-    for (const [h, c] of Object.entries(campos)) valores[h] = c.value;
+    for (const [k, c] of Object.entries(cajas)) valores[k] = c.value;
     cerrar();
     alAceptar(valores);
   };
@@ -3748,8 +3915,11 @@ app.registerExtension({
         // rellena queda editable y no se aplana a un unico movimiento.
         const tituloRecetas = grupo(addTitulo(this, "plano", "recetas de cámara · MiniMax H3",
                         "Elige una trayectoria completa; comprueba que tu escena tenga los sujetos necesarios."), "h3");
-        grupo(reubicar(this, addChips(this, "toma_h3",
+        const chipsRecetas = grupo(reubicar(this, addChips(this, "toma_h3",
           TOMAS_H3.map(([etiqueta, valor]) => [etiqueta, valor]), null, null, null), tituloRecetas.name), "h3");
+        grupo(reubicar(this, addBoton(this, "🎬  Armar el prompt con la receta elegida",
+          (nd) => armarEscenaH3(nd, String(findWidget(nd, "toma_h3")?.value || "libre"))),
+          chipsRecetas.name), "h3");
 
         // el bloque de camara: controles simples para crear una toma libre
         grupo(addTitulo(this, "plano", "cámara", "Elige la toma. Se escribe sola, en inglés."), "camara");

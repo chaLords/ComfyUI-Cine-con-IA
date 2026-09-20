@@ -4,7 +4,9 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const source = fs.readFileSync(path.join(__dirname, '../web/cineconia.js'), 'utf8');
+// En Windows el archivo puede estar con CRLF: los cortes de abajo buscan \n.
+const source = fs.readFileSync(path.join(__dirname, '../web/cineconia.js'), 'utf8')
+  .replace(/\r\n/g, '\n');
 const helpers = source.slice(source.indexOf('async function consultarPrompt('),
   source.indexOf('/**\n * Boton dibujado', source.indexOf('async function consultarPrompt(')));
 const cameraHelpers = source.slice(source.indexOf('const PLANOS_EN = {'),
@@ -137,6 +139,37 @@ test('a scene written for another shot proposes nothing rather than nonsense', (
   assert.equal(sugeridos['{ACTION_SHORT}'], 'standing');
   assert.equal(vm.runInContext('gerundio', context)('<Subject'), '');
   assert.equal(vm.runInContext('limpiarAccion', context)('sits down in <Subject 2>.'), '');
+});
+
+test('a scene builds the six sections in the verified shape', () => {
+  const context = setupRecipes();
+  const receta = vm.runInContext("TOMAS_H3.find((r) => r[1] === 'Órbita 360°')", context);
+  const seis = vm.runInContext('promptDesdeEscena', context)(receta, {
+    personaje: 'the adult man in <Picture 1>: dark side-swept hair and a full dark beard, wearing a grey knit pullover',
+    lugar: 'a quiet private study',
+    sitio: 'stands on the worn rug in the middle of the study',
+    alrededor: 'a wall of dark bookshelves and a tall bright window',
+    actuacion: 'expression eases from preoccupation into calm',
+    luz: 'soft daylight from a tall window', paleta: 'a warm-neutral palette',
+    sonido: 'quiet room tone and faint traffic beyond the window', musica: '',
+  }, vm.runInContext('PRONOMBRES_H3', context).el);
+
+  assert.match(seis.subject_definitions, /^<Subject 1> is the adult man in <Picture 1>: .*pullover\. His exact facial structure, features and proportions stay identical to <Picture 1> in every frame\.$/);
+  assert.equal(seis.summary, '[reference generation] The target video shows <Subject 1> standing still in ' +
+    'a quiet private study, in a waist-up medium close-up, as the camera performs a 360 orbit.');
+  assert.match(seis.retention_analysis, /fully_preserved - his face, identity and clothing are held identical to <Picture 1>/);
+  assert.match(seis.detailed_description, /^The target video is live-action and cinematic, shot on .*gimbal circling the subject, soft daylight from a tall window, a warm-neutral palette\.\n\[Shot 1\] He stands on the worn rug in the middle of the study, with a wall of dark bookshelves and a tall bright window behind him\. As the shot plays out, <Subject 1>'s expression eases from preoccupation into calm\.$/);
+  assert.equal(seis.non_diegetic_music, 'N/A');
+
+  // La pantalla dividida describe sus paneles: su plano no lleva lugar aparte.
+  const split = vm.runInContext("TOMAS_H3.find((r) => r[1] === 'Pantalla dividida')", context);
+  const seisSplit = vm.runInContext('promptDesdeEscena', context)(split,
+    {personaje: 'the man in <Picture 1>', lugar: 'a dim study at night', sitio: 'x', alrededor: 'y',
+     actuacion: 'writes steadily throughout, pausing once to read', luz: 'warm lamplight',
+     paleta: 'a muted palette', sonido: 'the scratch of a pen', musica: ''},
+    vm.runInContext('PRONOMBRES_H3', context).el);
+  assert.match(seisSplit.detailed_description, /\[Shot 1\] <Subject 1> writes steadily throughout, pausing once to read\.$/);
+  assert.doesNotMatch(seisSplit.detailed_description, /behind him/);
 });
 
 test('H3 recipes that depend on the scene expose their slots', () => {
