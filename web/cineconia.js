@@ -1903,6 +1903,13 @@ function loQueHayDetras(node) {
   return m ? m[1].trim() : "";
 }
 
+/** La toma que el resumen dice que se rueda, si la nombra. */
+function tomaDelResumen(node) {
+  const s = String(findWidget(node, "summary")?.value || "");
+  const m = /as the camera performs (?:a|an)\s+([^.,\n]+)/i.exec(s);
+  return m ? m[1].trim() : "";
+}
+
 /** El lugar que nombra el resumen, sin su articulo. */
 function lugarDelResumen(node) {
   const s = String(findWidget(node, "summary")?.value || "");
@@ -3970,6 +3977,16 @@ app.registerExtension({
               `⚠ ${modoToma}: completa en Cámara ${huecos.join(" ")}`,
               HUECOS_H3[huecos[0]]?.ayuda || cortar(mano, 58),
               "vuelve a pulsar la receta para que te los pregunte",
+            ];
+            // Cambiar de receta deja el resto del prompt describiendo la toma
+            // anterior, y el modelo obedece al conjunto: un split screen viejo
+            // parte en tres cualquier receta nueva.
+            const otra = tomaDelResumen(nd);
+            const ficha = TOMAS_H3.find(([, v]) => v === modoToma)?.[8];
+            if (otra && ficha && otra !== ficha.nombre) return [
+              `⚠ el resto del prompt todavía describe: ${otra}`,
+              "las seis secciones mandan tanto como la cámara",
+              "pulsa 🎬 Armar el prompt con la receta elegida",
             ];
             if (loraTurbo()) return [
               `⚠ ${modoToma}: hay una LoRA turbo cargada`,

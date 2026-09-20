@@ -172,6 +172,17 @@ test('a scene builds the six sections in the verified shape', () => {
   assert.doesNotMatch(seisSplit.detailed_description, /behind him/);
 });
 
+test('the summary tells which shot the rest of the prompt still describes', () => {
+  const context = setupRecipes();
+  const leer = vm.runInContext('tomaDelResumen', context);
+  const conResumen = (texto) => ({widgets: [{name: 'summary', value: texto}]});
+  assert.equal(leer(conResumen('[reference generation] The target video shows <Subject 1> seated at a ' +
+    'desk in a dim study at night, in a three-panel split screen, as the camera performs a ' +
+    'three-panel split screen.')), 'three-panel split screen');
+  assert.equal(leer(conResumen('... as the camera performs a 360 orbit.')), '360 orbit');
+  assert.equal(leer(conResumen('Un resumen sin esa frase.')), '');
+});
+
 test('H3 recipes that depend on the scene expose their slots', () => {
   const context = setupRecipes();
   const node = recipeNode('<Subject 1> is the woman in <Picture 1>.');

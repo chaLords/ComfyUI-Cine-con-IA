@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.5.1] - 2026-09-20
+
+### Added
+
+- The node warns when the six sections still describe the previous shot. Changing recipe only rewrites the camera box, and the rest of the prompt carries as much weight as the camera: a split screen left in the summary divides the frame in three whatever the new recipe asks for. The warning points at the button that rewrites the sections.
+
 ## [1.5.0] - 2026-09-20
 
 ### Added

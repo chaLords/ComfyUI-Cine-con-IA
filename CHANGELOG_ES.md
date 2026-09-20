@@ -8,6 +8,12 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.5.1] - 2026-09-20
+
+### Añadido
+
+- El nodo avisa cuando las seis secciones siguen describiendo la toma anterior. Cambiar de receta solo reescribe la caja de cámara, y el resto del prompt pesa tanto como ella: una pantalla dividida olvidada en el resumen parte el cuadro en tres pida lo que pida la receta nueva. El aviso señala el botón que reescribe las secciones.
+
 ## [1.5.0] - 2026-09-20
 
 ### Añadido
