@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.4] - 2026-09-20
+
+### Changed
+
+- The split screen warning about a character sheet that names its own panels no longer states it as a cause. The verified render carries the same sentence, so it is a thing to look at in the first result, not a diagnosis. The recipe tests record the retraction.
+
 ## [1.4.3] - 2026-09-20
 
 ### Fixed

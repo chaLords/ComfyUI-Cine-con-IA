@@ -48,9 +48,15 @@ things: backwards, canted from the start, and correct. It is the only one of the
 needed the first result watched and re-run. Changing the seed is enough; the text does not need
 touching.
 
-**A multi-panel plate breaks the split screen.** With a three-panel character sheet wired in, and a
-definition that names its panels, the model renders those panels instead of the shot's three angles.
-For this recipe, describe the character without mentioning panels, or use a single-frame plate.
+**A scene written for another shot does not carry over, and it shows late.** The split screen came
+out right on its own scene and came out broken when it was run over the orbit's scene: the camera
+text ended up describing the armchair instead of the action. The recipe supplies the camera; the
+scene has to be that shot's own.
+
+⚠️ **Unconfirmed:** in that failed render the model painted the character sheet's panels (face,
+front, back) instead of the three angles, which looked like the fault of naming those panels in
+`subject_definitions`. But the render that worked carries the same sentence. Too much differs
+between the two to blame either: watch the first render before rewriting anything.
 
 **The recipe works on a seated subject.** The orbit circles someone sitting in an armchair, as long
 as they are already seated when the shot starts. Put the act of sitting down inside the shot and it

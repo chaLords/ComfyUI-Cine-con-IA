@@ -8,6 +8,12 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.4.4] - 2026-09-20
+
+### Cambiado
+
+- El aviso de la pantalla dividida sobre una lámina que nombra sus propios paneles ya no lo presenta como causa. El render verificado lleva esa misma frase, así que es algo que mirar en el primer resultado, no un diagnóstico. Las pruebas de las recetas recogen la rectificación.
+
 ## [1.4.3] - 2026-09-20
 
 ### Corregido

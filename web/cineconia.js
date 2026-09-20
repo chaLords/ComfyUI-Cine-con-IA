@@ -3806,13 +3806,13 @@ app.registerExtension({
               "suprime casi todo el movimiento de cámara, sea cual sea el texto",
               "quítala en Cargar modelo y usa 20 pasos",
             ];
-            // Una lamina de varios paneles compite con los tres paneles de la
-            // toma: el modelo acaba copiando los de la lamina.
+            // Sospecha, no causa medida: una toma correcta llevaba la misma
+            // frase. Se avisa porque es barato mirarlo en el primer render.
             if (modoToma === "Pantalla dividida"
                 && /\bpanels?\b/i.test(String(findWidget(nd, "subject_definitions")?.value || ""))) return [
-              "⚠ Pantalla dividida: tu lámina también habla de paneles",
-              "el modelo copia los paneles de la lámina en vez de los de la toma",
-              "describe al personaje sin nombrarlos, o usa una lámina de un solo encuadre",
+              "Pantalla dividida: tu lámina también habla de paneles",
+              "mira el primer render: el modelo puede pintar los de la lámina",
+              "si pasa, descríbelo sin nombrarlos o usa una lámina de un encuadre",
             ];
             const receta = TOMAS_H3.find(([, v]) => v === modoToma);
             const d = duracionDelGrafo();

@@ -47,10 +47,16 @@ Es el mismo efecto que LoopForge midió con la lámina de escenario y con las po
 distintas: al revés, inclinado desde el principio, y correcto. Es la única de las catorce que exigió
 mirar el primer resultado y repetir. Cambiar la semilla basta; no hace falta tocar el texto.
 
-**Una lámina de varios paneles rompe la pantalla dividida.** Con una hoja de personaje de tres
-paneles (cara, frente, espalda) conectada, y una definición que los nombra, el modelo pinta esos
-paneles en lugar de los tres ángulos de la toma. Para esta receta, describe al personaje sin
-mencionar los paneles, o usa una lámina de un solo encuadre.
+**Una escena escrita para otra toma no sirve, y se nota tarde.** La pantalla dividida salió
+correcta con su propia escena, y salió rota al lanzarla sobre la escena de la órbita: el texto de
+cámara acabó describiendo el sillón en vez de la acción. La receta pone la cámara; la escena tiene
+que ser la de esa toma.
+
+⚠️ **Sin confirmar:** en ese render fallido el modelo pintó los paneles de la lámina de personaje
+(cara, frente, espalda) en vez de los tres ángulos, y parecía que la culpa era de nombrar esos
+paneles en `subject_definitions`. Pero el render que sí funcionó lleva esa misma frase. Quedan
+demasiadas variables entre los dos para culpar a ninguna: mira el primer render antes de reescribir
+nada.
 
 **La receta funciona con el personaje sentado.** La órbita da la vuelta completa alrededor de alguien
 sentado en un sillón, siempre que ya esté sentado al empezar. Si el plano incluye la acción de
