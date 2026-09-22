@@ -1,0 +1,158 @@
+"""Nodos ComfyUI del optimizador y su sampler consumidor."""
+
+from .optimizer_config import build_optimizer_config
+
+
+def _samplers():
+    try:
+        import comfy.samplers
+        values = list(comfy.samplers.KSampler.SAMPLERS)
+    except Exception:
+        values = []
+    if "res_multistep" not in values:
+        values.insert(0, "res_multistep")
+    return values or ["res_multistep"]
+
+
+def _schedulers():
+    try:
+        import comfy.samplers
+        values = list(comfy.samplers.KSampler.SCHEDULERS)
+    except Exception:
+        values = []
+    if "simple" not in values:
+        values.insert(0, "simple")
+    return values or ["simple"]
+
+
+def _unwrap(output):
+    if output is None:
+        return None
+    if isinstance(output, (tuple, list)):
+        return output[0] if output else None
+    args = getattr(output, "args", None)
+    if args:
+        return args[0]
+    try:
+        return output[0]
+    except Exception:
+        return output
+
+
+def _call_node(node_id, **kwargs):
+    try:
+        import nodes as comfy_nodes
+        cls = comfy_nodes.NODE_CLASS_MAPPINGS.get(node_id)
+    except Exception:
+        cls = None
+    if cls is None:
+        return None
+    execute = getattr(cls, "execute", None)
+    if execute is not None:
+        return _unwrap(execute(**kwargs))
+    function = getattr(cls, "FUNCTION", None)
+    if function:
+        return _unwrap(getattr(cls(), function)(**kwargs))
+    return None
+
+
+class CineH3Optimizer:
+    """Detecta el hardware, aplica un perfil y prepara la ejecucion H3."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "width": ("INT", {"default": 416, "min": 32, "max": 8192, "step": 32}),
+            "height": ("INT", {"default": 736, "min": 32, "max": 8192, "step": 32}),
+            "frames": ("INT", {"default": 192, "min": 1, "max": 4096}),
+            "modo": (["Auto", "Manual", "Advanced"], {"default": "Auto"}),
+            "perfil": (["AUTO", "8 GB", "12 GB", "16 GB", "24 GB", "32 GB"], {"default": "AUTO"}),
+            "calidad": ("INT", {"default": 70, "min": 0, "max": 100}),
+            "detalle": ("INT", {"default": 65, "min": 0, "max": 100}),
+            "movimiento": ("INT", {"default": 65, "min": 0, "max": 100}),
+            "resolucion": ("INT", {"default": 60, "min": 0, "max": 100}),
+            "refinar": ("BOOLEAN", {"default": True}),
+            "ahorro_vram": ("INT", {"default": 50, "min": 0, "max": 100}),
+            "pasos_advanced": ("INT", {"default": 20, "min": 1, "max": 100}),
+            "sampler_advanced": (_samplers(), {"default": "res_multistep"}),
+            "scheduler_advanced": (_schedulers(), {"default": "simple"}),
+            "denoise_advanced": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+            "trocear_atencion_advanced": ("INT", {"default": 16, "min": 1, "max": 64}),
+            "trocear_ffn_advanced": ("INT", {"default": 16, "min": 1, "max": 64}),
+            "escala_refinado_advanced": ("FLOAT", {"default": 1.25, "min": 1.0, "max": 4.0, "step": 0.05}),
+            "pasos_refinado_advanced": ([
+                "3 pasos  ·  rapido", "4 pasos  ·  recomendado", "5 pasos  ·  maxima calidad"
+            ], {"default": "4 pasos  ·  recomendado"}),
+        }}
+
+    RETURN_TYPES = ("CINECONIA_H3_CONFIG", "STRING", "INT", "INT", "BOOLEAN", "FLOAT", "STRING", "STRING")
+    RETURN_NAMES = ("config", "perfil_activo", "trocear_atencion", "trocear_ffn", "refinar", "escala_refinado", "pasos_refinado", "info")
+    FUNCTION = "configurar"
+    CATEGORY = "Cine con IA/H3"
+    DESCRIPTION = "Perfiles AUTO/8/12/16/24/32 GB, Memory Planner y modos Auto/Manual/Advanced para H3."
+
+    def configurar(self, width, height, frames, modo, perfil, calidad, detalle,
+                   movimiento, resolucion, refinar, ahorro_vram,
+                   pasos_advanced, sampler_advanced, scheduler_advanced,
+                   denoise_advanced, trocear_atencion_advanced,
+                   trocear_ffn_advanced, escala_refinado_advanced,
+                   pasos_refinado_advanced):
+        config, info = build_optimizer_config(
+            modo, perfil, width, height, frames,
+            calidad, detalle, movimiento, resolucion, refinar, ahorro_vram,
+            pasos_advanced, sampler_advanced, scheduler_advanced,
+            denoise_advanced, trocear_atencion_advanced,
+            trocear_ffn_advanced, escala_refinado_advanced,
+            pasos_refinado_advanced,
+        )
+        return (
+            config, config["profile"], config["attention_chunks"],
+            config["ffn_chunks"], config["refine"], config["refine_scale"],
+            config["refine_steps"], info,
+        )
+
+
+class CineH3OptimizedSampler:
+    """Ejecuta el primer pase con la politica producida por Optimizer."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "model": ("MODEL",),
+            "positivo": ("CONDITIONING",),
+            "latente": ("LATENT",),
+            "config": ("CINECONIA_H3_CONFIG",),
+            "semilla": ("INT", {"default": 833, "min": 0, "max": 0xffffffffffffffff,
+                                "control_after_generate": True}),
+        }}
+
+    RETURN_TYPES = ("LATENT", "STRING")
+    RETURN_NAMES = ("latent", "info")
+    FUNCTION = "render"
+    CATEGORY = "Cine con IA/H3"
+    DESCRIPTION = "Sampler H3 compatible con MODEL/CONDITIONING/LATENT y controlado por CineConIA H3 Optimizer."
+
+    def render(self, model, positivo, latente, config, semilla):
+        if not isinstance(config, dict) or config.get("schema") != "cineconia.h3.optimizer/v1":
+            raise ValueError("Conecta la salida config de CineConIA H3 Optimizer")
+        sigmas = _call_node(
+            "BasicScheduler", model=model, scheduler=config["scheduler"],
+            steps=int(config["steps"]), denoise=float(config["denoise"]),
+        )
+        sampler = _call_node("KSamplerSelect", sampler_name=config["sampler"])
+        guider = _call_node("BasicGuider", model=model, conditioning=positivo)
+        noise = _call_node("RandomNoise", noise_seed=int(semilla))
+        if sigmas is None or sampler is None or guider is None or noise is None:
+            raise RuntimeError("Faltan los nodos de sampleo avanzado del core de ComfyUI")
+        output = _call_node(
+            "SamplerCustomAdvanced", noise=noise, guider=guider,
+            sampler=sampler, sigmas=sigmas, latent_image=latente,
+        )
+        if output is None:
+            raise RuntimeError("El sampleo optimizado H3 fallo")
+        info = (
+            "{} · {} pasos · {} / {} · semilla {} · Memory Planner {}"
+            .format(config["profile"], config["steps"], config["sampler"],
+                    config["scheduler"], semilla, config["planner"]["status"])
+        )
+        return output, info

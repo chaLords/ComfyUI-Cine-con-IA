@@ -9,14 +9,14 @@
 <h1 align="center">ComfyUI · Cine con IA</h1>
 
 <p align="center">
-  <strong>Nueve nodos para rodar vídeo con IA en local, sin convertir el workflow en una maraña.</strong><br>
+  <strong>Nueve nodos estables y cuatro módulos H3 experimentales para rodar vídeo con IA en local.</strong><br>
   Proporción y Tamaño • Duración • Prompt • Cargar modelo • Escena • Render • Escalar y Refinar • Salida • Modelos
 </p>
 
 <p align="center">
   <a href="LICENSE"><img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-blue?style=flat-square"></a>
   <img alt="ComfyUI 0.34.2 o superior" src="https://img.shields.io/badge/ComfyUI-%E2%89%A5%200.34.2-6b46c1?style=flat-square">
-  <img alt="Nueve nodos" src="https://img.shields.io/badge/nodos-9-e08a3c?style=flat-square">
+  <img alt="Nueve nodos estables y cuatro experimentales" src="https://img.shields.io/badge/nodos-9%20%2B%204%20H3-e08a3c?style=flat-square">
   <img alt="Interfaz en español" src="https://img.shields.io/badge/interfaz-espa%C3%B1ol-2ea043?style=flat-square">
   <a href="https://www.youtube.com/@cineconia.oficial"><img alt="Canal de YouTube" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
 </p>
@@ -39,6 +39,9 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 > [!IMPORTANT]
 > Este repositorio contiene los nodos y su interfaz. No incluye ComfyUI, modelos, LoRAs, VAEs ni pesos de interpolación o escalado. El nodo **Modelos** te los descarga a su carpeta con un botón.
 
+> [!CAUTION]
+> La rama `feature/cineconia-h3-nodes` añade cuatro nodos H3 en desarrollo. Sus interfaces y ejecución están implementadas, pero los perfiles de VRAM todavía necesitan renders y benchmarks reales. Consulta [H3 Optimizer v1](docs/H3_OPTIMIZER_V1_ES.md).
+
 ## Qué incluye
 
 | Nodo | Función |
@@ -52,6 +55,10 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 | **Cine con IA · Escalar y Refinar** | Escala el latente de video con un upscaler 3D y realiza un segundo pase de refinado. Incluye perfiles de 3, 4 y 5 pasos y mensajes claros ante falta de VRAM. |
 | **Cine con IA · Salida** | Decodifica video y audio, interpola fotogramas opcionalmente y entrega un objeto `VIDEO`, fotogramas, audio, FPS e información del resultado. |
 | **Cine con IA · Modelos** | Enseña qué archivos necesita cada familia de modelos, marca los que ya tienes en disco y descarga los que falten directamente a su carpeta dentro de `models/`, con progreso y reanudación. |
+| **CineConIA · Scene / Prompt H3** | Separa personajes, acción, lugar, estilo y sonido y produce una escena estructurada para H3. |
+| **CineConIA · Camera Director H3** | Añade encuadre, ángulo, movimiento, lente, profundidad o una receta H3 completa y compila el prompt final de seis secciones. |
+| **CineConIA · H3 Optimizer** | Detecta VRAM, aplica perfiles AUTO/8/12/16/24/32 GB, ejecuta el Memory Planner y entrega una configuración reutilizable. |
+| **CineConIA · H3 Optimized Sampler** | Consume la configuración del Optimizer y ejecuta el primer pase mediante los nodos avanzados del core de ComfyUI. |
 
 ## Funciones destacadas de la interfaz
 

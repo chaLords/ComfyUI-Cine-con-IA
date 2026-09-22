@@ -6,6 +6,22 @@ Sin dependencias externas: solo Python estandar.
 import math
 import re
 
+try:
+    from .cineconia_h3 import (
+        CineCameraDirectorH3,
+        CineH3OptimizedSampler,
+        CineH3Optimizer,
+        CineScenePromptH3,
+    )
+except ImportError:
+    # Los tests cargan nodes.py directamente, fuera del paquete de ComfyUI.
+    from cineconia_h3 import (
+        CineCameraDirectorH3,
+        CineH3OptimizedSampler,
+        CineH3Optimizer,
+        CineScenePromptH3,
+    )
+
 CATEGORY = "Cine con IA"
 
 # Proporciones. El valor es ancho/alto.
@@ -2357,6 +2373,10 @@ NODE_CLASS_MAPPINGS = {
     "CineDuracion": CineDuracion,
     "CinePrompt6": CinePrompt6,
     "CineModelos": CineModelos,
+    "CineH3Optimizer": CineH3Optimizer,
+    "CineH3OptimizedSampler": CineH3OptimizedSampler,
+    "CineScenePromptH3": CineScenePromptH3,
+    "CineCameraDirectorH3": CineCameraDirectorH3,
 }
 
 # Los nombres de CLASE no se tocan nunca: son la llave con la que ComfyUI
@@ -2373,4 +2393,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CineDuracion": "Cine con IA · Duración",
     "CinePrompt6": "Cine con IA · Prompt",
     "CineModelos": "Cine con IA · Modelos",
+    "CineH3Optimizer": "CineConIA · H3 Optimizer",
+    "CineH3OptimizedSampler": "CineConIA · H3 Optimized Sampler",
+    "CineScenePromptH3": "CineConIA · Scene / Prompt H3",
+    "CineCameraDirectorH3": "CineConIA · Camera Director H3",
 }
