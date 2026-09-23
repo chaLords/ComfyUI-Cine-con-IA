@@ -9,6 +9,12 @@ pasada, no cuantas se hagan. Una tarjeta de 8 GB puede dar 30 pasos igual que
 una de 32, solo que tarda mas. Lo que si cambia con la VRAM es el troceo, si
 hay segundo pase y con que escala. Los pasos los decide el usuario con el
 control de calidad.
+
+ESCALERA. La escala del segundo pase crece con la tarjeta de modo que la
+carga de referencia (416x736x192, ajustes guiados por defecto) sube ~1.3x
+por escalon. Junto con CAPACITY de memory_planner.py eso garantiza que el
+preset de tu GPU (y los menores) queden en MARGEN, el de un escalon arriba
+en JUSTO y los de dos o mas en RIESGO. test_h3_ladder.py lo comprueba.
 """
 
 from copy import deepcopy
@@ -40,7 +46,7 @@ PROFILES = {
         "attention_chunks": 24,
         "ffn_chunks": 24,
         "refine": True,
-        "refine_scale": 1.15,
+        "refine_scale": 1.13,
         "refine_steps": "3 pasos  ·  rapido",
         "policy": "ahorro alto y segundo pase moderado",
     },
@@ -52,7 +58,7 @@ PROFILES = {
         "attention_chunks": 20,
         "ffn_chunks": 20,
         "refine": True,
-        "refine_scale": 1.20,
+        "refine_scale": 1.27,
         "refine_steps": "4 pasos  ·  recomendado",
         "policy": "equilibrado: calidad y margen de memoria",
     },
@@ -64,7 +70,7 @@ PROFILES = {
         "attention_chunks": 16,
         "ffn_chunks": 16,
         "refine": True,
-        "refine_scale": 1.25,
+        "refine_scale": 1.44,
         "refine_steps": "4 pasos  ·  recomendado",
         "policy": "calidad: segundo pase conservando margen",
     },
@@ -76,7 +82,7 @@ PROFILES = {
         "attention_chunks": 8,
         "ffn_chunks": 8,
         "refine": True,
-        "refine_scale": 1.50,
+        "refine_scale": 1.60,
         "refine_steps": "5 pasos  ·  maxima calidad",
         "policy": "calidad alta y troceo minimo",
     },

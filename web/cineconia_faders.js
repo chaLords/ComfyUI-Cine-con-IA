@@ -22,6 +22,9 @@ const POMO = "#e8eeee";
 const BORDE_POMO = "#12181a";
 const BARRA_BG = "#20282a";
 const VERDE = "#3f8e63";
+const AMARILLO = "#e4ba55";
+const ROJO_SEM = "#ed6976";
+const COLOR_ESTADO = { SAFE: VERDE, TIGHT: AMARILLO, RISKY: ROJO_SEM };
 const TEXTO_TENUE = "#8b9a9b";
 
 const MONO = "'IBM Plex Mono', Consolas, monospace";
@@ -164,8 +167,22 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
       estado.rects = [];
       let x = PAD, fila = 0;
       const yTop = y + CAB;
+      const ladder = objetivo === "perfil" ? n.__h3Preview?.ladder : null;
+      if (objetivo === "perfil" && esCustom(n)) {
+        ctx.save();
+        const aviso = "• CUSTOM · pulsa el perfil para volver";
+        ctx.font = "9px " + MONO; ctx.textAlign = "right";
+        // tapa la linea de la cabecera detras del texto, para que no lo tache
+        const aw = ctx.measureText(aviso).width + 10;
+        ctx.fillStyle = n.bgcolor || "#172123";
+        ctx.fillRect(width - PAD - aw, y + 2, aw, 12);
+        ctx.fillStyle = ACCENT_CLARO;
+        ctx.fillText(aviso, width - PAD, y + 8);
+        ctx.restore();
+        ctx.font = "11px " + MONO;
+      }
       for (const [etq, val] of items) {
-        const tw = Math.ceil(ctx.measureText(etq).width) + 16;
+        const tw = Math.ceil(ctx.measureText(etq).width) + 16 + (ladder ? 10 : 0);
         if (x + tw > width - PAD && x > PAD) { x = PAD; fila++; }
         const cy = yTop + GAP + fila * (CHIP_H + GAP);
         const on = String(target.value) === String(val) || (objetivo === "modo" && target.value === "Manual" && val === "Auto");
@@ -174,7 +191,18 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
         ctx.fill();
         ctx.fillStyle = on ? CHIP_ON_FG : CHIP_FG;
         ctx.textAlign = "center";
-        ctx.fillText(etq, x + tw / 2, cy + CHIP_H / 2 + 0.5);
+        if (ladder) {
+          // el punto dice, antes de pulsar, si ese preset cabe en tu GPU
+          ctx.beginPath();
+          ctx.arc(x + 9, cy + CHIP_H / 2, 3.2, 0, Math.PI * 2);
+          ctx.fillStyle = COLOR_ESTADO[ladder[val]] || TEXTO_TENUE;
+          ctx.fill();
+          if (on) { ctx.strokeStyle = CHIP_ON_FG; ctx.lineWidth = 1; ctx.stroke(); }
+          ctx.fillStyle = on ? CHIP_ON_FG : CHIP_FG;
+          ctx.fillText(etq, x + 5 + tw / 2, cy + CHIP_H / 2 + 0.5);
+        } else {
+          ctx.fillText(etq, x + tw / 2, cy + CHIP_H / 2 + 0.5);
+        }
         estado.rects.push({ x, y: cy, w: tw, h: CHIP_H, val });
         x += tw + GAP;
       }
@@ -186,11 +214,12 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
       for (const r of estado.rects) {
         if (pos[0] >= r.x && pos[0] <= r.x + r.w && pos[1] >= r.y && pos[1] <= r.y + r.h) {
           const target = findWidget(n, objetivo);
+          const previo = target?.value;
           if (target) {
             target.value = r.val;
             target.callback?.(r.val);
           }
-          alCambiar?.(n, r.val);
+          alCambiar?.(n, r.val, previo);
           n.setDirtyCanvas(true, true);
           return true;
         }
@@ -204,8 +233,18 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
 
 // --- fader ----------------------------------------------------------------
 
-function addFader(node, objetivo, etiqueta, lectura) {
-  const estado = { x0: 0, x1: 0, y: 0, arrastrando: false, desde: 0, hacia: null, t0: 0 };
+/**
+ * Fader atado a un widget INT de 0 a 100.
+ *
+ * Con `abs`, el riel representa el valor EFECTIVO (escala x1.00-x2.00, troceo
+ * 1-56) y no el 0-100 guardado. El perfil elegido define una ventana del riel
+ * -- la franja clara -- y el pomo se mueve dentro de ella. Asi, al cambiar de
+ * preset la ventana se desplaza y el pomo se desliza: el usuario ve lo que
+ * CineConIA cambia para adaptar H3 a su GPU. El widget sigue guardando el
+ * mismo 0-100 de siempre, asi que los workflows no cambian.
+ */
+function addFader(node, objetivo, etiqueta, lectura, abs = null) {
+  const estado = { x0: 0, x1: 0, y: 0, arrastrando: false, mostrado: null, objPrev: null, tPrev: 0 };
   const leer = () => valor(node, objetivo);
 
   const escribir = (v) => {
@@ -227,20 +266,33 @@ function addFader(node, objetivo, etiqueta, lectura) {
     computeSize(width) { return [width, FADER_H]; },
 
     draw(ctx, n, width, y) {
-      const real = leer();
-      let v = real;
-      if (estado.hacia !== null) {
-        const k = Math.min(1, (performance.now() - estado.t0) / ANIM_MS);
-        v = estado.desde + (estado.hacia - estado.desde) * (k * k * (3 - 2 * k));
-        if (k < 1) n.setDirtyCanvas(true, true); else estado.hacia = null;
-      }
-
       const x0 = PAD + ANCHO_ETQ;
       const x1 = Math.max(x0 + 40, width - PAD - ANCHO_LEC);
       const cy = y + FADER_H / 2;
       estado.x0 = x0; estado.x1 = x1; estado.y = y;
 
+      const efectivo = abs ? abs.valor(n) : null;
+      const usarAbs = abs && efectivo !== null;
+      const activo = !usarAbs || abs.activo(n);
+      const aPos = (a) => x0 + (x1 - x0) * clamp((a - abs.min) / (abs.max - abs.min), 0, 1);
+
+      // posicion objetivo del pomo, en pixeles
+      const destino = usarAbs ? aPos(efectivo) : x0 + (x1 - x0) * (clamp(leer(), 0, 100) / 100);
+      const ahora = performance.now();
+      if (estado.objPrev !== destino) { estado.objPrev = destino; estado.tPrev = ahora - 16; }
+      if (estado.mostrado === null || estado.arrastrando) {
+        estado.mostrado = destino;
+      } else {
+        const dt = Math.max(0, ahora - estado.tPrev);
+        estado.mostrado += (destino - estado.mostrado) * (1 - Math.exp(-dt / 55));
+        if (Math.abs(destino - estado.mostrado) > 0.4) n.setDirtyCanvas(true, true);
+        else estado.mostrado = destino;
+      }
+      estado.tPrev = ahora;
+      const px = estado.mostrado;
+
       ctx.save();
+      ctx.globalAlpha = activo ? 1 : 0.35;
       ctx.textBaseline = "middle";
       ctx.font = "9px " + MONO;
       ctx.textAlign = "left";
@@ -257,11 +309,19 @@ function addFader(node, objetivo, etiqueta, lectura) {
         ctx.stroke();
       }
 
+      // la ventana del perfil: donde puede moverse el pomo con este preset
+      const ventana = usarAbs && activo ? abs.ventana(n) : null;
+      if (ventana) {
+        const xl = aPos(ventana[0]), xr = aPos(ventana[1]);
+        ctx.fillStyle = "#34423f";
+        roundRect(ctx, xl - 3, cy - 5, Math.max(6, xr - xl + 6), 10, 5);
+        ctx.fill();
+      }
+
       ctx.fillStyle = CHIP_BG;
       roundRect(ctx, x0, cy - RIEL_H / 2, x1 - x0, RIEL_H, RIEL_H / 2);
       ctx.fill();
 
-      const px = x0 + (x1 - x0) * (clamp(v, 0, 100) / 100);
       if (px > x0 + 1) {
         ctx.fillStyle = ACCENT;
         roundRect(ctx, x0, cy - RIEL_H / 2, px - x0, RIEL_H, RIEL_H / 2);
@@ -279,35 +339,90 @@ function addFader(node, objetivo, etiqueta, lectura) {
       ctx.font = "11px " + MONO;
       ctx.textAlign = "right";
       ctx.fillStyle = INFO_FG;
-      ctx.fillText(lectura ? lectura(n, real) : String(real), width - PAD, cy);
+      ctx.fillText(lectura ? lectura(n, leer()) : String(leer()), width - PAD, cy);
       ctx.restore();
     },
 
     mouse(event, pos, n) {
       const dentro = pos[1] >= estado.y && pos[1] <= estado.y + FADER_H;
       const t = event.type;
+      const efectivo = abs ? abs.valor(n) : null;
+      const usarAbs = abs && efectivo !== null;
+      if (usarAbs && !abs.activo(n)) return false;
       const aplicar = (x) => {
-        const bruto = clamp(((x - estado.x0) / (estado.x1 - estado.x0)) * 100, 0, 100);
-        escribir(event.shiftKey ? leer() + (bruto - leer()) / 4 : bruto);
+        const frac = clamp((x - estado.x0) / (estado.x1 - estado.x0), 0, 1);
+        let destino = usarAbs ? abs.offset(n, abs.min + frac * (abs.max - abs.min)) : frac * 100;
+        if (event.shiftKey) destino = leer() + (destino - leer()) / 4;
+        escribir(clamp(destino, 0, 100));
         n.__cineCustom?.();
       };
       if ((t === "pointerdown" || t === "mousedown") && dentro) {
-        estado.arrastrando = true; estado.hacia = null; aplicar(pos[0]); return true;
+        estado.arrastrando = true; aplicar(pos[0]); return true;
       }
       if (estado.arrastrando && (t === "pointermove" || t === "mousemove")) { aplicar(pos[0]); return true; }
       if (estado.arrastrando && (t === "pointerup" || t === "mouseup")) { estado.arrastrando = false; return true; }
       return false;
     },
-
-    animarHacia(v) {
-      estado.desde = leer();
-      estado.hacia = clamp(v, 0, 100);
-      estado.t0 = performance.now();
-      escribir(v);
-    },
   };
   node.widgets.push(w);
   return w;
+}
+
+// --- faders absolutos: la base del perfil llega del servidor ----------------
+//
+// Solo se replica aqui la correspondencia 0-100 -> valor efectivo de
+// optimizer_config.py (dos lineas), para que el pomo siga al raton sin esperar
+// al servidor. Perfiles, capacidad y semaforo siguen viniendo solo de Python.
+
+const baseDe = (node) => node.__h3Preview?.base || null;
+
+const ABS_ESCALA = {
+  min: 1.0, max: 2.0,
+  activo: (n) => {
+    const c = node_config(n);
+    return c ? !!c.refine : !!baseDe(n)?.refine;
+  },
+  valor: (n) => {
+    const b = baseDe(n);
+    if (!b) return null;
+    if (!b.refine || !findWidget(n, "refinar")?.value) return 1.0;
+    return clamp(b.refine_scale + (valor(n, "resolucion") - 60) / 200, 1.0, 2.0);
+  },
+  ventana: (n) => {
+    const b = baseDe(n);
+    return b?.refine ? [clamp(b.refine_scale - 0.3, 1, 2), clamp(b.refine_scale + 0.2, 1, 2)] : null;
+  },
+  offset: (n, a) => 60 + (a - baseDe(n).refine_scale) * 200,
+};
+
+const ABS_AHORRO = {
+  min: 1, max: 56,
+  activo: () => true,
+  valor: (n) => {
+    const b = baseDe(n);
+    return b ? clamp(b.attention_chunks + Math.round((valor(n, "ahorro_vram") / 100) * 12), 1, 56) : null;
+  },
+  ventana: (n) => {
+    const b = baseDe(n);
+    return b ? [b.attention_chunks, Math.min(56, b.attention_chunks + 12)] : null;
+  },
+  offset: (n, a) => ((a - baseDe(n).attention_chunks) / 12) * 100,
+};
+
+function node_config(n) { return n.__h3Preview?.config || null; }
+
+/** Guiado con la escala o el ahorro fuera del punto neutro del preset. */
+function esCustom(n) {
+  if (findWidget(n, "modo")?.value === "Advanced") return false;
+  return valor(n, "resolucion") !== 60 || valor(n, "ahorro_vram") !== 50;
+}
+
+/** Pulsar un preset lo aplica tal cual: escala y ahorro vuelven al neutro. */
+function aplicarPreset(n) {
+  for (const [nombre, neutro] of [["resolucion", 60], ["ahorro_vram", 50]]) {
+    const w = findWidget(n, nombre);
+    if (w && Number(w.value) !== neutro) { w.value = neutro; w.callback?.(neutro); }
+  }
 }
 
 // --- lecturas: lo que de verdad hace cada control en la v1 -----------------
@@ -316,8 +431,17 @@ function addFader(node, objetivo, etiqueta, lectura) {
 const configDe = (node) => node.__h3Preview?.config;
 const leerCalidad = (n) => configDe(n) ? configDe(n).steps + " pasos" : "calculando…";
 const leerDetalle = (n) => configDe(n)?.refine ? configDe(n).refine_steps.split("·")[0].trim() : "sin refinado";
-const leerResolucion = (n) => configDe(n)?.refine ? "x" + configDe(n).refine_scale.toFixed(2) : "sin refinado";
-const leerAhorro = (n) => configDe(n) ? configDe(n).attention_chunks + " / " + configDe(n).ffn_chunks : "calculando…";
+const leerResolucion = (n) => {
+  const v = ABS_ESCALA.valor(n);
+  if (v === null) return configDe(n)?.refine ? "x" + configDe(n).refine_scale.toFixed(2) : "calculando…";
+  return ABS_ESCALA.activo(n) ? "x" + v.toFixed(2) : "sin segundo pase";
+};
+const leerAhorro = (n) => {
+  const a = ABS_AHORRO.valor(n), b = baseDe(n);
+  if (a === null || !b) return configDe(n) ? configDe(n).attention_chunks + " / " + configDe(n).ffn_chunks : "calculando…";
+  const f = clamp(b.ffn_chunks + Math.round((valor(n, "ahorro_vram") / 100) * 12), 1, 64);
+  return "troceo " + a + " / " + f;
+};
 
 function campos(node) {
   return Object.fromEntries((node.widgets || []).filter(widgetSeGuarda)
@@ -396,7 +520,7 @@ function planificar(node) {
   const p = configDe(node)?.planner;
   const labels = {SAFE: "MARGEN", TIGHT: "JUSTO", RISKY: "RIESGO", UNKNOWN: "SIN DATOS"};
   return {estado: labels[p?.status] || "SIN DATOS",
-    color: p?.status === "SAFE" ? VERDE : p?.status === "TIGHT" ? "#e4ba55" : p?.status === "RISKY" ? "#ed6976" : TEXTO_TENUE,
+    color: COLOR_ESTADO[p?.status] || TEXTO_TENUE,
     ratio: p?.status === "UNKNOWN" ? 0 : p?.capacity_ratio || 0,
     consejo: p?.recommendations?.join(" · ") || node.__h3Error || "Calculando…"};
 }
@@ -495,15 +619,15 @@ function montarOptimizador(node) {
   const chipPerfil = addChipsSimple(
     node, "perfil", "perfil de vram",
     ORDEN_PERFILES.map((p) => [p, p]),
-    (n) => actualizarPreview(n),
+    (n) => { aplicarPreset(n); actualizarPreview(n); },
   );
 
   addChipsSimple(node, "modo", "controles", MODOS.map(([label, v]) => [label, v]), (n) => visibilidad(n));
 
   faders.calidad = addFader(node, "calidad", "calidad", leerCalidad);
   faders.detalle = addFader(node, "detalle", "refinado", leerDetalle);
-  faders.resolucion = addFader(node, "resolucion", "escala", leerResolucion);
-  faders.ahorro_vram = addFader(node, "ahorro_vram", "ahorro", leerAhorro);
+  faders.resolucion = addFader(node, "resolucion", "escala", leerResolucion, ABS_ESCALA);
+  faders.ahorro_vram = addFader(node, "ahorro_vram", "ahorro", leerAhorro, ABS_AHORRO);
 
   addBarra(node);
   const refresh = node.addWidget("button", "__refresh", null, () => {
@@ -705,7 +829,7 @@ function montarDirector(node) {
   addTarjetas(node, "plano", "01 · encuadre", ENCUADRES, true);
   addTarjetas(node, "angulo", "02 · ángulo · desde dónde miras", ANGULOS_VISUALES, "angles");
   addTarjetas(node, "movimiento", "03 · movimientos frecuentes", CAMINOS, false);
-  const labels = {movimiento: "Movimiento · lista completa", angulo: "Ángulo", intensidad: "Intensidad / velocidad",
+  const labels = {movimiento: "Movimiento · lista completa", angulo: "Ángulo · lista completa", intensidad: "Intensidad / velocidad",
     lente: "Lente", profundidad_campo: "Fondo / profundidad", instruccion_camara: "Receta o instrucciones de cámara", reglas_continuidad: "Mantener continuidad"};
   for (const w of node.widgets) if (labels[w.name]) w.label = labels[w.name];
   const recipe = node.addWidget("combo", "Recetas H3 · elegir", "libre", () => {},
@@ -785,7 +909,7 @@ app.registerExtension({
         for (const name of ["plano", "angulo", "movimiento"]) {
           const cards = findWidget(node, "__cards_" + name);
           node.widgets = node.widgets.filter(w => w !== cards);
-          node.widgets.splice(node.widgets.indexOf(findWidget(node, name)) + 1, 0, cards);
+          node.widgets.splice(node.widgets.indexOf(findWidget(node, name)), 0, cards);
         }
       }
       node.setSize([Math.max(node.size?.[0] || 0, 440), node.computeSize()[1]]);

@@ -2267,7 +2267,22 @@ def preview_h3(body):
             raise ValueError("Salida de conexion invalida")
         values[name] = cls().calcular(**args)[cls.RETURN_NAMES.index(output_name)]
     result = CineH3Optimizer().configurar(**values)
-    return {"config": result["result"][0], "info": result["result"][-1]}
+    config = result["result"][0]
+    try:
+        from .cineconia_h3.profiles import get_profile
+    except ImportError:
+        from cineconia_h3.profiles import get_profile
+    base = get_profile(config["profile"])
+    # Que color tendria cada preset si lo pulsaras ahora, con estas dimensiones
+    # y los ajustes de memoria neutros que aplica el preset. La interfaz lo
+    # pinta como un punto en cada chip: el usuario ve cual le sirve sin probar.
+    ladder = {}
+    for preset in ("AUTO", "8 GB", "12 GB", "16 GB", "24 GB", "32 GB"):
+        probe = dict(values, perfil=preset, resolucion=60, ahorro_vram=50,
+                     modo="Auto" if values.get("modo") == "Advanced" else values.get("modo"))
+        ladder[preset] = CineH3Optimizer().configurar(**probe)["result"][0]["planner"]["status"]
+    return {"config": config, "info": result["result"][-1], "ladder": ladder,
+            "base": {k: base[k] for k in ("refine", "refine_scale", "attention_chunks", "ffn_chunks")}}
 
 
 def _registrar_rutas():

@@ -69,25 +69,31 @@ def build_optimizer_config(
         values["attention_chunks"] = int(clamp(values["attention_chunks"] + extra_chunks, 1, 56))
         values["ffn_chunks"] = int(clamp(values["ffn_chunks"] + extra_chunks, 1, 64))
 
-    # A manual policy can simulate a GPU, but never grant more physical memory.
+    # El preset decide la CARGA; la tarjeta real decide la CAPACIDAD. Asi, con
+    # una GPU de 16 GB, los presets de 8/12/16 quedan en verde, 24 en amarillo
+    # y 32 en rojo: el color le dice al usuario cual le sirve. Sin GPU detectada
+    # se simula la tarjeta del preset elegido.
     total = hardware.get("total_gb")
-    capacity_profile = profile_name
-    if total and total < int(profile_name.split()[0]) - 0.25:
-        capacity_profile = closest_profile(total)
-        selection_note += " · capacidad limitada por la GPU real"
+    capacity_profile = closest_profile(total) if total else profile_name
+    por_encima = bool(total) and PROFILE_NAMES.index(profile_name) > PROFILE_NAMES.index(capacity_profile)
+    if por_encima:
+        selection_note += " · por encima de tu GPU ({})".format(capacity_profile)
     planner = plan_memory(
         width, height, frames, capacity_profile,
         values["refine"], values["refine_scale"],
         attention_chunks=values["attention_chunks"], ffn_chunks=values["ffn_chunks"],
     )
     planner["capacity_profile"] = capacity_profile
-    planner["basis"] = "GPU detectada" if total else "simulacion manual"
+    planner["basis"] = "GPU detectada · " + capacity_profile if total else "simulación manual"
+    if por_encima and planner["status"] != "SAFE":
+        planner["recommendations"].insert(
+            0, "elige el preset de tu GPU ({}) o AUTO".format(capacity_profile))
     if profile == "AUTO" and not total:
         planner.update(status="UNKNOWN", basis="GPU sin detectar",
                        recommendations=["elige tu VRAM para simular un perfil"])
     elif total and total < 7.75:
         planner.update(status="RISKY", basis="GPU por debajo de los perfiles disponibles",
-                       recommendations=["menos de 8 GB: esta carga requiere validacion especifica"])
+                       recommendations=["menos de 8 GB: esta carga requiere validación específica"])
     if refine and not values["refine"]:
         selection_note += " · perfil de 8 GB: refinado apagado; Advanced permite forzarlo"
 

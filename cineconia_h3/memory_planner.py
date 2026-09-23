@@ -3,12 +3,22 @@
 from .profiles import clamp
 
 
+# Capacidad relativa de cada tarjeta, en la misma unidad que la carga.
+#
+# No es una medicion: es la definicion de politica "el preset de cada tarjeta
+# usa ~63 % de su capacidad a la carga de referencia". Se obtiene dividiendo la
+# carga de referencia de cada preset (ver profiles.py) por 0.63.
+#
+# Ancla real: el render verificado en una RTX 4060 Ti de 16 GB (416x736x192,
+# segundo pase x1.25, troceo 16/16) da 1.5625 / 2.38 = 0.66, MARGEN. La tabla
+# anterior (16 GB = 1.55) lo marcaba como RIESGO aunque se habia renderizado.
+# 8, 12, 24 y 32 GB siguen sin benchmark propio.
 CAPACITY = {
-    "8 GB": 0.75,
-    "12 GB": 1.10,
-    "16 GB": 1.55,
-    "24 GB": 2.45,
-    "32 GB": 3.35,
+    "8 GB": 1.42,
+    "12 GB": 1.86,
+    "16 GB": 2.38,
+    "24 GB": 3.13,
+    "32 GB": 4.06,
 }
 
 
@@ -40,12 +50,12 @@ def plan_memory(width, height, frames, profile_name, refine, refine_scale,
 
     recommendations = []
     if status in ("TIGHT", "RISKY"):
-        recommendations.append("aumentar troceo de atencion/FFN" if chunks < 32
-                               else "reducir duracion o resolucion inicial")
+        recommendations.append("aumentar troceo de atención/FFN" if chunks < 32
+                               else "reducir duración o resolución inicial")
     if status == "RISKY" and refine:
         recommendations.append("reducir escala del segundo pase o apagarlo")
     if status == "RISKY" and (width * height) > (416 * 736):
-        recommendations.append("probar menor resolucion inicial sin cambiar la salida final deseada")
+        recommendations.append("probar menor resolución inicial sin cambiar la salida final deseada")
     if not recommendations:
         recommendations.append("mantener los valores del perfil")
 
