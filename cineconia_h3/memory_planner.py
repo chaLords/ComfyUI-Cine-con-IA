@@ -23,12 +23,12 @@ def plan_memory(width, height, frames, profile_name, refine, refine_scale,
     height = max(32, int(height))
     frames = max(1, int(frames))
     base = (width * height) / float(416 * 736) * (frames / 192.0)
-    controls = (
-        0.72
-        + clamp(float(quality), 0, 100) / 260.0
-        + clamp(float(detail), 0, 100) / 420.0
-        + clamp(float(motion), 0, 100) / 700.0
-    )
+    # quality, detail y motion se reciben por compatibilidad pero NO entran en
+    # el calculo: los pasos de denoising y los de refinado cuestan tiempo, no
+    # memoria, porque son secuenciales. Meterlos aqui hacia que el semaforo
+    # cambiara de color al mover un control que no toca el pico de VRAM.
+    # Lo que si entra: resolucion, fotogramas, segundo pase y troceo.
+    controls = 1.0
     second_pass = 0.0
     if refine:
         second_pass = base * max(1.0, float(refine_scale)) ** 2 * 0.34

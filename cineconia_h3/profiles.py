@@ -2,6 +2,13 @@
 
 Los valores describen una politica, no un benchmark. Se mantienen separados
 del nodo para poder afinarlos sin cambiar su interfaz ni los workflows.
+
+Los pasos de denoising NO dependen de la VRAM y por eso valen igual en todos
+los perfiles. Los pasos son secuenciales: el pico de memoria lo marca una
+pasada, no cuantas se hagan. Una tarjeta de 8 GB puede dar 30 pasos igual que
+una de 32, solo que tarda mas. Lo que si cambia con la VRAM es el troceo, si
+hay segundo pase y con que escala. Los pasos los decide el usuario con el
+control de calidad.
 """
 
 from copy import deepcopy
@@ -11,7 +18,7 @@ PROFILE_NAMES = ("8 GB", "12 GB", "16 GB", "24 GB", "32 GB")
 
 PROFILES = {
     "8 GB": {
-        "steps": 10,
+        "steps": 20,
         "sampler": "res_multistep",
         "scheduler": "simple",
         "denoise": 1.0,
@@ -23,7 +30,7 @@ PROFILES = {
         "policy": "supervivencia: troceo maximo y sin segundo pase por defecto",
     },
     "12 GB": {
-        "steps": 14,
+        "steps": 20,
         "sampler": "res_multistep",
         "scheduler": "simple",
         "denoise": 1.0,
@@ -35,7 +42,7 @@ PROFILES = {
         "policy": "ahorro alto y segundo pase moderado",
     },
     "16 GB": {
-        "steps": 16,
+        "steps": 20,
         "sampler": "res_multistep",
         "scheduler": "simple",
         "denoise": 1.0,
@@ -59,7 +66,7 @@ PROFILES = {
         "policy": "calidad: segundo pase conservando margen",
     },
     "32 GB": {
-        "steps": 24,
+        "steps": 20,
         "sampler": "res_multistep",
         "scheduler": "simple",
         "denoise": 1.0,
