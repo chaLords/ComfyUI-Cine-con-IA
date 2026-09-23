@@ -56,7 +56,8 @@ class Workflow039Tests(unittest.TestCase):
                 declared_type = declared[input_["name"]][0]
                 if isinstance(declared_type, str):
                     self.assertEqual(input_["type"], declared_type)
-            output_schema = list(zip(cls.RETURN_NAMES, cls.RETURN_TYPES))
+            output_schema = [(name, "COMBO" if isinstance(kind, list) else kind)
+                             for name, kind in zip(cls.RETURN_NAMES, cls.RETURN_TYPES)]
             workflow_outputs = [(o["name"], o["type"]) for o in node["outputs"]]
             self.assertEqual(workflow_outputs, output_schema, node_type)
 

@@ -50,3 +50,22 @@ class CineScenePromptH3:
             "con accion" if scene["action"] else "sin accion",
         )
         return scene, info
+
+
+class CineSimplePromptH3:
+    """Una sola caja; conserva prompts H3 completos y texto libre."""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"texto": ("STRING", {"multiline": True, "default": "",
+            "tooltip": "Pega tu prompt completo o describe la escena en ingles. Conecta scene al Director de camara; prompt permite usar el texto directamente."})}}
+
+    RETURN_TYPES = ("CINECONIA_H3_SCENE", "STRING")
+    RETURN_NAMES = ("scene", "prompt")
+    FUNCTION = "crear"
+    CATEGORY = "Cine con IA/H3"
+    DESCRIPTION = "Prompt simple: una caja de texto, conexion opcional al Director de camara."
+
+    def crear(self, texto):
+        text = str(texto or "").strip()
+        return {"schema": "cineconia.h3.scene/v1", "raw_prompt": text}, text

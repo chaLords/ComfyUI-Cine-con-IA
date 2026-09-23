@@ -12,6 +12,7 @@ try:
         CineH3OptimizedSampler,
         CineH3Optimizer,
         CineScenePromptH3,
+        CineSimplePromptH3,
     )
 except ImportError:
     # Los tests cargan nodes.py directamente, fuera del paquete de ComfyUI.
@@ -20,6 +21,7 @@ except ImportError:
         CineH3OptimizedSampler,
         CineH3Optimizer,
         CineScenePromptH3,
+        CineSimplePromptH3,
     )
 
 CATEGORY = "Cine con IA"
@@ -2210,6 +2212,64 @@ def _estado_catalogo(familia, con_extras):
     return fuera
 
 
+def preview_h3(body):
+    """Read-only preview, shared with execution; no model loading or sampling."""
+    if not isinstance(body, dict):
+        raise ValueError("Se esperaba un objeto")
+    fields = body.get("fields", {})
+    if not isinstance(fields, dict):
+        raise ValueError("Campos invalidos")
+    schema = CineH3Optimizer.INPUT_TYPES()["required"]
+    values = {}
+    for name, (kind, options) in schema.items():
+        value = fields.get(name, options["default"])
+        if isinstance(kind, list):
+            if value not in kind:
+                raise ValueError("Opcion invalida: " + name)
+        elif kind == "BOOLEAN":
+            if not isinstance(value, bool):
+                raise ValueError("Booleano invalido: " + name)
+        else:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError("Numero invalido: " + name)
+            if not options.get("min", value) <= value <= options.get("max", value):
+                raise ValueError("Fuera de rango: " + name)
+        values[name] = value
+    sources = body.get("sources", {})
+    if not isinstance(sources, dict):
+        raise ValueError("Fuentes invalidas")
+    for name, source in sources.items():
+        if name not in ("width", "height", "frames") or not isinstance(source, dict):
+            raise ValueError("Conexion no compatible con vista previa")
+        cls = {"CineRatioSize": CineRatioSize, "CineDuracion": CineDuracion}.get(source.get("type"))
+        if cls is None:
+            raise ValueError("Conexion no compatible con vista previa")
+        supplied = source.get("fields", {})
+        if not isinstance(supplied, dict):
+            raise ValueError("Campos de conexion invalidos")
+        node_schema = cls.INPUT_TYPES()
+        args = {}
+        for key, entry in {**node_schema.get("required", {}), **node_schema.get("optional", {})}.items():
+            opts = entry[1] if len(entry) > 1 else {}
+            value = supplied.get(key, opts.get("default"))
+            if not isinstance(value, (str, bool, int, float)):
+                raise ValueError("Valor de conexion invalido")
+            if isinstance(entry[0], list) and value not in entry[0]:
+                raise ValueError("Opcion de conexion invalida")
+            if entry[0] in ("INT", "FLOAT"):
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                    raise ValueError("Numero de conexion invalido")
+                if not opts.get("min", value) <= value <= opts.get("max", value):
+                    raise ValueError("Conexion fuera de rango")
+            args[key] = value
+        output_name = source.get("output")
+        if output_name not in cls.RETURN_NAMES or output_name not in ("width", "height", "frames"):
+            raise ValueError("Salida de conexion invalida")
+        values[name] = cls().calcular(**args)[cls.RETURN_NAMES.index(output_name)]
+    result = CineH3Optimizer().configurar(**values)
+    return {"config": result["result"][0], "info": result["result"][-1]}
+
+
 def _registrar_rutas():
     """Engancha las rutas al servidor de ComfyUI.
 
@@ -2227,6 +2287,16 @@ def _registrar_rutas():
     rutas = getattr(getattr(PromptServer, "instance", None), "routes", None)
     if rutas is None:
         return
+
+    @rutas.post("/cineconia/h3/preview")
+    async def _h3_preview(peticion):
+        try:
+            body = await peticion.json()
+            import asyncio
+            result = await asyncio.to_thread(preview_h3, body)
+            return web.json_response(result)
+        except (ValueError, TypeError, KeyError, OverflowError) as exc:
+            return web.json_response({"error": str(exc)}, status=400)
 
     @rutas.post("/cineconia/prompt_preview")
     async def _prompt_preview(peticion):
@@ -2376,6 +2446,7 @@ NODE_CLASS_MAPPINGS = {
     "CineH3Optimizer": CineH3Optimizer,
     "CineH3OptimizedSampler": CineH3OptimizedSampler,
     "CineScenePromptH3": CineScenePromptH3,
+    "CineSimplePromptH3": CineSimplePromptH3,
     "CineCameraDirectorH3": CineCameraDirectorH3,
 }
 
@@ -2393,8 +2464,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CineDuracion": "Cine con IA · Duración",
     "CinePrompt6": "Cine con IA · Prompt",
     "CineModelos": "Cine con IA · Modelos",
-    "CineH3Optimizer": "CineConIA · H3 Optimizer",
-    "CineH3OptimizedSampler": "CineConIA · H3 Optimized Sampler",
-    "CineScenePromptH3": "CineConIA · Scene / Prompt H3",
-    "CineCameraDirectorH3": "CineConIA · Camera Director H3",
+    "CineH3Optimizer": "Cine con IA · Optimizador H3",
+    "CineH3OptimizedSampler": "Cine con IA · Render optimizado H3",
+    "CineScenePromptH3": "Cine con IA · Escena por apartados H3",
+    "CineSimplePromptH3": "Cine con IA · Prompt simple H3",
+    "CineCameraDirectorH3": "Cine con IA · Director de camara H3",
 }

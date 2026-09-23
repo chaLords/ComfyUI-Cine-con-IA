@@ -265,3 +265,7 @@ Proyecto en desarrollo activo. Se recomienda conservar una copia de los workflow
 Publicado bajo la [licencia MIT](LICENSE). Puedes usar, modificar y redistribuir el código conservando el aviso de copyright y la licencia.
 
 Las catorce recetas de cámara para MiniMax H3 reproducen palabra por palabra las frases publicadas por Loop Forge. Ese trabajo tiene licencia MIT, Copyright (c) 2026 Loop Forge, y su aviso y el texto de la licencia se conservan en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), junto con las guías de MiniMax que sigue el formato de prompt de este nodo.
+
+## Laboratorio H3 modular (rama de desarrollo)
+
+Prompt simple de una caja, director visual de cámara y optimizador de VRAM: [cambios y uso](docs/H3_MODULAR_V2_ES.md). Workflow de prueba: [039 H3 Modular v2](examples/039.REALminimax-H3-Modular-v2.json). Los perfiles requieren calibración con renders; esta rama no es un release del Registry.

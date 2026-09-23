@@ -1,6 +1,7 @@
 """Nodos ComfyUI del optimizador y su sampler consumidor."""
 
 from .optimizer_config import build_optimizer_config
+from .profiles import REFINE_STEPS
 
 
 def _samplers():
@@ -77,7 +78,7 @@ class CineH3Optimizer:
             "sampler_advanced": (_samplers(), {"default": "res_multistep"}),
             "scheduler_advanced": (_schedulers(), {"default": "simple"}),
             "denoise_advanced": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-            "trocear_atencion_advanced": ("INT", {"default": 16, "min": 1, "max": 64}),
+            "trocear_atencion_advanced": ("INT", {"default": 16, "min": 1, "max": 56}),
             "trocear_ffn_advanced": ("INT", {"default": 16, "min": 1, "max": 64}),
             "escala_refinado_advanced": ("FLOAT", {"default": 1.25, "min": 1.0, "max": 4.0, "step": 0.05}),
             "pasos_refinado_advanced": ([
@@ -85,7 +86,7 @@ class CineH3Optimizer:
             ], {"default": "4 pasos  ·  recomendado"}),
         }}
 
-    RETURN_TYPES = ("CINECONIA_H3_CONFIG", "STRING", "INT", "INT", "BOOLEAN", "FLOAT", "STRING", "STRING")
+    RETURN_TYPES = ("CINECONIA_H3_CONFIG", "STRING", "INT", "INT", "BOOLEAN", "FLOAT", REFINE_STEPS, "STRING")
     RETURN_NAMES = ("config", "perfil_activo", "trocear_atencion", "trocear_ffn", "refinar", "escala_refinado", "pasos_refinado", "info")
     FUNCTION = "configurar"
     CATEGORY = "Cine con IA/H3"
@@ -105,11 +106,11 @@ class CineH3Optimizer:
             trocear_ffn_advanced, escala_refinado_advanced,
             pasos_refinado_advanced,
         )
-        return (
+        return {"ui": {"h3_config": [config], "text": [info]}, "result": (
             config, config["profile"], config["attention_chunks"],
             config["ffn_chunks"], config["refine"], config["refine_scale"],
             config["refine_steps"], info,
-        )
+        )}
 
 
 class CineH3OptimizedSampler:

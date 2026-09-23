@@ -4422,3 +4422,6 @@ app.registerExtension({
     }
   },
 });
+
+// Shared camera recipes: the modular Director uses the same verified text.
+export { TOMAS_H3, conjugarTomaH3, PRONOMBRES_H3, huecosH3 };

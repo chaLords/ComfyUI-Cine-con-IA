@@ -2,7 +2,7 @@
 
 from .hardware import detect_hardware, select_auto_profile
 from .memory_planner import plan_memory
-from .profiles import PROFILE_NAMES, clamp, get_profile
+from .profiles import PROFILE_NAMES, REFINE_STEPS, closest_profile, clamp, get_profile
 
 
 MODES = ("Auto", "Manual", "Advanced")
@@ -27,8 +27,8 @@ def build_optimizer_config(
         advanced_refine_steps="4 pasos  ·  recomendado",
         hardware=None):
     mode = mode if mode in MODES else "Auto"
-    hardware = hardware or detect_hardware()
-    if mode == "Auto":
+    hardware = detect_hardware() if hardware is None else hardware
+    if profile == "AUTO":
         profile_name, selection_note = select_auto_profile(hardware)
     else:
         profile_name = profile if profile in PROFILE_NAMES else "16 GB"
@@ -47,15 +47,15 @@ def build_optimizer_config(
             "sampler": str(advanced_sampler),
             "scheduler": str(advanced_scheduler),
             "denoise": float(clamp(float(advanced_denoise), 0.0, 1.0)),
-            "attention_chunks": int(clamp(int(advanced_attention_chunks), 1, 64)),
+            "attention_chunks": int(clamp(int(advanced_attention_chunks), 1, 56)),
             "ffn_chunks": int(clamp(int(advanced_ffn_chunks), 1, 64)),
             "refine": bool(refine),
             "refine_scale": float(clamp(float(advanced_refine_scale), 1.0, 4.0)),
-            "refine_steps": str(advanced_refine_steps),
+            "refine_steps": str(advanced_refine_steps) if advanced_refine_steps in REFINE_STEPS else REFINE_STEPS[1],
         })
     else:
-        values["steps"] = int(clamp(values["steps"] + round((quality - 60) / 10), 4, 30))
-        values["refine"] = bool(refine)
+        values["steps"] = int(clamp(values["steps"] + round((quality - 70) / 10), 4, 30))
+        values["refine"] = bool(refine) and values["refine"]
         if values["refine"]:
             # El control Resolucion afecta solo al multiplicador del segundo
             # pase. Nunca cambia silenciosamente width/height solicitados.
@@ -66,20 +66,30 @@ def build_optimizer_config(
             values["refine_scale"] = 1.0
 
         extra_chunks = round(vram_save / 100.0 * 12)
-        values["attention_chunks"] = int(clamp(values["attention_chunks"] + extra_chunks, 1, 64))
+        values["attention_chunks"] = int(clamp(values["attention_chunks"] + extra_chunks, 1, 56))
         values["ffn_chunks"] = int(clamp(values["ffn_chunks"] + extra_chunks, 1, 64))
 
+    # A manual policy can simulate a GPU, but never grant more physical memory.
+    total = hardware.get("total_gb")
+    capacity_profile = profile_name
+    if total and total < int(profile_name.split()[0]) - 0.25:
+        capacity_profile = closest_profile(total)
+        selection_note += " · capacidad limitada por la GPU real"
     planner = plan_memory(
-        width, height, frames, profile_name,
+        width, height, frames, capacity_profile,
         values["refine"], values["refine_scale"],
-        quality, detail, motion, vram_save,
+        attention_chunks=values["attention_chunks"], ffn_chunks=values["ffn_chunks"],
     )
-    if planner["status"] == "TIGHT":
-        values["attention_chunks"] = max(values["attention_chunks"], 24)
-        values["ffn_chunks"] = max(values["ffn_chunks"], 24)
-    elif planner["status"] == "RISKY":
-        values["attention_chunks"] = max(values["attention_chunks"], 32)
-        values["ffn_chunks"] = max(values["ffn_chunks"], 32)
+    planner["capacity_profile"] = capacity_profile
+    planner["basis"] = "GPU detectada" if total else "simulacion manual"
+    if profile == "AUTO" and not total:
+        planner.update(status="UNKNOWN", basis="GPU sin detectar",
+                       recommendations=["elige tu VRAM para simular un perfil"])
+    elif total and total < 7.75:
+        planner.update(status="RISKY", basis="GPU por debajo de los perfiles disponibles",
+                       recommendations=["menos de 8 GB: esta carga requiere validacion especifica"])
+    if refine and not values["refine"]:
+        selection_note += " · perfil de 8 GB: refinado apagado; Advanced permite forzarlo"
 
     config = {
         "schema": "cineconia.h3.optimizer/v1",
@@ -108,12 +118,13 @@ def build_optimizer_config(
         "{}x{} · {} frames · {} pasos · troceo {}/{}\n"
         "refinado: {} x{} ({})\n"
         "Memory Planner: {}\n"
-        "Perfiles v1 experimentales: falta validacion con render real."
+        "Perfiles experimentales: falta validacion con render real.\n"
+        "{}"
     ).format(
         mode, profile_name, detected, selection_note,
         width, height, frames, values["steps"],
         values["attention_chunks"], values["ffn_chunks"],
         "si" if values["refine"] else "no", values["refine_scale"],
-        values["refine_steps"], planner["status"],
+        values["refine_steps"], planner["status"], " · ".join(planner["recommendations"]),
     )
     return config, info

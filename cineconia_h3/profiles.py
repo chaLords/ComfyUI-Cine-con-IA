@@ -12,6 +12,9 @@ control de calidad.
 """
 
 from copy import deepcopy
+import math
+
+REFINE_STEPS = ["3 pasos  ·  rapido", "4 pasos  ·  recomendado", "5 pasos  ·  maxima calidad"]
 
 
 PROFILE_NAMES = ("8 GB", "12 GB", "16 GB", "24 GB", "32 GB")
@@ -85,10 +88,12 @@ def closest_profile(vram_gb):
     try:
         value = float(vram_gb)
     except (TypeError, ValueError):
-        return "16 GB"
+        return "8 GB"
+    if not math.isfinite(value):
+        return "8 GB"
     selected = "8 GB"
     for name in PROFILE_NAMES:
-        if value >= int(name.split()[0]):
+        if value >= int(name.split()[0]) - 0.25:
             selected = name
     return selected
 

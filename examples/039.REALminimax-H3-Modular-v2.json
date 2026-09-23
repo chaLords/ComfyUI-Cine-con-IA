@@ -1,5 +1,5 @@
 {
-  "id": "cineconia-039-h3-optimizer-v1-20260922",
+  "id": "cineconia-039-h3-modular-v2-20260923",
   "revision": 0,
   "last_node_id": 34002,
   "last_link_id": 36,
@@ -8,12 +8,12 @@
       "id": 510,
       "type": "MarkdownNote",
       "pos": [
-        -40,
-        -560
+        -20,
+        -440
       ],
       "size": [
-        680,
-        590
+        1550,
+        340
       ],
       "flags": {},
       "order": 0,
@@ -25,10 +25,10 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "# CineConIA · MiniMax H3 · workflow 039 · Optimizer v1\n\nEsta copia conserva la toma de pantalla dividida del workflow 038 y agrega herramientas reales:\n\n1. **Scene / Prompt H3** separa personajes, acción, lugar, estilo y sonido.\n2. **Camera Director H3** conserva la receta completa de pantalla dividida y genera el prompt final.\n3. **H3 Optimizer** detecta VRAM, elige AUTO/8/12/16/24/32 GB y ejecuta el Memory Planner.\n4. **H3 Optimized Sampler** consume esa configuración para el primer pase.\n5. El perfil también controla el troceo del cargador y el segundo pase existente.\n\nLa resolución, 192 fotogramas, referencias, modelo, refinado, salida y VHS provienen del 038.\n\n**Estado:** interfaces, perfiles, planificación y sampler están implementados y probados a nivel de código.\nLos perfiles siguen siendo experimentales hasta medir VRAM, tiempos y calidad con renders H3 reales.\nSelfLift, high-res tiling y Sigma Refiner no se conectan aquí porque el 038 no contiene interfaces\nreales para ellos; no se inventaron sockets.\n"
+        "# 039 · H3 modular\n\n1. Escribe o pega tu escena en **Prompt simple**.\n2. Elige encuadre y movimiento en **Director de cámara**. La receta original de pantalla dividida se conserva.\n3. Elige **AUTO** o tu capacidad de VRAM. El semáforo es una estimación experimental.\n4. **Solicitar segundo pase** controla el refinado conectado. El perfil de 8 GB lo desactiva en modo guiado.\n\nEl Prompt completo sigue disponible en el menú de nodos. Comprueba los nombres de modelos y la imagen de referencia de tu instalación antes de generar."
       ],
       "widgets_values_named": {
-        "text": "# CineConIA · MiniMax H3 · workflow 039 · Optimizer v1\n\nEsta copia conserva la toma de pantalla dividida del workflow 038 y agrega herramientas reales:\n\n1. **Scene / Prompt H3** separa personajes, acción, lugar, estilo y sonido.\n2. **Camera Director H3** conserva la receta completa de pantalla dividida y genera el prompt final.\n3. **H3 Optimizer** detecta VRAM, elige AUTO/8/12/16/24/32 GB y ejecuta el Memory Planner.\n4. **H3 Optimized Sampler** consume esa configuración para el primer pase.\n5. El perfil también controla el troceo del cargador y el segundo pase existente.\n\nLa resolución, 192 fotogramas, referencias, modelo, refinado, salida y VHS provienen del 038.\n\n**Estado:** interfaces, perfiles, planificación y sampler están implementados y probados a nivel de código.\nLos perfiles siguen siendo experimentales hasta medir VRAM, tiempos y calidad con renders H3 reales.\nSelfLift, high-res tiling y Sigma Refiner no se conectan aquí porque el 038 no contiene interfaces\nreales para ellos; no se inventaron sockets.\n"
+        "text": "# 039 · H3 modular\n\n1. Escribe o pega tu escena en **Prompt simple**.\n2. Elige encuadre y movimiento en **Director de cámara**. La receta original de pantalla dividida se conserva.\n3. Elige **AUTO** o tu capacidad de VRAM. El semáforo es una estimación experimental.\n4. **Solicitar segundo pase** controla el refinado conectado. El perfil de 8 GB lo desactiva en modo guiado.\n\nEl Prompt completo sigue disponible en el menú de nodos. Comprueba los nombres de modelos y la imagen de referencia de tu instalación antes de generar."
       },
       "color": "#432",
       "bgcolor": "#653"
@@ -37,12 +37,12 @@
       "id": 502,
       "type": "CineDuracion",
       "pos": [
-        -40,
-        520
+        0,
+        540
       ],
       "size": [
         420,
-        309
+        310
       ],
       "flags": {},
       "order": 1,
@@ -87,18 +87,20 @@
         "desfase": 5,
         "minimo_fotogramas": 5,
         "avanzado": false
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 501,
       "type": "CineRatioSize",
       "pos": [
-        -40,
+        0,
         0
       ],
       "size": [
         420,
-        470
+        460
       ],
       "flags": {},
       "order": 2,
@@ -141,18 +143,20 @@
         "tamano": "0.40 MP",
         "personalizado_mp": 0.3,
         "multiplo_de": 32
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 509,
       "type": "LoadImage",
       "pos": [
-        -44.95867768595041,
-        907.1074380165292
+        0,
+        940
       ],
       "size": [
         420,
-        340
+        360
       ],
       "flags": {},
       "order": 3,
@@ -189,14 +193,14 @@
     },
     {
       "id": 511,
-      "type": "CineScenePromptH3",
+      "type": "CineSimplePromptH3",
       "pos": [
-        420,
-        -70
+        500,
+        0
       ],
       "size": [
-        620,
-        760
+        500,
+        540
       ],
       "flags": {},
       "order": 4,
@@ -211,46 +215,34 @@
           ]
         },
         {
-          "name": "info",
+          "name": "prompt",
           "type": "STRING",
           "links": []
         }
       ],
-      "title": "Scene / Prompt · personajes, acción y lugar",
+      "title": "01 · Prompt simple",
       "properties": {
-        "Node name for S&R": "CineScenePromptH3"
+        "Node name for S&R": "CineSimplePromptH3"
       },
       "widgets_values": [
-        "<Subject 1> is the adult man in <Picture 1>, a character reference sheet whose three panels show the same man: his face, his outfit from the front and his outfit from the back. He has dark side-swept hair and a full dark beard, and wears a grey collared knit pullover, dark charcoal pleated trousers and brown leather shoes. His exact facial structure, features and proportions stay identical to <Picture 1> in every frame.",
-        "[reference generation] The target video shows <Subject 1> seated at a desk in a dim study at night, in a three-panel split screen, as the camera performs a three-panel split screen.",
-        "<Subject 1> (appears in [Shot 1]): fully_preserved - his face, identity and clothing are held identical to <Picture 1> in every frame with zero drift.",
-        "<Subject 1> writes steadily and continuously throughout, his hand moving across the page, pausing once to read what he wrote before carrying on.",
-        "",
-        "The target video is live-action and cinematic, shot on an ARRI Alexa Mini with a 35mm prime, locked off, warm lamplight against a dark room, a muted palette.",
-        "The steady scratch of a pen, close and continuous, over the low hum of a quiet room, with a chair creaking once.",
-        "A tight rhythmic pulse locked to the writing, a new layer entering each time another panel opens."
+        "subject_definitions:\n<Subject 1> is the adult man in <Picture 1>, a character reference sheet whose three panels show the same man: his face, his outfit from the front and his outfit from the back. He has dark side-swept hair and a full dark beard, and wears a grey collared knit pullover, dark charcoal pleated trousers and brown leather shoes. His exact facial structure, features and proportions stay identical to <Picture 1> in every frame.\n\nsummary:\n[reference generation] The target video shows <Subject 1> seated at a desk in a dim study at night, in a three-panel split screen, as the camera performs a three-panel split screen.\n\nretention_analysis:\n<Subject 1> (appears in [Shot 1]): fully_preserved - his face, identity and clothing are held identical to <Picture 1> in every frame with zero drift.\n\ndetailed_description:\nThe target video is live-action and cinematic, shot on an ARRI Alexa Mini with a 35mm prime, locked off, warm lamplight against a dark room, a muted palette.\n[Shot 1] <Subject 1> writes steadily and continuously throughout, his hand moving across the page, pausing once to read what he wrote before carrying on.\n\noverall_soundscape:\nThe steady scratch of a pen, close and continuous, over the low hum of a quiet room, with a chair creaking once.\n\nnon_diegetic_music:\nA tight rhythmic pulse locked to the writing, a new layer entering each time another panel opens."
       ],
       "widgets_values_named": {
-        "personajes_y_referencias": "<Subject 1> is the adult man in <Picture 1>, a character reference sheet whose three panels show the same man: his face, his outfit from the front and his outfit from the back. He has dark side-swept hair and a full dark beard, and wears a grey collared knit pullover, dark charcoal pleated trousers and brown leather shoes. His exact facial structure, features and proportions stay identical to <Picture 1> in every frame.",
-        "resumen": "[reference generation] The target video shows <Subject 1> seated at a desk in a dim study at night, in a three-panel split screen, as the camera performs a three-panel split screen.",
-        "retencion": "<Subject 1> (appears in [Shot 1]): fully_preserved - his face, identity and clothing are held identical to <Picture 1> in every frame with zero drift.",
-        "accion": "<Subject 1> writes steadily and continuously throughout, his hand moving across the page, pausing once to read what he wrote before carrying on.",
-        "lugar_y_contexto": "",
-        "estilo_visual": "The target video is live-action and cinematic, shot on an ARRI Alexa Mini with a 35mm prime, locked off, warm lamplight against a dark room, a muted palette.",
-        "sonido": "The steady scratch of a pen, close and continuous, over the low hum of a quiet room, with a chair creaking once.",
-        "musica": "A tight rhythmic pulse locked to the writing, a new layer entering each time another panel opens."
-      }
+        "texto": "subject_definitions:\n<Subject 1> is the adult man in <Picture 1>, a character reference sheet whose three panels show the same man: his face, his outfit from the front and his outfit from the back. He has dark side-swept hair and a full dark beard, and wears a grey collared knit pullover, dark charcoal pleated trousers and brown leather shoes. His exact facial structure, features and proportions stay identical to <Picture 1> in every frame.\n\nsummary:\n[reference generation] The target video shows <Subject 1> seated at a desk in a dim study at night, in a three-panel split screen, as the camera performs a three-panel split screen.\n\nretention_analysis:\n<Subject 1> (appears in [Shot 1]): fully_preserved - his face, identity and clothing are held identical to <Picture 1> in every frame with zero drift.\n\ndetailed_description:\nThe target video is live-action and cinematic, shot on an ARRI Alexa Mini with a 35mm prime, locked off, warm lamplight against a dark room, a muted palette.\n[Shot 1] <Subject 1> writes steadily and continuously throughout, his hand moving across the page, pausing once to read what he wrote before carrying on.\n\noverall_soundscape:\nThe steady scratch of a pen, close and continuous, over the low hum of a quiet room, with a chair creaking once.\n\nnon_diegetic_music:\nA tight rhythmic pulse locked to the writing, a new layer entering each time another panel opens."
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 512,
       "type": "CineCameraDirectorH3",
       "pos": [
-        1100,
-        -70
+        1080,
+        0
       ],
       "size": [
-        620,
-        650
+        500,
+        1180
       ],
       "flags": {},
       "order": 5,
@@ -276,7 +268,7 @@
           "links": []
         }
       ],
-      "title": "Camera Director · pantalla dividida",
+      "title": "02 · Director de cámara",
       "properties": {
         "Node name for S&R": "CineCameraDirectorH3"
       },
@@ -299,18 +291,20 @@
         "profundidad_campo": "sin especificar",
         "instruccion_camara": "The frame is divided into three equal vertical panels side by side, separated by thin black gutters. The left panel holds <Subject 1>, seated at a cluttered wooden desk writing in a leather notebook, a brass desk lamp glowing in front of him, a mug and scattered papers beside it, a dark study and a rain-streaked window behind him. Every panel is locked off and completely static; nothing pans, zooms or moves at any point. The three panels open one after another. The left panel plays from the very first frame, showing him from his left side in profile as he writes, while the centre and right panels are solid black. The centre panel stays solid black and then comes on, showing the same moment from the front, framed across the desk with the lamp glow on his face. The right panel stays solid black longer than the centre one and comes on last, showing him from behind in full, his back and the glowing lamp in view. For the remainder of the shot all three panels play together in perfect sync, the same continuous writing at the same instant from three different angles.",
         "reglas_continuidad": false
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 513,
       "type": "CineH3Optimizer",
       "pos": [
-        390,
-        760
+        500,
+        670
       ],
       "size": [
-        650,
-        820
+        500,
+        680
       ],
       "flags": {},
       "order": 6,
@@ -386,7 +380,7 @@
           "links": []
         }
       ],
-      "title": "H3 Optimizer · AUTO + Memory Planner",
+      "title": "03 · Memoria y calidad",
       "properties": {
         "Node name for S&R": "CineH3Optimizer"
       },
@@ -400,7 +394,7 @@
         65,
         65,
         60,
-        true,
+        false,
         50,
         20,
         "res_multistep",
@@ -421,7 +415,7 @@
         "detalle": 65,
         "movimiento": 65,
         "resolucion": 60,
-        "refinar": true,
+        "refinar": false,
         "ahorro_vram": 50,
         "pasos_advanced": 20,
         "sampler_advanced": "res_multistep",
@@ -431,18 +425,20 @@
         "trocear_ffn_advanced": 16,
         "escala_refinado_advanced": 1.25,
         "pasos_refinado_advanced": "4 pasos  ·  recomendado"
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 500,
       "type": "CineCargarH3",
       "pos": [
-        443.6602691073012,
-        1410.4378116248888
+        1080,
+        1320
       ],
       "size": [
-        799.0547093777745,
-        682
+        790,
+        740
       ],
       "flags": {},
       "order": 7,
@@ -539,18 +535,20 @@
         "lora_4": "ninguno",
         "lora_fuerza_4": 0,
         "perfil": "MiniMax H3"
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 106,
       "type": "ModelPreviewOverrideKJ",
       "pos": [
-        1310.6028966544195,
-        527.2127266292267
+        1660,
+        560
       ],
       "size": [
-        435.3305474663305,
-        1006.5005495153687
+        460,
+        570
       ],
       "flags": {},
       "order": 8,
@@ -615,12 +613,12 @@
       "id": 504,
       "type": "CineEscenaH3",
       "pos": [
-        1306.1999999999991,
-        13.200000000000001
+        1660,
+        0
       ],
       "size": [
         460,
-        462
+        460
       ],
       "flags": {},
       "order": 9,
@@ -746,17 +744,19 @@
         "tamano_referencia": "max  ·  mas identidad",
         "fotograma_guia": 0,
         "modo_guia": "flexible  ·  prioriza camara"
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 514,
       "type": "CineH3OptimizedSampler",
       "pos": [
-        1816,
-        120
+        2200,
+        0
       ],
       "size": [
-        480,
+        460,
         330
       ],
       "flags": {},
@@ -807,22 +807,24 @@
       ],
       "widgets_values_named": {
         "semilla": 552013742
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 506,
       "type": "CineEscalarRefinar",
       "pos": [
-        1818.6923781907583,
-        449.7745012449469
+        2200,
+        440
       ],
       "size": [
         460,
-        473.9586776859503
+        500
       ],
       "flags": {},
       "order": 11,
-      "mode": 4,
+      "mode": 0,
       "inputs": [
         {
           "name": "model",
@@ -888,18 +890,20 @@
         "sampler": "er_sde",
         "semilla": 835,
         "control_after_generate": "randomize"
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 507,
       "type": "CineSalida",
       "pos": [
-        2326.200000000002,
-        13.200000000000001
+        2740,
+        0
       ],
       "size": [
         460,
-        320
+        340
       ],
       "flags": {},
       "order": 12,
@@ -966,18 +970,20 @@
         "interpolar": "x2  ·  48 fps",
         "modelo_interpolacion": "film_net_fp16.safetensors",
         "fps_base": 24
-      }
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
     },
     {
       "id": 34000,
       "type": "VHS_VideoCombine",
       "pos": [
-        2326.200000000002,
-        393.19999999999993
+        2740,
+        450
       ],
       "size": [
         460,
-        1089.0526315789475
+        1060
       ],
       "flags": {},
       "order": 13,
@@ -1038,20 +1044,7 @@
         "save_metadata": true,
         "trim_to_audio": false,
         "pingpong": false,
-        "save_output": true,
-        "videopreview": {
-          "hidden": false,
-          "paused": false,
-          "params": {
-            "filename": "20260919_113722_00001-audio.mp4",
-            "subfolder": "CineConIA",
-            "type": "output",
-            "format": "video/h264-mp4",
-            "frame_rate": 48,
-            "workflow": "20260919_113722_00001.png",
-            "fullpath": "C:\\Users\\gonza\\Documents\\ComfyUI\\ComfyUI-Easy-Install\\ComfyUI\\output\\CineConIA\\20260919_113722_00001-audio.mp4"
-          }
-        }
+        "save_output": true
       },
       "widgets_values_named": {
         "frame_rate": 24,
@@ -1063,20 +1056,7 @@
         "save_metadata": true,
         "trim_to_audio": false,
         "pingpong": false,
-        "save_output": true,
-        "videopreview": {
-          "hidden": false,
-          "paused": false,
-          "params": {
-            "filename": "20260919_113722_00001-audio.mp4",
-            "subfolder": "CineConIA",
-            "type": "output",
-            "format": "video/h264-mp4",
-            "frame_rate": 48,
-            "workflow": "20260919_113722_00001.png",
-            "fullpath": "C:\\Users\\gonza\\Documents\\ComfyUI\\ComfyUI-Easy-Install\\ComfyUI\\output\\CineConIA\\20260919_113722_00001-audio.mp4"
-          }
-        }
+        "save_output": true
       }
     }
   ],
@@ -1346,14 +1326,106 @@
       "CINECONIA_H3_SCENE"
     ]
   ],
-  "groups": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "ENTRADAS · formato, duración y referencia",
+      "bounding": [
+        -30,
+        -65,
+        480,
+        1410
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "ESCENA · texto",
+      "bounding": [
+        470,
+        -65,
+        560,
+        655
+      ],
+      "color": "#966c45",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "CÁMARA · encuadre y movimiento",
+      "bounding": [
+        1050,
+        -65,
+        560,
+        1330
+      ],
+      "color": "#966c45",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "PROCESO · memoria",
+      "bounding": [
+        470,
+        605,
+        560,
+        810
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 5,
+      "title": "MODELO · carga y troceo",
+      "bounding": [
+        1050,
+        1260,
+        850,
+        860
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 6,
+      "title": "GENERACIÓN · escena, render y refinado",
+      "bounding": [
+        1630,
+        -65,
+        1060,
+        1240
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 7,
+      "title": "SALIDA · imagen, audio y video",
+      "bounding": [
+        2710,
+        -65,
+        520,
+        1650
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.7320500000000079,
+      "scale": 0.6,
       "offset": [
-        94.09341588485329,
-        -456.03160990597155
+        80,
+        150
       ]
     },
     "frontendVersion": "1.49.6",

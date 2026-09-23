@@ -21,12 +21,12 @@ class OptimizerConfigTests(unittest.TestCase):
         self.assertEqual(config["schema"], "cineconia.h3.optimizer/v1")
         self.assertIn("experimentales", info)
 
-    def test_auto_lowers_profile_when_most_vram_is_busy(self):
+    def test_auto_stays_stable_when_model_is_cached(self):
         hardware = {"available": True, "name": "GPU", "total_gb": 24.0,
                     "free_gb": 8.0, "source": "test"}
         config, _ = build_optimizer_config(
             "Auto", "AUTO", 416, 736, 192, hardware=hardware)
-        self.assertEqual(config["profile"], "16 GB")
+        self.assertEqual(config["profile"], "24 GB")
 
     def test_advanced_values_are_effective(self):
         hardware = {"available": False, "name": "test", "total_gb": None,

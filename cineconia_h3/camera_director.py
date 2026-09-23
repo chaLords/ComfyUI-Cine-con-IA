@@ -1,5 +1,7 @@
 """Camera Director H3: como se filma una escena ya definida."""
 
+import re
+
 
 SHOTS = {
     "sin especificar": "",
@@ -13,11 +15,13 @@ SHOTS = {
 }
 ANGLES = {
     "sin especificar": "",
+    "frontal": "directly in front of the subject, looking straight at them",
+    "perfil": "at the subject's side, about ninety degrees off their front, showing a side profile",
     "altura de los ojos": "at the subject's eye level",
     "contrapicado": "below the subject, looking up",
     "picado": "above the subject, looking down",
     "cenital": "directly overhead, looking straight down",
-    "tres cuartos": "about forty-five degrees off the subject's front",
+    "tres cuartos": "about forty-five degrees to one side of the subject's front, showing a three-quarter view of their face and body",
     "sobre el hombro": "just behind the subject's shoulder",
 }
 MOVEMENTS = {
@@ -35,8 +39,12 @@ MOVEMENTS = {
     "lateral derecha": "trucks right",
     "grua arriba": "pedestals up",
     "grua abajo": "pedestals down",
-    "orbita": "arcs around the subject with visible background parallax",
+    "orbita": "arcs around the subject; the subject's body keeps facing its original direction while the background slides behind them with visible parallax",
     "seguimiento": "follows the subject in a tracking shot",
+    "punto de vista": "takes the point of view of the subject",
+    "giro de horizonte": "rolls clockwise",
+    "giro antihorario": "rolls counterclockwise",
+    "camara en mano fuerte": "shakes strongly, handheld",
     "camara en mano": "moves with a slight handheld shake",
 }
 INTENSITIES = {
@@ -94,6 +102,30 @@ def build_prompt(scene, plano, angulo, movimiento, intensidad, lente,
     # estructurados van despues, igual que en CinePrompt6, para no reescribir
     # trayectorias verificadas como Pantalla dividida u Orbita 360.
     camera_text = "\n\n".join(part for part in (camera, generated) if part).strip()
+    if "raw_prompt" in scene:
+        prompt = str(scene["raw_prompt"]).strip()
+        if camera_text:
+            section = re.search(
+                r"(?ms)^detailed_description:[ \t]*\n?(.*?)(?=^(?:subject_definitions|summary|retention_analysis|overall_soundscape|non_diegetic_music):|\Z)",
+                prompt)
+            if section:
+                start, end = section.span(1)
+                content = section.group(1)
+                if re.search(r"(?m)^[ \t]*\[Shot 1\]", content):
+                    content = re.sub(r"(?m)^([ \t]*\[Shot 1\])",
+                                     lambda m: m.group(1) + " " + camera_text,
+                                     content, count=1)
+                else:
+                    content = "[Shot 1] " + camera_text + "\n" + content
+                prompt = prompt[:start] + content + prompt[end:]
+            elif re.search(r"(?m)^\[Shot 1\]", prompt):
+                prompt = re.sub(r"(?m)^\[Shot 1\]", lambda _: "[Shot 1] " + camera_text,
+                                prompt, count=1)
+            else:
+                prompt += "\n\n" + camera_text
+        if reglas_continuidad and "### Shot constraints" not in prompt:
+            prompt += "\n\n### Shot constraints\n\n" + CONTINUITY_RULES
+        return prompt.strip(), camera_text
     description_parts = [scene.get("visual_style", "").strip()]
     shot_parts = [camera_text, scene.get("action", "").strip(), scene.get("setting", "").strip()]
     shot = " ".join(part for part in shot_parts if part).strip()

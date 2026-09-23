@@ -13,7 +13,8 @@ CAPACITY = {
 
 
 def plan_memory(width, height, frames, profile_name, refine, refine_scale,
-                quality=70, detail=65, motion=65, vram_save=50):
+                quality=70, detail=65, motion=65, vram_save=50,
+                attention_chunks=16, ffn_chunks=16):
     """Clasifica la solicitud sin prometer una cantidad exacta de VRAM.
 
     La unidad de carga es relativa a 416x736x192, la configuracion medida del
@@ -23,17 +24,12 @@ def plan_memory(width, height, frames, profile_name, refine, refine_scale,
     height = max(32, int(height))
     frames = max(1, int(frames))
     base = (width * height) / float(416 * 736) * (frames / 192.0)
-    # quality, detail y motion se reciben por compatibilidad pero NO entran en
-    # el calculo: los pasos de denoising y los de refinado cuestan tiempo, no
-    # memoria, porque son secuenciales. Meterlos aqui hacia que el semaforo
-    # cambiara de color al mover un control que no toca el pico de VRAM.
-    # Lo que si entra: resolucion, fotogramas, segundo pase y troceo.
-    controls = 1.0
-    second_pass = 0.0
-    if refine:
-        second_pass = base * max(1.0, float(refine_scale)) ** 2 * 0.34
-    saving = 1.0 - (clamp(float(vram_save), 0, 100) / 100.0) * 0.18
-    load = (base * controls + second_pass) * saving
+    # Sequential passes do not coexist. Model the larger activation footprint.
+    # Chunking only reduces part of that footprint; weights/latents still exist.
+    peak = base * (max(1.0, float(refine_scale)) ** 2 if refine else 1.0)
+    chunks = min(clamp(int(attention_chunks), 1, 56), clamp(int(ffn_chunks), 1, 64))
+    saving = 0.82 + 0.18 * min(1.0, 16.0 / chunks)
+    load = peak * saving
     ratio = load / CAPACITY.get(profile_name, CAPACITY["16 GB"])
     if ratio <= 0.76:
         status = "SAFE"
@@ -44,7 +40,8 @@ def plan_memory(width, height, frames, profile_name, refine, refine_scale,
 
     recommendations = []
     if status in ("TIGHT", "RISKY"):
-        recommendations.append("aumentar troceo de atencion/FFN")
+        recommendations.append("aumentar troceo de atencion/FFN" if chunks < 32
+                               else "reducir duracion o resolucion inicial")
     if status == "RISKY" and refine:
         recommendations.append("reducir escala del segundo pase o apagarlo")
     if status == "RISKY" and (width * height) > (416 * 736):
@@ -57,5 +54,6 @@ def plan_memory(width, height, frames, profile_name, refine, refine_scale,
         "relative_load": round(load, 3),
         "capacity_ratio": round(ratio, 3),
         "recommendations": recommendations,
+        "experimental": True,
         "reference": "416x736x192 = carga relativa de referencia",
     }

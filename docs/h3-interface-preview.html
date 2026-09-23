@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es"><meta charset="utf-8"><title>Cine con IA · Laboratorio H3</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:40px;background:#0d1416;color:#e3edec;font:14px system-ui}header{max-width:1460px;margin:0 auto 28px}small{color:#e7a163;letter-spacing:2px}h1{font-size:32px;margin:10px 0}p{color:#9eb0b1;line-height:1.6}main{display:flex;gap:26px;align-items:flex-start;justify-content:center;flex-wrap:wrap}article{width:460px;border:1px solid #354347;border-radius:14px;overflow:hidden;background:#172123;box-shadow:0 15px 35px #0004}h2{font-size:15px;margin:0;padding:18px;background:#283436}h2 span{color:#e6a369;margin-right:12px}.body{position:relative}canvas{display:block}.control{position:absolute;left:10px;width:440px;display:flex;align-items:center;justify-content:space-between;gap:10px;color:#afc1c2;font:12px system-ui}.control input,.control select,.control textarea,.control button{background:#222e31;border:1px solid #455458;color:#e3edec;border-radius:5px;padding:5px;max-width:245px;font:12px system-ui}.control textarea{max-width:none;width:100%;resize:none;height:220px;padding:14px}.control:has(textarea){display:block}.control:has(textarea) label{display:block;margin-bottom:8px}.control button{width:100%;max-width:none;cursor:pointer;color:#e9b077}.control input[type=number]{width:110px}footer{max-width:1460px;margin:30px auto;color:#7e9497;font-size:12px}.summary{background:#142124;border:1px solid #33464b;padding:16px;margin-top:20px;border-radius:10px}#errors{color:#ee7880}
+</style>
+<header><small>CINE CON IA / LABORATORIO H3</small><h1>Una escena. Tu cámara. Tu GPU.</h1><p>Escribe en una sola caja, elige cómo filmar y consulta la carga según tu tarjeta.<br>Vista de prueba con los controles reales de la extensión. No genera video.</p><div id="errors"></div></header><main></main>
+<footer>El Prompt completo conserva sus herramientas y recetas. El modo simple se conecta al mismo Director.<br>El semáforo es una estimación experimental: MARGEN · JUSTO · RIESGO. No representa un porcentaje de VRAM ocupada.</footer>
+<script type="module">
+import {app} from '/scripts/app.js';
+import '/extensions/cineconia/cineconia_faders.js';
+window.addEventListener('error',e=>document.querySelector('#errors').textContent=e.message);
+const schemas=await (await fetch('/schema')).json();
+const extension=app.extensions.find(e=>e.name==='cineconia.faders');
+const titles=['01|Prompt simple','02|Director de cámara','03|Optimizador H3'];
+const instances=[];
+for(const [i,[type,schema]] of Object.entries(schemas).entries()){
+ const article=document.createElement('article');const [num,title]=titles[i].split('|');article.innerHTML=`<h2><span>${num}</span>${title}</h2><div class="body"><canvas></canvas></div>`;document.querySelector('main').append(article);
+ const body=article.querySelector('.body'),canvas=article.querySelector('canvas');canvas.width=460;
+ const node={comfyClass:type,size:[460,400],widgets:[],inputs:[],serialize(){return{}},setSize(s){this.size=s},setDirtyCanvas(){requestAnimationFrame(draw)},computeSize(){return [460,this.widgets.reduce((h,w)=>h+(w.hidden?0:(w.computeSize?.(460)?.[1]||32)),10)]},addWidget(type,name,value,callback,options={}){const w={type,name,value,callback,options};this.widgets.push(w);return w}};
+ for(const [name,[kind,options={}]] of Object.entries(schema.required||{})){
+  if(!['INT','FLOAT','STRING','BOOLEAN'].includes(kind)&&!Array.isArray(kind)){node.inputs.push({name});continue}
+  const type=Array.isArray(kind)?'combo':kind==='BOOLEAN'?'toggle':kind==='STRING'?'text':'number';
+  const w=node.addWidget(type,name,options.default??(Array.isArray(kind)?kind[0]:''),null,{...options,values:Array.isArray(kind)?kind:undefined});
+  if(options.multiline){w.computeSize=()=>[460,258];}
+ }
+ if(type==='CineSimplePromptH3')node.widgets[0].value='A woman walks through a quiet city street after the rain. Warm shop lights reflect in the pavement. She stops at a bookshop window, smiling softly. Cinematic live-action imagery, natural skin texture, gentle evening light.';
+ if(type==='CineH3Optimizer')node.widgets.find(w=>w.name==='perfil').value='16 GB';
+ await extension.nodeCreated(node);
+ const dom=new Map();
+ for(const w of node.widgets){
+  if(w.serialize===false&&w.type!=='button'&&w.type!=='combo')continue;
+  const row=document.createElement('div');row.className='control';const label=document.createElement('label');label.textContent=w.label||w.name;row.append(label);
+  let el;
+  if(w.options?.multiline){el=document.createElement('textarea');el.value=w.value;}
+  else if(w.options?.values){el=document.createElement('select');for(const v of w.options.values){const opt=document.createElement('option');opt.value=v;opt.textContent=v;el.append(opt)}el.value=w.value;}
+  else if(w.type==='button'){el=document.createElement('button');el.textContent=w.label||w.name;label.remove();el.onclick=()=>w.callback?.();}
+  else{el=document.createElement('input');el.type=typeof w.value==='boolean'?'checkbox':'number';if(el.type==='checkbox')el.checked=w.value;else{el.value=w.value;el.min=w.options?.min??0;el.max=w.options?.max??8192;el.step=w.options?.step??1}}
+  el.onchange=()=>{w.value=el.type==='checkbox'?el.checked:el.type==='number'?Number(el.value):el.value;w.callback?.(w.value);draw()};row.append(el);body.append(row);dom.set(w,{row,el,label});
+ }
+ function draw(){
+  const height=node.computeSize()[1];if(canvas.height!==height)canvas.height=height;body.style.height=height+'px';const ctx=canvas.getContext('2d');ctx.clearRect(0,0,460,height);let y=5;
+  for(const w of node.widgets){const ui=dom.get(w);if(w.hidden){if(ui)ui.row.style.display='none';continue}const h=w.computeSize?.(460)?.[1]||32;w.__previewY=y;
+   if(ui){ui.row.style.display='';ui.row.style.top=y+'px';ui.label.textContent=w.label||w.name;if(ui.el.tagName==='BUTTON')ui.el.textContent=w.label||w.name;else if(document.activeElement!==ui.el){if(ui.el.type==='checkbox')ui.el.checked=w.value;else ui.el.value=w.value}}
+   else w.draw?.(ctx,node,460,y);y+=h;
+  }
+ }
+ canvas.addEventListener('pointerdown',e=>{const r=canvas.getBoundingClientRect(),pos=[e.clientX-r.left,e.clientY-r.top];for(const w of node.widgets){if(w.hidden)continue;if(pos[1]>=w.__previewY&&pos[1]<w.__previewY+(w.computeSize?.(460)?.[1]||32))w.mouse?.(e,pos,node)}draw()});
+ instances.push({node,draw});draw();
+}
+window.addEventListener('redraw',()=>instances.forEach(i=>i.draw()));
+</script></html>

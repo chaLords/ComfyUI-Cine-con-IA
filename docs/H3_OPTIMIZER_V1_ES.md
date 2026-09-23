@@ -1,5 +1,7 @@
 # CineConIA H3 Optimizer v1
 
+> Documento histórico del primer prototipo. Para el estado actual de esta rama, ver [H3 modular v2](H3_MODULAR_V2_ES.md).
+
 Esta es la primera implementación funcional de los módulos H3 de la rama
 `feature/cineconia-h3-nodes`. No cambia la versión `1.5.2`, no modifica las
 clases de los nodos H3 existentes y no contiene acciones de publicación en

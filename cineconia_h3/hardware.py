@@ -4,7 +4,7 @@ No importa torch al cargar el custom node. Esto permite que ComfyUI enumere
 los nodos incluso si la instalacion CUDA esta incompleta.
 """
 
-from .profiles import closest_profile, previous_profile
+from .profiles import closest_profile
 
 
 def detect_hardware():
@@ -28,12 +28,12 @@ def detect_hardware():
             free = float(free_bytes) / (1024 ** 3)
             total = float(total_bytes) / (1024 ** 3)
         except Exception:
-            free = total
+            free = None
         return {
             "available": True,
             "name": props.name,
             "total_gb": round(total, 2),
-            "free_gb": round(free, 2),
+            "free_gb": round(free, 2) if free is not None else None,
             "source": "torch.cuda",
         }
     except Exception:
@@ -41,17 +41,9 @@ def detect_hardware():
 
 
 def select_auto_profile(hardware):
-    """Elige por VRAM total y baja un nivel si queda menos del 60 % libre."""
+    """Politica estable por capacidad total; la cache de Comfy no cambia el perfil."""
     total = hardware.get("total_gb")
-    free = hardware.get("free_gb")
     if not total:
-        return "16 GB", "AUTO sin CUDA: fallback conservador a 16 GB"
+        return "8 GB", "GPU desconocida: politica de 8 GB, capacidad sin verificar"
     selected = closest_profile(total)
-    if free is not None and free / total < 0.60:
-        lowered = previous_profile(selected)
-        if lowered != selected:
-            return lowered, (
-                "AUTO bajo de {} a {} porque solo hay {:.1f}/{:.1f} GB libres"
-                .format(selected, lowered, free, total)
-            )
     return selected, "AUTO segun {:.1f} GB de VRAM total".format(total)

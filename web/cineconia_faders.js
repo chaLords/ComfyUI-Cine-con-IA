@@ -1,12 +1,13 @@
 import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
+import { TOMAS_H3, conjugarTomaH3, PRONOMBRES_H3, huecosH3 } from "./cineconia.js";
 
 /**
  * Interfaz de los nodos H3 nuevos: logo, chips, faders y barra de carga.
  *
- * Archivo aparte a proposito: no toca cineconia.js. ComfyUI carga todos los
- * .js de WEB_DIRECTORY, asi que esta extension se registra sola. Como las
- * constantes y helpers de cineconia.js son de modulo y no se exportan, aqui
- * se repiten los pocos que hacen falta, con los mismos valores.
+ * ComfyUI registra esta extension desde WEB_DIRECTORY. Comparte las recetas
+ * con el Prompt completo; los perfiles y el calculo de memoria viven solo
+ * en Python. Los widgets visuales nunca se guardan como valores del nodo.
  */
 
 const ACCENT = "#e08a3c";
@@ -21,7 +22,6 @@ const POMO = "#e8eeee";
 const BORDE_POMO = "#12181a";
 const BARRA_BG = "#20282a";
 const VERDE = "#3f8e63";
-const ROJO = "#ff0033";
 const TEXTO_TENUE = "#8b9a9b";
 
 const MONO = "'IBM Plex Mono', Consolas, monospace";
@@ -42,49 +42,16 @@ const NODOS_H3 = [
   "CineH3Optimizer",
   "CineH3OptimizedSampler",
   "CineScenePromptH3",
+  "CineSimplePromptH3",
   "CineCameraDirectorH3",
 ];
 
-// Copia de profiles.py y de memory_planner.py. Si se toca una, se toca la otra.
-const PERFILES = {
-  // Los pasos valen 20 en todos los perfiles a proposito: son secuenciales,
-  // asi que no suben el pico de VRAM. Lo que cambia con la tarjeta es el
-  // troceo, si hay segundo pase y con que escala.
-  "8 GB":  { pasos: 20, troceo: 32, escala: 1.00, refinar: false, cap: 0.75 },
-  "12 GB": { pasos: 20, troceo: 24, escala: 1.15, refinar: true,  cap: 1.10 },
-  "16 GB": { pasos: 20, troceo: 20, escala: 1.20, refinar: true,  cap: 1.55 },
-  "24 GB": { pasos: 20, troceo: 16, escala: 1.25, refinar: true,  cap: 2.45 },
-  "32 GB": { pasos: 20, troceo: 8,  escala: 1.50, refinar: true,  cap: 3.35 },
-};
 const ORDEN_PERFILES = ["AUTO", "8 GB", "12 GB", "16 GB", "24 GB", "32 GB"];
-
-// Donde deja cada preset los cuatro faders. Propuesta coherente con los
-// perfiles, no una medicion: se ajusta aqui cuando haya benchmarks reales.
-const PRESETS = {
-  // El perfil solo mueve lo que afecta al pico de memoria: el ahorro, la
-  // escala del segundo pase y si lo hay. La calidad y el detalle son tiempo,
-  // no memoria, y los decide el usuario: el preset no los toca.
-  "8 GB":  { resolucion: 35, ahorro_vram: 90, refinar: false },
-  "12 GB": { resolucion: 50, ahorro_vram: 70, refinar: true },
-  "16 GB": { resolucion: 60, ahorro_vram: 50, refinar: true },
-  "24 GB": { resolucion: 70, ahorro_vram: 30, refinar: true },
-  "32 GB": { resolucion: 80, ahorro_vram: 10, refinar: true },
-};
-
-const MODOS = [["auto", "Auto"], ["manual", "Manual"], ["avanzado", "Advanced"]];
+const MODOS = [["guiado", "Auto"], ["avanzado", "Advanced"]];
 
 const findWidget = (node, name) => node?.widgets?.find((w) => w.name === name);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const valor = (node, name, porDefecto = 0) => Number(findWidget(node, name)?.value ?? porDefecto);
-
-/** round() de Python: los empates van al par. Math.round(0.5) da 1, Python da 0. */
-function redondear(v) {
-  const abajo = Math.floor(v);
-  if (Math.abs(v - abajo - 0.5) > 1e-9) return Math.round(v);
-  return abajo % 2 === 0 ? abajo : abajo + 1;
-}
-
-const encajar = (v, mult = 32) => Math.max(mult, Math.round(v / mult) * mult);
 
 function roundRect(ctx, x, y, w, h, r) {
   const rr = Math.max(0, Math.min(r, w / 2, h / 2));
@@ -125,26 +92,6 @@ function ocultar(w) {
 /** Los widgets puramente visuales nunca deben ocupar una posicion guardada. */
 function widgetSeGuarda(w) {
   return Boolean(w) && w.serialize !== false && w.options?.serialize !== false;
-}
-
-/**
- * LiteGraph guarda por el indice completo del widget pero al restaurar
- * consume los valores seguidos saltando los que llevan serialize:false. Si
- * nuestros widgets visuales van delante, eso deja huecos y desplaza todos los
- * controles reales. Esta funcion quita esos huecos usando la lista de widgets
- * como mapa, sin tocar el valor de ningun control. Es la misma reparacion que
- * compactarValoresWidgets() hace en cineconia.js.
- */
-function compactarValores(node, valores) {
-  if (!Array.isArray(valores)) return valores;
-  const widgets = node.widgets || [];
-  const reales = widgets.filter(widgetSeGuarda);
-  if (valores.length <= reales.length) return valores.slice();
-  const limpios = [];
-  for (let i = 0; i < widgets.length && i < valores.length; i++) {
-    if (widgetSeGuarda(widgets[i])) limpios.push(valores[i]);
-  }
-  return limpios;
 }
 
 function cabecera(ctx, titulo, width, y) {
@@ -221,7 +168,7 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
         const tw = Math.ceil(ctx.measureText(etq).width) + 16;
         if (x + tw > width - PAD && x > PAD) { x = PAD; fila++; }
         const cy = yTop + GAP + fila * (CHIP_H + GAP);
-        const on = String(target.value) === String(val);
+        const on = String(target.value) === String(val) || (objetivo === "modo" && target.value === "Manual" && val === "Auto");
         ctx.fillStyle = on ? ACCENT : CHIP_BG;
         roundRect(ctx, x, cy, tw, CHIP_H, 5);
         ctx.fill();
@@ -365,77 +312,111 @@ function addFader(node, objetivo, etiqueta, lectura) {
 
 // --- lecturas: lo que de verdad hace cada control en la v1 -----------------
 
-function perfilDe(node) {
-  const nombre = String(findWidget(node, "perfil")?.value || "AUTO");
-  return PERFILES[nombre] || PERFILES["16 GB"];
-}
-const esAuto = (node) => String(findWidget(node, "perfil")?.value || "AUTO") === "AUTO";
+// The server is the only source of profile, steps and memory estimates.
+const configDe = (node) => node.__h3Preview?.config;
+const leerCalidad = (n) => configDe(n) ? configDe(n).steps + " pasos" : "calculando…";
+const leerDetalle = (n) => configDe(n)?.refine ? configDe(n).refine_steps.split("·")[0].trim() : "sin refinado";
+const leerResolucion = (n) => configDe(n)?.refine ? "x" + configDe(n).refine_scale.toFixed(2) : "sin refinado";
+const leerAhorro = (n) => configDe(n) ? configDe(n).attention_chunks + " / " + configDe(n).ffn_chunks : "calculando…";
 
-function pasosDe(node) {
-  return clamp(perfilDe(node).pasos + redondear((valor(node, "calidad") - 60) / 10), 4, 30);
-}
-function escalaDe(node) {
-  if (!findWidget(node, "refinar")?.value) return 1.0;
-  return Math.round(clamp(perfilDe(node).escala + (valor(node, "resolucion") - 60) / 200, 1.0, 2.0) * 100) / 100;
-}
-function troceoDe(node) {
-  return clamp(perfilDe(node).troceo + redondear((valor(node, "ahorro_vram") / 100) * 12), 1, 64);
+function campos(node) {
+  return Object.fromEntries((node.widgets || []).filter(widgetSeGuarda)
+    .filter(w => !String(w.name).startsWith("__"))
+    .map(w => [w.name, w.value]));
 }
 
-const leerCalidad = (n) => pasosDe(n) + " pasos" + (esAuto(n) ? " ·auto" : "");
-function leerDetalle(n, v) {
-  if (!findWidget(n, "refinar")?.value) return "sin refinado";
-  if (v >= 82) return "5 pasos · máxima";
-  if (v >= 48) return "4 pasos · recom.";
-  return "3 pasos · rápido";
+function fuente(node, input, seen = new Set()) {
+  if (input?.link == null) return null;
+  const graph = node.graph || app.graph;
+  const link = graph?.links?.[input.link];
+  if (!link || seen.has(link.origin_id)) throw new Error("conexion sin resolver");
+  seen.add(link.origin_id);
+  const origin = graph.getNodeById(link.origin_id);
+  const type = origin?.comfyClass || origin?.type;
+  if (type === "Reroute") return fuente(origin, origin.inputs?.[0], seen);
+  if (["PrimitiveNode", "PrimitiveInt", "PrimitiveFloat"].includes(type)) {
+    const value = origin.widgets?.find(widgetSeGuarda)?.value;
+    if (typeof value !== "number") throw new Error("valor conectado pendiente");
+    return {value};
+  }
+  if (!["CineRatioSize", "CineDuracion"].includes(type)
+      || origin.inputs?.some(i => i.link != null)) throw new Error("conexion requiere ejecutar");
+  return {type, fields: campos(origin), output: origin.outputs?.[link.origin_slot]?.name};
 }
-function leerResolucion(n) {
-  if (!findWidget(n, "refinar")?.value) return "sin refinado";
-  const e = escalaDe(n);
-  const an = valor(n, "width"), al = valor(n, "height");
-  if (!an || !al) return "x" + e.toFixed(2);
-  return "x" + e.toFixed(2) + " → " + encajar(an * e) + "x" + encajar(al * e);
-}
-const leerAhorro = (n) => "troceo " + troceoDe(n) + "/" + troceoDe(n);
 
-// --- barra de carga (espejo de memory_planner.py) --------------------------
+function payloadDe(node) {
+  const fields = campos(node), sources = {};
+  for (const name of ["width", "height", "frames"]) {
+    const source = fuente(node, node.inputs?.find(i => i.name === name));
+    if (source?.value !== undefined) fields[name] = source.value;
+    else if (source) sources[name] = source;
+  }
+  // Other linked controls cannot be inferred safely from stale local widgets.
+  if (node.inputs?.some(i => i.link != null && !["width", "height", "frames"].includes(i.name))) {
+    throw new Error("control conectado: consulta el resultado al ejecutar");
+  }
+  return {fields, sources};
+}
+
+function actualizarPreview(node) {
+  let payload;
+  try { payload = payloadDe(node); }
+  catch (e) {
+    node.__h3Key = null;
+    node.__h3Preview = null;
+    node.__h3Error = e.message;
+    clearTimeout(node.__h3Timer);
+    return;
+  }
+  const key = JSON.stringify(payload);
+  if (key === node.__h3Key) return;
+  node.__h3Key = key;
+  node.__h3Preview = null;
+  node.__h3Error = "Calculando en el servidor…";
+  clearTimeout(node.__h3Timer);
+  node.__h3Timer = setTimeout(async () => {
+    try {
+      const response = await api.fetchApi("/cineconia/h3/preview", {
+        method: "POST", headers: {"Content-Type": "application/json"}, body: key,
+      });
+      if (!response.ok) throw new Error("Vista previa no disponible; reinicia ComfyUI");
+      const result = await response.json();
+      if (node.__h3Key !== key || node.__h3Removed) return;
+      node.__h3Preview = result;
+      node.__h3Error = null;
+    } catch (e) {
+      if (node.__h3Key !== key || node.__h3Removed) return;
+      node.__h3Error = e.message;
+    }
+    node.setDirtyCanvas(true, true);
+  }, 180);
+}
 
 function planificar(node) {
-  const an = Math.max(32, valor(node, "width", 416));
-  const al = Math.max(32, valor(node, "height", 736));
-  const fr = Math.max(1, valor(node, "frames", 192));
-  const ah = clamp(valor(node, "ahorro_vram"), 0, 100);
-  const refinar = !!findWidget(node, "refinar")?.value;
+  const p = configDe(node)?.planner;
+  const labels = {SAFE: "MARGEN", TIGHT: "JUSTO", RISKY: "RIESGO", UNKNOWN: "SIN DATOS"};
+  return {estado: labels[p?.status] || "SIN DATOS",
+    color: p?.status === "SAFE" ? VERDE : p?.status === "TIGHT" ? "#e4ba55" : p?.status === "RISKY" ? "#ed6976" : TEXTO_TENUE,
+    ratio: p?.status === "UNKNOWN" ? 0 : p?.capacity_ratio || 0,
+    consejo: p?.recommendations?.join(" · ") || node.__h3Error || "Calculando…"};
+}
 
-  const base = ((an * al) / (416 * 736)) * (fr / 192);
-  // espejo de memory_planner.py: calidad, detalle y movimiento no entran,
-  // porque los pasos son secuenciales y no suben el pico de memoria
-  const controles = 1.0;
-  const segundo = refinar ? base * Math.pow(Math.max(1, escalaDe(node)), 2) * 0.34 : 0;
-  const ahorro = 1 - (ah / 100) * 0.18;
-  const carga = (base * controles + segundo) * ahorro;
-  const ratio = carga / perfilDe(node).cap;
-
-  let estado = "SAFE", color = VERDE;
-  if (ratio > 1.0) { estado = "RISKY"; color = ROJO; }
-  else if (ratio > 0.76) { estado = "TIGHT"; color = ACCENT; }
-
-  // El consejo tiene que servir para algo: si el ahorro ya esta al tope,
-  // pedir mas troceo es pedir algo que el usuario ya hizo. Lo unico que
-  // queda entonces es pedir menos video.
-  let consejo = "mantener los valores del perfil";
-  if (estado !== "SAFE") {
-    if (ah >= 80) consejo = "reduce la duración o la resolución: no cabe en este perfil";
-    else consejo = "aumentar troceo de atención/FFN";
+function textoAjustado(ctx, text, x, y, width, maxLines = 2) {
+  const words = String(text).split(/\s+/);
+  let line = "", lines = 0;
+  for (const word of words) {
+    if (ctx.measureText(line + word).width > width && line) {
+      ctx.fillText(line.trim(), x, y + lines * 15);
+      if (++lines >= maxLines) return;
+      line = "";
+    }
+    line += word + " ";
   }
-  if (estado === "RISKY" && refinar && ah < 80) {
-    consejo = "reducir la escala del segundo pase o apagarlo";
-  }
-  return { estado, color, ratio, consejo };
+  ctx.fillText(line.trim(), x, y + lines * 15);
 }
 
 function addBarra(node) {
-  const ALTO = CAB + 20 + 16;
+  const ALTO = 142;
   const w = {
     type: "cineconia_barra",
     name: "__barra",
@@ -444,10 +425,11 @@ function addBarra(node) {
     serialize: false,
     computeSize(width) { return [width, ALTO]; },
     draw(ctx, n, width, y) {
+      actualizarPreview(n);
       const p = planificar(n);
       ctx.save();
       ctx.textBaseline = "middle";
-      cabecera(ctx, "carga estimada", width, y + 8);
+      cabecera(ctx, "riesgo estimado · experimental", width, y + 8);
 
       const by = y + CAB + 4;
       const bw = width - PAD * 2 - 64;
@@ -481,8 +463,18 @@ function addBarra(node) {
       ctx.font = "11px " + MONO;
       ctx.textAlign = "left";
       ctx.fillStyle = TEXTO_TENUE;
-      const nota = esAuto(n) ? p.consejo + "  ·  estimado sobre 16 GB" : p.consejo;
-      ctx.fillText(nota, PAD, by + 22);
+      textoAjustado(ctx, p.consejo, PAD, by + 25, width - PAD * 2);
+      const c = configDe(n);
+      if (c) {
+        ctx.fillStyle = INFO_FG;
+        textoAjustado(ctx, `${c.profile} · ${c.width}×${c.height} · ${c.frames} fotogramas`, PAD, by + 62, width - PAD * 2, 1);
+        ctx.fillStyle = TEXTO_TENUE;
+        const gpu = c.hardware?.total_gb;
+        textoAjustado(ctx, gpu ? `GPU: ${gpu} GB · política ${c.profile} · capacidad ${c.planner.capacity_profile}` : c.planner.basis,
+          PAD, by + 80, width - PAD * 2, 1);
+      }
+      ctx.font = "10px " + MONO;
+      ctx.fillText("No mide uso de VRAM ni garantiza que el render quepa.", PAD, by + 104, width - PAD * 2);
       ctx.restore();
     },
   };
@@ -494,23 +486,34 @@ function addBarra(node) {
 
 function montarOptimizador(node) {
   const faders = {};
+  for (const [name, label] of Object.entries({width: "Ancho", height: "Alto", frames: "Fotogramas", refinar: "Solicitar segundo pase"})) {
+    const w = findWidget(node, name); if (w) w.label = label;
+  }
 
   addLogo(node);
 
   const chipPerfil = addChipsSimple(
     node, "perfil", "perfil de vram",
     ORDEN_PERFILES.map((p) => [p, p]),
-    (n, val) => aplicarPreset(n, val),
+    (n) => actualizarPreview(n),
   );
 
-  addChipsSimple(node, "modo", "modo", MODOS.map(([, v]) => [v.toLowerCase(), v]));
+  addChipsSimple(node, "modo", "controles", MODOS.map(([label, v]) => [label, v]), (n) => visibilidad(n));
 
   faders.calidad = addFader(node, "calidad", "calidad", leerCalidad);
-  faders.detalle = addFader(node, "detalle", "detalle", leerDetalle);
-  faders.resolucion = addFader(node, "resolucion", "resolución", leerResolucion);
+  faders.detalle = addFader(node, "detalle", "refinado", leerDetalle);
+  faders.resolucion = addFader(node, "resolucion", "escala", leerResolucion);
   faders.ahorro_vram = addFader(node, "ahorro_vram", "ahorro", leerAhorro);
 
   addBarra(node);
+  const refresh = node.addWidget("button", "__refresh", null, () => {
+    node.__h3Key = null;
+    actualizarPreview(node);
+    node.setDirtyCanvas(true, true);
+  }, {serialize: false});
+  refresh.label = "Actualizar detección de GPU";
+  refresh.serialize = false;
+
 
   // los nativos que reemplazan los faders y los chips se ocultan; el valor
   // sigue en su sitio, asi que los workflows guardados no se enteran
@@ -521,61 +524,213 @@ function montarOptimizador(node) {
   // los nuestros van arriba, en el orden de la maqueta
   const mios = node.widgets.filter((w) => String(w.name || "").startsWith("__"));
   node.widgets = node.widgets.filter((w) => !mios.includes(w));
-  node.widgets.unshift(...mios);
+  node.widgets.push(...mios);
 
-  // ...y por eso hay que reparar los valores al abrir un workflow: ver
-  // compactarValores(). Sin esto, los controles reales reciben el valor del
-  // de al lado y el nodo miente sin avisar.
-  const configurarAntes = node.onConfigure;
-  node.onConfigure = function (info) {
-    if (info && Array.isArray(info.widgets_values)) {
-      info.widgets_values = compactarValores(this, info.widgets_values);
-    }
-    const r = configurarAntes?.apply(this, arguments);
-    setTimeout(() => { this.__cineCustom?.(); this.setDirtyCanvas(true, true); }, 0);
-    return r;
-  };
-
-  function aplicarPreset(n, nombrePerfil) {
-    const preset = PRESETS[nombrePerfil];
-    if (!preset) return;                 // AUTO no mueve nada: decide Python
-    for (const [clave, val] of Object.entries(preset)) {
-      if (clave === "refinar") {
-        const w = findWidget(n, "refinar");
-        if (w) { w.value = val; w.callback?.(val); }
-      } else {
-        faders[clave]?.animarHacia(val);
-      }
-    }
-    n.__cinePresetAplicado = nombrePerfil;
-    n.setDirtyCanvas(true, true);
+  for (const widget of node.widgets.filter(widgetSeGuarda)) {
+    const previous = widget.callback;
+    widget.callback = function () {
+      const result = previous?.apply(this, arguments);
+      visibilidad(node);
+      actualizarPreview(node);
+      return result;
+    };
   }
-
-  // estado CUSTOM: se deduce comparando, no se guarda en el workflow
-  node.__cineCustom = () => {
-    const p = String(findWidget(node, "perfil")?.value || "");
-    const preset = PRESETS[p];
-    if (!preset) return;
-    const igual = Object.entries(preset).every(([k, v]) =>
-      k === "refinar" ? !!findWidget(node, "refinar")?.value === v : valor(node, k) === v);
-    node.__cineEsCustom = !igual;
+  const beforeDraw = node.onDrawForeground;
+  node.onDrawForeground = function () {
+    beforeDraw?.apply(this, arguments);
+    visibilidad(this);
+    actualizarPreview(this);
   };
-
-  // el sufijo CUSTOM se pinta sobre el chip de perfil
-  const dibujoChip = chipPerfil.draw;
-  chipPerfil.draw = function (ctx, n, width, y) {
-    dibujoChip.call(this, ctx, n, width, y);
-    if (!n.__cineEsCustom) return;
-    ctx.save();
-    ctx.font = "9px " + MONO;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = ACCENT_CLARO;
-    ctx.fillText("• CUSTOM", width - PAD, y + 8);
-    ctx.restore();
+  const beforeExecuted = node.onExecuted;
+  node.onExecuted = function (message) {
+    beforeExecuted?.apply(this, arguments);
+    if (message.h3_config?.[0]) {
+      this.__h3Preview = {config: message.h3_config[0]};
+      this.setDirtyCanvas(true, true);
+    }
   };
+  const beforeRemoved = node.onRemoved;
+  node.onRemoved = function () {
+    this.__h3Removed = true;
+    clearTimeout(this.__h3Timer);
+    return beforeRemoved?.apply(this, arguments);
+  };
+  node.__cineCustom = () => { visibilidad(node); actualizarPreview(node); };
+  visibilidad(node);
+  actualizarPreview(node);
 
-  node.__cineCustom();
+}
+
+function mostrar(w) {
+  if (!w || w.__tipo === undefined) return;
+  w.type = w.__tipo;
+  w.computeSize = w.__computeSize;
+  w.draw = w.__draw;
+  w.hidden = false;
+  const el = w.inputEl || w.element || w.domElement;
+  if (el?.style) el.style.display = w.__display || "";
+  delete w.__tipo;
+}
+
+function visibilidad(node) {
+  const advanced = findWidget(node, "modo")?.value === "Advanced";
+  if (node.__h3Advanced === advanced) return;
+  node.__h3Advanced = advanced;
+  for (const w of node.widgets) {
+    if (w.name?.endsWith("_advanced")) (advanced ? mostrar : ocultar)(w);
+    if (w.name?.startsWith("__fader_")) (advanced ? ocultar : mostrar)(w);
+  }
+  node.setSize?.([Math.max(node.size?.[0] || 0, 460), node.computeSize()[1]]);
+  node.setDirtyCanvas(true, true);
+}
+
+function montarSimple(node) {
+  const w = findWidget(node, "texto");
+  if (w) {
+    w.label = "Tu escena · pega aquí el prompt completo";
+    const el = w.inputEl || w.element;
+    if (el) {
+      el.placeholder = "Describe la escena en inglés o pega un prompt H3 completo.\nLa cámara se elige en el Director.";
+      el.style.minHeight = "220px";
+      el.style.lineHeight = "1.6";
+    }
+  }
+  const copy = node.addWidget("button", "Copiar texto", null, async () => {
+    try { await navigator.clipboard.writeText(String(w?.value || "")); copy.label = "Texto copiado"; }
+    catch { copy.label = "Selecciona el texto y usa Ctrl+C"; }
+    node.setDirtyCanvas(true, true);
+  });
+  copy.serialize = false;
+  copy.options = {...copy.options, serialize: false};
+}
+
+const ENCUADRES = [
+  ["Libre", "sin especificar", 0.5],
+  ["Detalle", "primerisimo primer plano", 2.8],
+  ["Rostro", "primer plano", 1.8],
+  ["Medio corto", "plano medio corto", 1.2],
+  ["Medio", "plano medio", 0.95],
+  ["Americano", "plano americano", 0.7],
+  ["General", "plano general", 0.47],
+  ["Gran general", "gran plano general", 0.25],
+];
+const ANGULOS_VISUALES = [
+  ["Libre", "sin especificar", null],
+  ["Frontal", "frontal", 90],
+  ["Tres cuartos · 3/4", "tres cuartos", 135],
+  ["Perfil", "perfil", 180],
+];
+const CAMINOS = [
+  ["Fija", "fijo", "·"], ["Acercar", "acercarse", "↓"],
+  ["Alejar", "alejarse", "↑"], ["Órbita", "orbita", "↻"],
+  ["Seguir", "seguimiento", "→"], ["En mano", "camara en mano", "≈"],
+];
+
+function addTarjetas(node, targetName, title, cards, shots) {
+  let rects = [];
+  const columns = shots ? 4 : 3;
+  const height = shots ? 88 : 66;
+  const widget = {
+    name: "__cards_" + targetName, type: "cineconia_cards", value: null,
+    serialize: false, options: {serialize: false},
+    computeSize(width) { return [width, CAB + Math.ceil(cards.length / columns) * (height + GAP) + GAP]; },
+    draw(ctx, n, width, y) {
+      ctx.save(); ctx.textBaseline = "middle";
+      cabecera(ctx, title, width, y + 8);
+      rects = [];
+      const cw = (width - PAD * 2 - GAP * (columns - 1)) / columns;
+      for (let i = 0; i < cards.length; i++) {
+        const [label, value, scale] = cards[i];
+        const x = PAD + (i % columns) * (cw + GAP), top = y + CAB + Math.floor(i / columns) * (height + GAP);
+        const selected = findWidget(n, targetName)?.value === value;
+        ctx.fillStyle = selected ? "#42352a" : CHIP_BG;
+        roundRect(ctx, x, top, cw, height, 7); ctx.fill();
+        ctx.strokeStyle = selected ? ACCENT : LINEA; ctx.lineWidth = 1; ctx.stroke();
+        ctx.save();
+        ctx.beginPath(); ctx.rect(x + 5, top + 5, cw - 10, height - 27); ctx.clip();
+        const cx = x + cw / 2, cy = top + (height - 24) / 2;
+        if (shots === "angles") {
+          ctx.fillStyle = selected ? ACCENT_CLARO : "#9badad";
+          // Top view: the small triangle is the subject's face, the square is the camera.
+          const sy = top + 23;
+          ctx.beginPath(); ctx.arc(cx, sy, 7, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(cx - 4, sy + 7); ctx.lineTo(cx + 4, sy + 7); ctx.lineTo(cx, sy + 13); ctx.closePath(); ctx.fill();
+          if (scale !== null) {
+            const angle = scale * Math.PI / 180;
+            const px = cx + Math.cos(angle) * 29, py = sy + Math.sin(angle) * 29;
+            ctx.strokeStyle = selected ? ACCENT_CLARO : INFO_FG; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(cx, sy); ctx.stroke();
+            ctx.fillRect(px - 5, py - 4, 10, 8);
+          }
+        } else if (shots) {
+          ctx.strokeStyle = "#657779"; ctx.lineWidth = 0.7;
+          ctx.beginPath(); ctx.moveTo(x + 8, cy + 10); ctx.lineTo(x + cw - 8, cy + 10); ctx.stroke();
+          if (value === "sin especificar") {
+            ctx.font = "24px sans-serif"; ctx.fillStyle = INFO_FG; ctx.textAlign = "center"; ctx.fillText("◇", cx, cy);
+          } else {
+            const r = 7 * scale, headY = top + 8 + r;
+            ctx.fillStyle = selected ? ACCENT_CLARO : "#9badad";
+            ctx.beginPath(); ctx.arc(cx, headY, r, 0, Math.PI * 2); ctx.fill();
+            roundRect(ctx, cx - 12 * scale, headY + r + 3, 24 * scale, 30 * scale, 7 * scale); ctx.fill();
+            ctx.fillRect(cx - 10 * scale, headY + r + 28 * scale, 8 * scale, 25 * scale);
+            ctx.fillRect(cx + 2 * scale, headY + r + 28 * scale, 8 * scale, 25 * scale);
+          }
+        } else {
+          ctx.fillStyle = selected ? ACCENT_CLARO : INFO_FG;
+          ctx.textAlign = "center"; ctx.font = "28px sans-serif"; ctx.fillText(scale, cx, cy);
+        }
+        ctx.restore();
+        ctx.font = (shots === "angles" ? "10px " : "11px ") + MONO; ctx.textAlign = "center";
+        ctx.fillStyle = selected ? ACCENT_CLARO : CHIP_FG;
+        ctx.fillText(label, cx, top + height - 12, cw - 8);
+        rects.push({x, y: top, w: cw, h: height, value});
+      }
+      ctx.restore();
+    },
+    mouse(event, pos, n) {
+      if (!["pointerdown", "mousedown"].includes(event.type)) return false;
+      const r = rects.find(r => pos[0] >= r.x && pos[0] <= r.x + r.w && pos[1] >= r.y && pos[1] <= r.y + r.h);
+      if (!r) return false;
+      const target = findWidget(n, targetName);
+      if (target) { target.value = r.value; target.callback?.(r.value); }
+      n.setDirtyCanvas(true, true);
+      return true;
+    },
+  };
+  node.widgets.push(widget);
+}
+
+function montarDirector(node) {
+  ocultar(findWidget(node, "plano"));
+  addTarjetas(node, "plano", "01 · encuadre", ENCUADRES, true);
+  addTarjetas(node, "angulo", "02 · ángulo · desde dónde miras", ANGULOS_VISUALES, "angles");
+  addTarjetas(node, "movimiento", "03 · movimientos frecuentes", CAMINOS, false);
+  const labels = {movimiento: "Movimiento · lista completa", angulo: "Ángulo", intensidad: "Intensidad / velocidad",
+    lente: "Lente", profundidad_campo: "Fondo / profundidad", instruccion_camara: "Receta o instrucciones de cámara", reglas_continuidad: "Mantener continuidad"};
+  for (const w of node.widgets) if (labels[w.name]) w.label = labels[w.name];
+  const recipe = node.addWidget("combo", "Recetas H3 · elegir", "libre", () => {},
+    {values: TOMAS_H3.map(r => r[1]), serialize: false});
+  recipe.serialize = false;
+  const apply = node.addWidget("button", "Aplicar receta a la cámara", null, () => {
+    const selected = TOMAS_H3.find(r => r[1] === recipe.value);
+    if (!selected || selected[1] === "libre") return;
+    const w = findWidget(node, "instruccion_camara");
+    if (!w) return;
+    // Neutral grammar avoids guessing a subject's gender from the artwork.
+    w.value = conjugarTomaH3(selected[2], PRONOMBRES_H3.neutro);
+    if (w.inputEl) w.inputEl.value = w.value;
+    w.callback?.(w.value);
+    for (const name of ["plano", "angulo", "movimiento", "lente", "profundidad_campo"]) {
+      const control = findWidget(node, name);
+      if (control) { control.value = "sin especificar"; control.callback?.(control.value); }
+    }
+    const holes = huecosH3(w.value);
+    apply.label = holes.length ? "Completa los {CAMPOS} de la receta" : "Receta aplicada · revisa tu escena";
+    node.setDirtyCanvas(true, true);
+  });
+  apply.serialize = false;
+  apply.options = {...apply.options, serialize: false};
+
 }
 
 app.registerExtension({
@@ -586,15 +741,54 @@ app.registerExtension({
     if (!NODOS_H3.includes(clase) || !node.widgets) return;
     if (node.widgets.some((w) => String(w.name || "").startsWith("__"))) return;
 
+    const originalWidgets = node.widgets.filter(widgetSeGuarda).slice();
+    const serialize = node.serialize;
+    node.serialize = function () {
+      const info = serialize?.apply(this, arguments) || {};
+      info.widgets_values = originalWidgets.map(w => w.value);
+      info.widgets_values_named = Object.fromEntries(originalWidgets.map(w => [w.name, w.value]));
+      return info;
+    };
+    const onConfigure = node.onConfigure;
+    node.onConfigure = function (info) {
+      const result = onConfigure?.apply(this, arguments);
+      const named = info?.widgets_values_named;
+      const values = info?.widgets_values;
+      // Older prototypes put decorative holes before the real fields.
+      // Named values are authoritative when available; new saves have no holes.
+      originalWidgets.forEach((w, i) => {
+        const value = named && Object.hasOwn(named, w.name) ? named[w.name] : values?.[i];
+        if (value !== undefined) {
+          w.value = value;
+          if (w.inputEl) w.inputEl.value = value;
+        }
+      });
+      this.__cineCustom?.();
+      this.setDirtyCanvas(true, true);
+      return result;
+    };
+    node.color = "#283436";
+    node.bgcolor = "#172123";
+    if (clase === "CineCameraDirectorH3") montarDirector(node);
+    if (clase === "CineSimplePromptH3") montarSimple(node);
     if (clase === "CineH3Optimizer") {
       montarOptimizador(node);
-      node.setSize([Math.max(node.size?.[0] || 0, 400), node.computeSize()[1]]);
+      const visual = node.widgets.filter(w => !widgetSeGuarda(w));
+      node.widgets = [...visual, ...node.widgets.filter(widgetSeGuarda)];
+      node.setSize([Math.max(node.size?.[0] || 0, 460), node.computeSize()[1]]);
     } else {
-      // los otros tres solo reciben la marca, para que no desentonen
+      // Marca comun y tarjetas intercaladas sin cambiar el orden de datos.
       addLogo(node);
       const logo = node.widgets.pop();
       node.widgets.unshift(logo);
-      node.setSize([Math.max(node.size?.[0] || 0, 340), node.computeSize()[1]]);
+      if (clase === "CineCameraDirectorH3") {
+        for (const name of ["plano", "angulo", "movimiento"]) {
+          const cards = findWidget(node, "__cards_" + name);
+          node.widgets = node.widgets.filter(w => w !== cards);
+          node.widgets.splice(node.widgets.indexOf(findWidget(node, name)) + 1, 0, cards);
+        }
+      }
+      node.setSize([Math.max(node.size?.[0] || 0, 440), node.computeSize()[1]]);
     }
   },
 });
