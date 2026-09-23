@@ -8,6 +8,12 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.5.3] - 2026-09-22
+
+### Añadido
+
+- El paquete se presenta en la consola al arrancar ComfyUI, como el resto del ecosistema: versión, cuántos nodos cargaron y enlaces a los tutoriales y al código. Usa color y símbolos cuando la consola los admite y cae a ASCII simple cuando no, y nunca puede impedir que los nodos carguen.
+
 ## [1.5.2] - 2026-09-20
 
 ### Añadido

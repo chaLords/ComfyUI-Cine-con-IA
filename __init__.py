@@ -26,8 +26,18 @@ def _version():
         return ""
 
 
+def _admite(texto):
+    """True si la salida actual puede escribir estos caracteres."""
+    import sys
+    try:
+        texto.encode(getattr(sys.stdout, "encoding", None) or "ascii")
+        return True
+    except (UnicodeError, LookupError):
+        return False
+
+
 def _saludo():
-    """Una linea de presentacion al cargar, como hacen otros paquetes.
+    """Presentacion al cargar, como hacen otros paquetes del ecosistema.
 
     Nada de esto puede impedir que los nodos carguen: si la consola no
     admite color, si pyproject no esta, o si el terminal no deja escribir,
@@ -35,23 +45,34 @@ def _saludo():
     """
     n = len(NODE_CLASS_MAPPINGS)
     v = _version()
-    ambar, gris, apagar = "\033[38;5;179m", "\033[38;5;245m", "\033[0m"
+    c = {
+        "ambar": "\033[38;5;214m", "negrita": "\033[1m", "gris": "\033[38;5;245m",
+        "verde": "\033[38;5;114m", "rojo": "\033[38;5;203m", "azul": "\033[38;5;111m",
+        "fin": "\033[0m",
+    }
     if os.name == "nt" and not os.environ.get("WT_SESSION"):
         # Consolas antiguas de Windows no entienden los codigos de color y
         # los pintarian como basura encima del mensaje.
         try:
             import colorama  # noqa: F401
         except ImportError:
-            ambar = gris = apagar = ""
+            c = dict.fromkeys(c, "")
 
-    # Solo ASCII: la consola de Windows no siempre esta en UTF-8 y un
-    # caracter como "·" se convierte en basura encima del mensaje.
-    raya = "-" * 62
-    print(f"{ambar}{raya}")
-    print(f"  Cine con IA{(' v' + v) if v else ''}  |  {n} nodos cargados")
-    print(f"{gris}  Tutoriales:   {CANAL}")
-    print(f"  Repositorio:  {REPO}{ambar}")
-    print(f"{raya}{apagar}")
+    # Con UTF-8 (Windows Terminal, la consola del portable) va la version con
+    # simbolos; si la salida no los admite, la de solo ASCII, que nunca falla.
+    if _admite("━🎬✔▶◆"):
+        raya, logo, ok, yt, gh = "━" * 64, "🎬", "✔", "▶", "◆"
+    else:
+        raya, logo, ok, yt, gh = "=" * 64, "", "OK", ">", "*"
+
+    version = f" v{v}" if v else ""
+    titulo = f"{logo}  " if logo else ""
+    print(f"{c['ambar']}{raya}{c['fin']}")
+    print(f"   {c['ambar']}{c['negrita']}{titulo}CINE CON IA{c['fin']}{c['gris']}{version}{c['fin']}"
+          f"   {c['verde']}{ok} {n} nodos cargados{c['fin']}")
+    print(f"   {c['rojo']}{yt}{c['fin']} {c['gris']}Tutoriales{c['fin']}   {c['azul']}{CANAL}{c['fin']}")
+    print(f"   {c['gris']}{gh} Codigo    {c['fin']}   {c['azul']}{REPO}{c['fin']}")
+    print(f"{c['ambar']}{raya}{c['fin']}")
 
 
 try:
