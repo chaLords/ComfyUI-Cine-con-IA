@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.5.3] - 2026-09-22
+
+### Added
+
+- The package introduces itself in the console when ComfyUI starts, like the rest of the ecosystem: version, how many nodes loaded, and links to the tutorials and the code. It uses colour and symbols when the console supports them and falls back to plain ASCII when it does not, and it can never stop the nodes from loading.
+
 ## [1.5.2] - 2026-09-20
 
 ### Added
