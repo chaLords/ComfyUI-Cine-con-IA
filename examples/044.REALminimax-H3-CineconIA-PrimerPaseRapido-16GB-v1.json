@@ -1,5 +1,5 @@
 {
-  "id": "cineconia-043-h3-receta033-vs-auto-20260924",
+  "id": "cineconia-044-h3-primer-pase-rapido-16gb-20260924",
   "revision": 0,
   "last_node_id": 34003,
   "last_link_id": 59,
@@ -20,15 +20,15 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "Cómo se usa · 043 Receta del 033 contra nuestro Auto",
+      "title": "Cómo se usa · 044 Primer pase rápido contra nuestro Auto",
       "properties": {
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "# 043 · Receta del 033 contra nuestro Auto\n\nEl 033 (*REALminimax h3-Upscale*, el workflow del que nacieron estos nodos) repartía el trabajo distinto: un primer pase **barato** y un salto **grande** antes de refinar. Aquí se mide contra lo que hace hoy nuestro Optimizador en Auto. Misma escena, misma cámara, **misma semilla**, 5 s, y las dos parten de 416×736.\n\n- **A · nuestro Auto**: 20 pasos res_multistep/simple a 416×736 → sube ×1.27 a **544×928** → 4 pasos de refinado.\n- **B · receta 033**: 8 pasos er_sde/beta a 416×736 → sube ×2 a **832×1472** → 4 pasos de refinado.\n\nEl refinado es el mismo en las dos (*Escalar y refinar*: escalador latente de H3, sigmas 0.9035 → 0, er_sde, semilla 835).\n\n**Antes de ejecutar.** El Optimizador B marca **rojo**. Medido en una RTX 4060 Ti de 16 GB: subir ×2 a 832×1472 no da error de memoria, pero el refinado queda casi detenido (más de 15 min sin terminar el primer paso). En 16 GB usa el **044**, que es esta misma receta con ×1.27. Si quieres más detalle que el 044, prueba en B *Escala refinado* **1.5** (verde, 640×1088): todavía no está medido. El troceo del modelo lo pone B (32/32); no cambia el resultado, solo baja el pico.\n\n**1 · Ejecuta dos veces.** La primera incluye cargar el modelo; compara la segunda.\n\n**2 · Lee el Cronómetro.** Las barras separan *Render* y *Escalar y refinar* de cada rama. En el historial, la primera cifra *normal* es A y la segunda es B.\n\n**3 · Compara.** Se guardan como `CineConIA/043_A_auto_…` y `CineConIA/043_B_receta033_…`. B sale con 2,4 veces más píxeles: míralos al mismo tamaño en pantalla — cara, pelo, textura de la ropa.\n\n*Medido en 16 GB: el primer pase de B tardó 12 min 34 s y el de A 31 min 35 s. El salto ×2 es lo que no entra.*"
+        "# 044 · Primer pase rápido contra nuestro Auto (16 GB)\n\nEs el 043 ajustado a una tarjeta de 16 GB. En el 043, subir ×2 a 832×1472 dejó el refinado casi detenido; aquí las dos ramas suben ×1.27 y terminan igual, así que **lo único que cambia es el primer pase**. Misma escena, misma cámara, **misma semilla**, 5 s.\n\n- **A · nuestro Auto**: 20 pasos res_multistep/simple a 416×736 → sube ×1.27 a **544×928** → 4 pasos de refinado.\n- **B · primer pase rápido**: 8 pasos er_sde/beta a 416×736 → sube ×1.27 a **544×928** → 4 pasos de refinado.\n\nMedido en el 043 con una RTX 4060 Ti: el primer pase de B tardó **12 min 34 s** y el de A **31 min 35 s**. La pregunta de este workflow es si esos 8 pasos se ven igual de bien.\n\n**1 · Ejecuta una vez.** Las dos ramas corren una detrás de otra. No hace falta repetir: el Cronómetro separa *Render* y *Escalar y refinar* de cada rama.\n\n**2 · Lee el Cronómetro.** En el historial, la primera cifra *normal* es A y la segunda es B.\n\n**3 · Compara.** Se guardan como `CineConIA/044_A_auto_…` y `CineConIA/044_B_rapido_…`, del mismo tamaño: la diferencia que veas es del primer pase. Mira la cara, el pelo, la textura de la ropa y si el movimiento es igual de estable.\n\n*Si B se ve bien, lo siguiente es probar en B Escala refinado 1.5 (640×1088), que todavía no está medido.*"
       ],
       "widgets_values_named": {
-        "text": "# 043 · Receta del 033 contra nuestro Auto\n\nEl 033 (*REALminimax h3-Upscale*, el workflow del que nacieron estos nodos) repartía el trabajo distinto: un primer pase **barato** y un salto **grande** antes de refinar. Aquí se mide contra lo que hace hoy nuestro Optimizador en Auto. Misma escena, misma cámara, **misma semilla**, 5 s, y las dos parten de 416×736.\n\n- **A · nuestro Auto**: 20 pasos res_multistep/simple a 416×736 → sube ×1.27 a **544×928** → 4 pasos de refinado.\n- **B · receta 033**: 8 pasos er_sde/beta a 416×736 → sube ×2 a **832×1472** → 4 pasos de refinado.\n\nEl refinado es el mismo en las dos (*Escalar y refinar*: escalador latente de H3, sigmas 0.9035 → 0, er_sde, semilla 835).\n\n**Antes de ejecutar.** El Optimizador B marca **rojo**. Medido en una RTX 4060 Ti de 16 GB: subir ×2 a 832×1472 no da error de memoria, pero el refinado queda casi detenido (más de 15 min sin terminar el primer paso). En 16 GB usa el **044**, que es esta misma receta con ×1.27. Si quieres más detalle que el 044, prueba en B *Escala refinado* **1.5** (verde, 640×1088): todavía no está medido. El troceo del modelo lo pone B (32/32); no cambia el resultado, solo baja el pico.\n\n**1 · Ejecuta dos veces.** La primera incluye cargar el modelo; compara la segunda.\n\n**2 · Lee el Cronómetro.** Las barras separan *Render* y *Escalar y refinar* de cada rama. En el historial, la primera cifra *normal* es A y la segunda es B.\n\n**3 · Compara.** Se guardan como `CineConIA/043_A_auto_…` y `CineConIA/043_B_receta033_…`. B sale con 2,4 veces más píxeles: míralos al mismo tamaño en pantalla — cara, pelo, textura de la ropa.\n\n*Medido en 16 GB: el primer pase de B tardó 12 min 34 s y el de A 31 min 35 s. El salto ×2 es lo que no entra.*"
+        "text": "# 044 · Primer pase rápido contra nuestro Auto (16 GB)\n\nEs el 043 ajustado a una tarjeta de 16 GB. En el 043, subir ×2 a 832×1472 dejó el refinado casi detenido; aquí las dos ramas suben ×1.27 y terminan igual, así que **lo único que cambia es el primer pase**. Misma escena, misma cámara, **misma semilla**, 5 s.\n\n- **A · nuestro Auto**: 20 pasos res_multistep/simple a 416×736 → sube ×1.27 a **544×928** → 4 pasos de refinado.\n- **B · primer pase rápido**: 8 pasos er_sde/beta a 416×736 → sube ×1.27 a **544×928** → 4 pasos de refinado.\n\nMedido en el 043 con una RTX 4060 Ti: el primer pase de B tardó **12 min 34 s** y el de A **31 min 35 s**. La pregunta de este workflow es si esos 8 pasos se ven igual de bien.\n\n**1 · Ejecuta una vez.** Las dos ramas corren una detrás de otra. No hace falta repetir: el Cronómetro separa *Render* y *Escalar y refinar* de cada rama.\n\n**2 · Lee el Cronómetro.** En el historial, la primera cifra *normal* es A y la segunda es B.\n\n**3 · Compara.** Se guardan como `CineConIA/044_A_auto_…` y `CineConIA/044_B_rapido_…`, del mismo tamaño: la diferencia que veas es del primer pase. Mira la cara, el pelo, la textura de la ropa y si el movimiento es igual de estable.\n\n*Si B se ve bien, lo siguiente es probar en B Escala refinado 1.5 (640×1088), que todavía no está medido.*"
       },
       "color": "#432",
       "bgcolor": "#653"
@@ -1060,7 +1060,7 @@
       "widgets_values": {
         "frame_rate": 24,
         "loop_count": 0,
-        "filename_prefix": "CineConIA/043_A_auto_%date:yyyyMMdd_hhmmss%",
+        "filename_prefix": "CineConIA/044_A_auto_%date:yyyyMMdd_hhmmss%",
         "format": "video/h264-mp4",
         "pix_fmt": "yuv420p",
         "crf": 16,
@@ -1072,7 +1072,7 @@
       "widgets_values_named": {
         "frame_rate": 24,
         "loop_count": 0,
-        "filename_prefix": "CineConIA/043_A_auto_%date:yyyyMMdd_hhmmss%",
+        "filename_prefix": "CineConIA/044_A_auto_%date:yyyyMMdd_hhmmss%",
         "format": "video/h264-mp4",
         "pix_fmt": "yuv420p",
         "crf": 16,
@@ -1167,7 +1167,7 @@
           "links": []
         }
       ],
-      "title": "03B · Memoria · receta 033",
+      "title": "03B · Memoria · 8 pasos rápidos",
       "properties": {
         "Node name for S&R": "CineH3Optimizer"
       },
@@ -1189,7 +1189,7 @@
         1,
         32,
         32,
-        2.0,
+        1.27,
         "4 pasos  ·  recomendado",
         "Normal",
         10,
@@ -1213,7 +1213,7 @@
         "denoise_advanced": 1,
         "trocear_atencion_advanced": 32,
         "trocear_ffn_advanced": 32,
-        "escala_refinado_advanced": 2.0,
+        "escala_refinado_advanced": 1.27,
         "pasos_refinado_advanced": "4 pasos  ·  recomendado",
         "muestreo": "Normal",
         "transicion_advanced": 10,
@@ -1280,7 +1280,7 @@
           "links": []
         }
       ],
-      "title": "04B · Render · receta 033 (8 pasos)",
+      "title": "04B · Render · 8 pasos (er_sde / beta)",
       "properties": {
         "Node name for S&R": "CineH3OptimizedSampler"
       },
@@ -1376,7 +1376,7 @@
       },
       "color": "#283436",
       "bgcolor": "#172123",
-      "title": "05B · Escalar y refinar · receta 033"
+      "title": "05B · Escalar y refinar · x1.27"
     },
     {
       "id": 517,
@@ -1457,7 +1457,7 @@
       },
       "color": "#283436",
       "bgcolor": "#172123",
-      "title": "06B · Salida · receta 033"
+      "title": "06B · Salida · 8 pasos"
     },
     {
       "id": 34003,
@@ -1513,7 +1513,7 @@
           "links": []
         }
       ],
-      "title": "Vídeo B · receta 033",
+      "title": "Vídeo B · 8 pasos rápidos",
       "properties": {
         "cnr_id": "comfyui-videohelpersuite",
         "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
@@ -1522,7 +1522,7 @@
       "widgets_values": {
         "frame_rate": 24,
         "loop_count": 0,
-        "filename_prefix": "CineConIA/043_B_receta033_%date:yyyyMMdd_hhmmss%",
+        "filename_prefix": "CineConIA/044_B_rapido_%date:yyyyMMdd_hhmmss%",
         "format": "video/h264-mp4",
         "pix_fmt": "yuv420p",
         "crf": 16,
@@ -1534,7 +1534,7 @@
       "widgets_values_named": {
         "frame_rate": 24,
         "loop_count": 0,
-        "filename_prefix": "CineConIA/043_B_receta033_%date:yyyyMMdd_hhmmss%",
+        "filename_prefix": "CineConIA/044_B_rapido_%date:yyyyMMdd_hhmmss%",
         "format": "video/h264-mp4",
         "pix_fmt": "yuv420p",
         "crf": 16,
@@ -2076,7 +2076,7 @@
     },
     {
       "id": 4,
-      "title": "PROCESO · A Auto / B receta 033",
+      "title": "PROCESO · A Auto / B 8 pasos",
       "bounding": [
         470,
         605,
@@ -2128,7 +2128,7 @@
     },
     {
       "id": 7,
-      "title": "GENERACIÓN B · receta 033",
+      "title": "GENERACIÓN B · 8 pasos rápidos",
       "bounding": [
         3250,
         -65,
@@ -2141,7 +2141,7 @@
     },
     {
       "id": 7,
-      "title": "SALIDA B · receta 033",
+      "title": "SALIDA B · 8 pasos rápidos",
       "bounding": [
         3790,
         -65,

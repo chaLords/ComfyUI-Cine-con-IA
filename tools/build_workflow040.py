@@ -29,8 +29,8 @@ Misma escena y misma cámara que el 039. Solo cambia cómo se decide la memoria.
 
 **4 · Cambia el video y mira cómo reaccionan los puntos.**
 - *Proporción y Tamaño* → **0.40 MP**: AUTO pasa a amarillo; 8 y 12 siguen en verde.
-- *Duración* → **15 s**: AUTO en rojo; 8 GB en verde (sin segundo pase, troceo 38).
-- 15 s y desmarca *Solicitar segundo pase*: todo en verde menos 32.
+- *Duración* → **15 s**: AUTO en rojo; 8 GB en amarillo (sin segundo pase, troceo 38).
+- 15 s y desmarca *Solicitar segundo pase*: todo en amarillo. A 15 s ni el primer pase solo tiene margen en 16 GB.
 
 **5 · Generar.** Vuelve a 0.30 MP · 8 s, deja **AUTO** y ejecuta: 20 pasos, troceo 26/26 y segundo pase x1.27. El video se guarda como `CineConIA/040_…`.
 

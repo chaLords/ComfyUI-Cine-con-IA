@@ -85,11 +85,10 @@ class Workflow040Tests(unittest.TestCase):
         self.assertEqual((r["ladder"]["8 GB"], r["ladder"]["12 GB"]), ("SAFE", "SAFE"))
 
         r = self._preview(segundos=15)
-        self.assertEqual((r["ladder"]["AUTO"], r["ladder"]["8 GB"]), ("RISKY", "SAFE"))
+        self.assertEqual((r["ladder"]["AUTO"], r["ladder"]["8 GB"]), ("RISKY", "TIGHT"))
 
         r = self._preview(segundos=15, refinar=False)
-        self.assertTrue(all(v == "SAFE" for k, v in r["ladder"].items() if k != "32 GB"))
-        self.assertEqual(r["ladder"]["32 GB"], "TIGHT")
+        self.assertTrue(all(v == "TIGHT" for v in r["ladder"].values()))
 
 
 if __name__ == "__main__":

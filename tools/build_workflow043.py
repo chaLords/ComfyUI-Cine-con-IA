@@ -48,7 +48,7 @@ El 033 (*REALminimax h3-Upscale*, el workflow del que nacieron estos nodos) repa
 
 El refinado es el mismo en las dos (*Escalar y refinar*: escalador latente de H3, sigmas 0.9035 → 0, er_sde, semilla 835).
 
-**Antes de ejecutar.** El Optimizador B marca **amarillo**: subir ×2 a 832×1472 es el tramo que más memoria pide. El troceo del modelo lo pone B (32/32); no cambia el resultado, solo baja el pico. **Si se queda sin memoria**: en el Optimizador B, *Escala refinado* 2.0 → **1.5** (verde, 640×1088).
+**Antes de ejecutar.** El Optimizador B marca **rojo**. Medido en una RTX 4060 Ti de 16 GB: subir ×2 a 832×1472 no da error de memoria, pero el refinado queda casi detenido (más de 15 min sin terminar el primer paso). En 16 GB usa el **044**, que es esta misma receta con ×1.27. Si quieres más detalle que el 044, prueba en B *Escala refinado* **1.5** (verde, 640×1088): todavía no está medido. El troceo del modelo lo pone B (32/32); no cambia el resultado, solo baja el pico.
 
 **1 · Ejecuta dos veces.** La primera incluye cargar el modelo; compara la segunda.
 
@@ -56,7 +56,7 @@ El refinado es el mismo en las dos (*Escalar y refinar*: escalador latente de H3
 
 **3 · Compara.** Se guardan como `CineConIA/043_A_auto_…` y `CineConIA/043_B_receta033_…`. B sale con 2,4 veces más píxeles: míralos al mismo tamaño en pantalla — cara, pelo, textura de la ropa.
 
-*Experimental. B no promete ser más rápido: promete más detalle en un tiempo parecido. Eso es lo que se mide.*"""
+*Medido en 16 GB: el primer pase de B tardó 12 min 34 s y el de A 31 min 35 s. El salto ×2 es lo que no entra.*"""
 
 
 def fijar_semilla_refinado(node):
@@ -66,7 +66,8 @@ def fijar_semilla_refinado(node):
     poner_valores(node, named)
 
 
-def construir():
+def armar():
+    """El grafo del 043, sin escribirlo (el 044 parte de aqui)."""
     w = json.loads(SOURCE.read_text(encoding="utf-8"))
     w["id"] = "cineconia-043-h3-receta033-vs-auto-20260924"
     w["revision"] = 0
@@ -192,6 +193,11 @@ def construir():
 
     w.setdefault("extra", {})["ds"] = dict(VISTA)
     g.ordenar()
+    return w
+
+
+def construir():
+    w = armar()
     OUTPUT.write_text(json.dumps(w, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return w
 

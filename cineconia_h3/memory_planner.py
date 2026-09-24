@@ -6,22 +6,27 @@ from .profiles import clamp
 # Capacidad relativa de cada tarjeta, en la misma unidad que la carga.
 #
 # No es una medicion: es la definicion de politica "el preset de cada tarjeta
-# usa ~63 % de su capacidad a la carga de referencia". Se obtiene dividiendo la
-# carga de referencia de cada preset (ver profiles.py) por 0.63.
+# usa ~70 % de su capacidad a la carga de referencia". Se obtiene dividiendo la
+# carga de referencia de cada preset (ver profiles.py) por 0.70.
 #
 # Datos medidos que la tabla respeta (RTX 4060 Ti, 16 GB):
 #  - 033 v2: 416x736x192, segundo pase x2.0, SIN troceo -> OOM, pico 20.9 GB.
-#    Aqui da 4.0 / 2.38 = 1.68, RIESGO.
+#    Aqui da 4.0 / 2.14 = 1.87, RIESGO.
 #  - 038: 480x832x192, sin segundo pase, troceo 16/16 -> renderiza.
-#    Aqui da 1.30 / 2.38 = 0.55, MARGEN.
-# Ningun render medido tiene el segundo pase activo con troceo: desde el 035
-# ese pase estaba en bypass. 8, 12, 24 y 32 GB siguen sin benchmark propio.
+#    Aqui da 1.30 / 2.14 = 0.61, MARGEN.
+#  - 043 A: 416x736x124, segundo pase x1.27, troceo 32/32 -> renderiza
+#    (~115 s por paso de refinado). Aqui da 0.95 / 2.14 = 0.44, MARGEN.
+#  - 043 B: 416x736x124, segundo pase x2.0, troceo 32/32 -> no da OOM pero el
+#    refinado queda casi detenido (mas de 15 min sin terminar el primer paso,
+#    dos veces). Aqui da 2.35 / 2.14 = 1.10, RIESGO. Con la politica anterior
+#    (63 %, capacidad 2.38) salia JUSTO: por eso se subio al 70 %.
+# 8, 12, 24 y 32 GB siguen sin benchmark propio.
 CAPACITY = {
-    "8 GB": 1.42,
-    "12 GB": 1.86,
-    "16 GB": 2.38,
-    "24 GB": 3.13,
-    "32 GB": 4.06,
+    "8 GB": 1.28,
+    "12 GB": 1.67,
+    "16 GB": 2.14,
+    "24 GB": 2.82,
+    "32 GB": 3.66,
 }
 
 

@@ -208,8 +208,9 @@ class Workflow043Tests(Coherencia, unittest.TestCase):
                                    lado_escalado(cfg["height"], cfg["refine_scale"]))
             self.assertIn("×{:g} a **{}**".format(cfg["refine_scale"], final), self.nota)
         self.assertEqual(a["planner"]["status"], "SAFE")
-        self.assertEqual(b["planner"]["status"], "TIGHT")
-        self.assertIn("amarillo", self.nota)
+        self.assertEqual(b["planner"]["status"], "RISKY")   # medido: x2 queda casi detenido
+        self.assertIn("rojo", self.nota)
+        self.assertIn("044", self.nota)
 
         menos = self.preview(self.opt["Advanced"], escala_refinado_advanced=1.5)
         self.assertEqual(menos["planner"]["status"], "SAFE")
@@ -222,6 +223,47 @@ class Workflow043Tests(Coherencia, unittest.TestCase):
         self.assertTrue(prefijos[0].startswith("CineConIA/043_A_auto_"))
         self.assertTrue(prefijos[1].startswith("CineConIA/043_B_receta033_"))
         for p in ("043_A_auto_", "043_B_receta033_"):
+            self.assertIn(p, self.nota)
+
+
+
+class Workflow044Tests(Coherencia, unittest.TestCase):
+    """El 043 ajustado a 16 GB: solo cambia el primer pase."""
+    nombre = "044"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        opts = [n for n in cls.workflow["nodes"] if n["type"] == "CineH3Optimizer"]
+        cls.opt = {n["widgets_values_named"]["modo"]: n for n in opts}
+
+    def test_es_el_043_con_b_a_x127(self):
+        w043 = cargar("043")
+        self.assertEqual(self.workflow["links"], w043["links"])
+        a43 = {n["id"]: n for n in w043["nodes"]}
+        for n in self.workflow["nodes"]:
+            if n["type"] in ("MarkdownNote", "VHS_VideoCombine"):
+                continue
+            esperado = dict(a43[n["id"]].get("widgets_values_named") or {})
+            if n["id"] == self.opt["Advanced"]["id"]:
+                esperado["escala_refinado_advanced"] = 1.27
+            self.assertEqual(n.get("widgets_values_named") or {}, esperado, n["id"])
+
+    def test_las_dos_ramas_terminan_igual_y_en_margen(self):
+        a, b = self.preview(self.opt["Auto"]), self.preview(self.opt["Advanced"])
+        self.assertEqual((b["steps"], b["sampler"], b["scheduler"]), (8, "er_sde", "beta"))
+        self.assertEqual((a["steps"], a["sampler"], a["scheduler"]), (20, "res_multistep", "simple"))
+        self.assertEqual(a["refine_scale"], b["refine_scale"])
+        final = "{}×{}".format(lado_escalado(416, b["refine_scale"]), lado_escalado(736, b["refine_scale"]))
+        self.assertEqual(self.nota.count("×1.27 a **{}**".format(final)), 2)
+        self.assertEqual((a["planner"]["status"], b["planner"]["status"]), ("SAFE", "SAFE"))
+
+    def test_cada_rama_guarda_su_video(self):
+        prefijos = sorted(n["widgets_values"]["filename_prefix"] for n in self.workflow["nodes"]
+                          if n["type"] == "VHS_VideoCombine")
+        self.assertTrue(prefijos[0].startswith("CineConIA/044_A_auto_"))
+        self.assertTrue(prefijos[1].startswith("CineConIA/044_B_rapido_"))
+        for p in ("044_A_auto_", "044_B_rapido_"):
             self.assertIn(p, self.nota)
 
 
