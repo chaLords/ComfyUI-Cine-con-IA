@@ -90,11 +90,13 @@ class OptimizedSamplerTests(unittest.TestCase):
             hardware={"available": False, "name": "test", "total_gb": None,
                       "free_gb": None, "source": "test"})
         with patch.dict(sys.modules, {"nodes": fake_nodes}):
-            latent, info = CineH3OptimizedSampler().render(
+            out = CineH3OptimizedSampler().render(
                 object(), object(), object(), config, 123)
+        latent, info = out["result"]
         self.assertIsNotNone(latent)
         self.assertEqual(len(calls), 5)
         self.assertIn("24 GB", info)
+        self.assertEqual(out["ui"]["h3_render"][0]["mode"], "normal")
 
 
 if __name__ == "__main__":

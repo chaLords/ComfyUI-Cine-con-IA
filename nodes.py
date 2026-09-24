@@ -2219,7 +2219,8 @@ def preview_h3(body):
     fields = body.get("fields", {})
     if not isinstance(fields, dict):
         raise ValueError("Campos invalidos")
-    schema = CineH3Optimizer.INPUT_TYPES()["required"]
+    spec = CineH3Optimizer.INPUT_TYPES()
+    schema = {**spec["required"], **spec.get("optional", {})}
     values = {}
     for name, (kind, options) in schema.items():
         value = fields.get(name, options["default"])

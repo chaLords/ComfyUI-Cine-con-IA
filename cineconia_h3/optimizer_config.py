@@ -2,6 +2,7 @@
 
 from .hardware import detect_hardware, select_auto_profile
 from .memory_planner import plan_memory
+from .progressive import MODES as SAMPLING_MODES, describe as describe_progressive, plan_progressive
 from .profiles import PROFILE_NAMES, REFINE_STEPS, closest_profile, clamp, get_profile
 
 
@@ -25,7 +26,8 @@ def build_optimizer_config(
         advanced_attention_chunks=16, advanced_ffn_chunks=16,
         advanced_refine_scale=1.25,
         advanced_refine_steps="4 pasos  ·  recomendado",
-        hardware=None):
+        sampling="Normal", advanced_transition=10, advanced_lowres_scale=0.0,
+        hardware=None, progressive_env=None):
     mode = mode if mode in MODES else "Auto"
     hardware = detect_hardware() if hardware is None else hardware
     if profile == "AUTO":
@@ -97,6 +99,14 @@ def build_optimizer_config(
     if refine and not values["refine"]:
         selection_note += " · perfil de 8 GB: refinado apagado; Advanced permite forzarlo"
 
+    # Muestreo progresivo (SelfLift): ahorra tiempo, no memoria. El pico lo
+    # marca el tramo final, a la resolucion pedida, asi que el planificador
+    # de arriba sigue valiendo tal cual.
+    sampling = sampling if sampling in SAMPLING_MODES else "Normal"
+    progressive = plan_progressive(
+        sampling == "Progresivo", mode, width, height, values["steps"], quality,
+        advanced_transition, advanced_lowres_scale, values["refine"], env=progressive_env)
+
     config = {
         "schema": "cineconia.h3.optimizer/v1",
         "mode": mode,
@@ -111,6 +121,8 @@ def build_optimizer_config(
         "vram_save": vram_save,
         "hardware": hardware,
         "planner": planner,
+        "sampling": sampling,
+        "progressive": progressive,
         **values,
     }
     detected = (
@@ -124,6 +136,7 @@ def build_optimizer_config(
         "{}x{} · {} frames · {} pasos · troceo {}/{}\n"
         "refinado: {} x{} ({})\n"
         "Memory Planner: {}\n"
+        "{}\n"
         "Perfiles experimentales: falta validacion con render real.\n"
         "{}"
     ).format(
@@ -131,6 +144,7 @@ def build_optimizer_config(
         width, height, frames, values["steps"],
         values["attention_chunks"], values["ffn_chunks"],
         "si" if values["refine"] else "no", values["refine_scale"],
-        values["refine_steps"], planner["status"], " · ".join(planner["recommendations"]),
+        values["refine_steps"], planner["status"], describe_progressive(progressive),
+        " · ".join(planner["recommendations"]),
     )
     return config, info

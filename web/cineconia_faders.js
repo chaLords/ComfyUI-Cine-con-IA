@@ -51,6 +51,9 @@ const NODOS_H3 = [
 
 const ORDEN_PERFILES = ["AUTO", "8 GB", "12 GB", "16 GB", "24 GB", "32 GB"];
 const MODOS = [["guiado", "Auto"], ["avanzado", "Advanced"]];
+const MUESTREOS = [["Normal", "Normal"], ["Progresivo", "Progresivo"]];
+// Controles avanzados que solo tienen sentido con muestreo Progresivo.
+const SOLO_PROGRESIVO = ["transicion_advanced", "escala_inicial_advanced"];
 
 const findWidget = (node, name) => node?.widgets?.find((w) => w.name === name);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -142,6 +145,36 @@ function addLogo(node) {
 
 // --- chips ----------------------------------------------------------------
 
+/** Texto a la derecha de una cabecera. Tapa la linea para que no lo tache. */
+function avisoCabecera(ctx, n, width, y, texto, color) {
+  ctx.save();
+  ctx.font = "9px " + MONO; ctx.textAlign = "right";
+  const aw = ctx.measureText(texto).width + 10;
+  ctx.fillStyle = n.bgcolor || "#172123";
+  ctx.fillRect(width - PAD - aw, y + 2, aw, 12);
+  ctx.fillStyle = color;
+  ctx.fillText(texto, width - PAD, y + 8);
+  ctx.restore();
+  ctx.font = "11px " + MONO;
+}
+
+/** Que va a hacer el modo progresivo, segun el servidor. null en Normal. */
+function avisoMuestreo(n) {
+  if (findWidget(n, "muestreo")?.value !== "Progresivo") return null;
+  const p = n.__h3Preview?.config?.progressive;
+  if (!p?.requested) return { texto: "• calculando…", color: TEXTO_TENUE };
+  const tramo = `• ${p.transition_step} de ${p.steps} pasos a ${p.low_width}×${p.low_height}`;
+  const bajo = Math.min(p.low_width, p.low_height) < 384;
+  switch (p.status) {
+    case "READY": return bajo ? { texto: tramo + " · bajo 384 px", color: AMARILLO } : { texto: tramo, color: INFO_FG };
+    case "SIN_VERIFICAR": return { texto: tramo + " · sin verificar", color: TEXTO_TENUE };
+    case "NO_APLICA": return { texto: "• no aplica a este tamaño · se renderiza normal", color: AMARILLO };
+    case "FALTA_SELFLIFT": return { texto: "• falta SelfLift · instálalo y reinicia", color: ROJO_SEM };
+    case "FALTA_ESCALADOR": return { texto: "• falta el escalador latente H3", color: ROJO_SEM };
+    default: return null;
+  }
+}
+
 /**
  * Fila de chips atada a un widget nativo.
  * items: [[etiqueta, valor], ...]   alCambiar: (node, valor) => void
@@ -169,17 +202,11 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
       const yTop = y + CAB;
       const ladder = objetivo === "perfil" ? n.__h3Preview?.ladder : null;
       if (objetivo === "perfil" && esCustom(n)) {
-        ctx.save();
-        const aviso = "• CUSTOM · pulsa el perfil para volver";
-        ctx.font = "9px " + MONO; ctx.textAlign = "right";
-        // tapa la linea de la cabecera detras del texto, para que no lo tache
-        const aw = ctx.measureText(aviso).width + 10;
-        ctx.fillStyle = n.bgcolor || "#172123";
-        ctx.fillRect(width - PAD - aw, y + 2, aw, 12);
-        ctx.fillStyle = ACCENT_CLARO;
-        ctx.fillText(aviso, width - PAD, y + 8);
-        ctx.restore();
-        ctx.font = "11px " + MONO;
+        avisoCabecera(ctx, n, width, y, "• CUSTOM · pulsa el perfil para volver", ACCENT_CLARO);
+      }
+      if (objetivo === "muestreo") {
+        const aviso = avisoMuestreo(n);
+        if (aviso) avisoCabecera(ctx, n, width, y, aviso.texto, aviso.color);
       }
       for (const [etq, val] of items) {
         const tw = Math.ceil(ctx.measureText(etq).width) + 16 + (ladder ? 10 : 0);
@@ -623,6 +650,16 @@ function montarOptimizador(node) {
   );
 
   addChipsSimple(node, "modo", "controles", MODOS.map(([label, v]) => [label, v]), (n) => visibilidad(n));
+  // Solo si el servidor ya trae el modo progresivo: con un Python viejo no hay widget.
+  if (findWidget(node, "muestreo")) {
+    addChipsSimple(node, "muestreo", "muestreo", MUESTREOS, (n) => visibilidad(n));
+  }
+  for (const [name, label] of Object.entries({
+    transicion_advanced: "pasos a baja resolución",
+    escala_inicial_advanced: "escala del tramo inicial · 0 = auto",
+  })) {
+    const w = findWidget(node, name); if (w) w.label = label;
+  }
 
   faders.calidad = addFader(node, "calidad", "calidad", leerCalidad);
   faders.detalle = addFader(node, "detalle", "refinado", leerDetalle);
@@ -641,7 +678,7 @@ function montarOptimizador(node) {
 
   // los nativos que reemplazan los faders y los chips se ocultan; el valor
   // sigue en su sitio, asi que los workflows guardados no se enteran
-  for (const nombre of ["calidad", "detalle", "resolucion", "ahorro_vram", "perfil", "modo", "movimiento"]) {
+  for (const nombre of ["calidad", "detalle", "resolucion", "ahorro_vram", "perfil", "modo", "movimiento", "muestreo"]) {
     ocultar(findWidget(node, nombre));
   }
 
@@ -698,10 +735,16 @@ function mostrar(w) {
 
 function visibilidad(node) {
   const advanced = findWidget(node, "modo")?.value === "Advanced";
-  if (node.__h3Advanced === advanced) return;
+  const progresivo = findWidget(node, "muestreo")?.value === "Progresivo";
+  const vista = advanced + "|" + progresivo;
+  if (node.__h3Vista === vista) return;
+  node.__h3Vista = vista;
   node.__h3Advanced = advanced;
   for (const w of node.widgets) {
-    if (w.name?.endsWith("_advanced")) (advanced ? mostrar : ocultar)(w);
+    if (w.name?.endsWith("_advanced")) {
+      const ver = advanced && (progresivo || !SOLO_PROGRESIVO.includes(w.name));
+      (ver ? mostrar : ocultar)(w);
+    }
     if (w.name?.startsWith("__fader_")) (advanced ? ocultar : mostrar)(w);
   }
   node.setSize?.([Math.max(node.size?.[0] || 0, 460), node.computeSize()[1]]);
@@ -857,6 +900,75 @@ function montarDirector(node) {
 
 }
 
+// --- Render optimizado: que va a hacer y cuanto tardo -----------------------
+
+/** Lee la config que muestra el Optimizador conectado, sin ejecutar nada. */
+function planDelRender(node) {
+  const input = node.inputs?.find((i) => i.name === "config");
+  const graph = node.graph || app.graph;
+  const link = input?.link != null ? graph?.links?.[input.link] : null;
+  const origen = link ? graph?.getNodeById?.(link.origin_id) : null;
+  if (!origen) return { texto: "conecta la config del Optimizador", color: TEXTO_TENUE };
+  const c = origen.__h3Preview?.config;
+  if (!c) return { texto: "esperando al Optimizador…", color: TEXTO_TENUE };
+  const p = c.progressive;
+  if (p?.enabled) {
+    const falta = { FALTA_SELFLIFT: "falta SelfLift", FALTA_ESCALADOR: "falta el escalador H3" }[p.status];
+    return {
+      texto: `progresivo · ${p.transition_step} de ${p.steps} pasos a ${p.low_width}×${p.low_height} → ${c.width}×${c.height} · euler` + (falta ? ` · ${falta}` : ""),
+      color: falta ? ROJO_SEM : INFO_FG,
+    };
+  }
+  const nota = p?.status === "NO_APLICA" ? " · progresivo no aplica" : "";
+  return { texto: `normal · ${c.steps} pasos · ${c.sampler} / ${c.scheduler}${nota}`, color: nota ? AMARILLO : INFO_FG };
+}
+
+function duracion(segundos) {
+  const s = Math.round(Number(segundos) || 0);
+  return s < 90 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s`;
+}
+
+/** Una linea con el ultimo render: tiempo primero, que es lo que se compara. */
+function resumenUltimo(r) {
+  if (!r) return "sin ejecutar todavía";
+  const modo = r.mode === "progresivo"
+    ? `progresivo · ${r.transition_step}/${r.steps} a ${r.low?.[0]}×${r.low?.[1]}` + (r.full ? ` → ${r.full[0]}×${r.full[1]}` : "")
+    : `normal · ${r.steps} pasos · ${r.sampler}`;
+  return `último: ${duracion(r.seconds)} · ${modo} · semilla ${r.seed}`;
+}
+
+function montarRender(node) {
+  const w = {
+    type: "cineconia_render",
+    name: "__render",
+    value: null,
+    options: { serialize: false },
+    serialize: false,
+    computeSize(width) { return [width, CAB + 52]; },
+    draw(ctx, n, width, y) {
+      const plan = planDelRender(n);
+      ctx.save();
+      ctx.textBaseline = "middle";
+      cabecera(ctx, "render", width, y + 8);
+      ctx.font = "11px " + MONO;
+      ctx.textAlign = "left";
+      ctx.fillStyle = plan.color;
+      textoAjustado(ctx, plan.texto, PAD, y + CAB + 9, width - PAD * 2, 1);
+      ctx.fillStyle = TEXTO_TENUE;
+      textoAjustado(ctx, resumenUltimo(n.__h3Ultimo), PAD, y + CAB + 29, width - PAD * 2, 2);
+      ctx.restore();
+    },
+  };
+  node.widgets.push(w);
+  const antes = node.onExecuted;
+  node.onExecuted = function (message) {
+    antes?.apply(this, arguments);
+    const r = message?.h3_render?.[0];
+    if (r) { this.__h3Ultimo = r; this.setDirtyCanvas(true, true); }
+  };
+  return w;
+}
+
 app.registerExtension({
   name: "cineconia.faders",
 
@@ -905,6 +1017,11 @@ app.registerExtension({
       addLogo(node);
       const logo = node.widgets.pop();
       node.widgets.unshift(logo);
+      if (clase === "CineH3OptimizedSampler") {
+        // debajo del logo, antes de la semilla
+        montarRender(node);
+        node.widgets.splice(1, 0, node.widgets.pop());
+      }
       if (clase === "CineCameraDirectorH3") {
         for (const name of ["plano", "angulo", "movimiento"]) {
           const cards = findWidget(node, "__cards_" + name);

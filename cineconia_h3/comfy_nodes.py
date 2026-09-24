@@ -1,7 +1,11 @@
 """Nodos ComfyUI del optimizador y su sampler consumidor."""
 
+import logging
+import time
+
 from .optimizer_config import build_optimizer_config
 from .profiles import REFINE_STEPS
+from .progressive import MODES as SAMPLING_MODES, run_selflift
 
 
 def _samplers():
@@ -12,7 +16,10 @@ def _samplers():
         values = []
     if "res_multistep" not in values:
         values.insert(0, "res_multistep")
-    return values or ["res_multistep"]
+    if "euler" not in values:
+        # el modo progresivo lo necesita; en ComfyUI siempre esta
+        values.append("euler")
+    return values
 
 
 def _schedulers():
@@ -84,6 +91,20 @@ class CineH3Optimizer:
             "pasos_refinado_advanced": ([
                 "3 pasos  ·  rapido", "4 pasos  ·  recomendado", "5 pasos  ·  maxima calidad"
             ], {"default": "4 pasos  ·  recomendado"}),
+        }, "optional": {
+            # Al final y opcionales: los workflows guardados antes siguen
+            # cargando igual y toman estos valores por defecto.
+            "muestreo": (list(SAMPLING_MODES), {
+                "default": "Normal",
+                "tooltip": "Progresivo: los primeros pasos a menor resolución y el final a la tuya "
+                           "(SelfLift). Ahorra tiempo, no VRAM. Experimental."}),
+            "transicion_advanced": ("INT", {
+                "default": 10, "min": 1, "max": 99,
+                "tooltip": "Solo Progresivo: pasos a baja resolución antes de subir a la final."}),
+            "escala_inicial_advanced": ("FLOAT", {
+                "default": 0.0, "min": 0.0, "max": 1.0, "step": 0.05,
+                "tooltip": "Solo Progresivo: escala del tramo inicial. 0 = automática (lado corto "
+                           "de 384 px o más); 0.5 = mitad de ancho y de alto."}),
         }}
 
     RETURN_TYPES = ("CINECONIA_H3_CONFIG", "STRING", "INT", "INT", "BOOLEAN", "FLOAT", REFINE_STEPS, "STRING")
@@ -97,14 +118,17 @@ class CineH3Optimizer:
                    pasos_advanced, sampler_advanced, scheduler_advanced,
                    denoise_advanced, trocear_atencion_advanced,
                    trocear_ffn_advanced, escala_refinado_advanced,
-                   pasos_refinado_advanced):
+                   pasos_refinado_advanced, muestreo="Normal",
+                   transicion_advanced=10, escala_inicial_advanced=0.0):
         config, info = build_optimizer_config(
             modo, perfil, width, height, frames,
             calidad, detalle, movimiento, resolucion, refinar, ahorro_vram,
             pasos_advanced, sampler_advanced, scheduler_advanced,
             denoise_advanced, trocear_atencion_advanced,
             trocear_ffn_advanced, escala_refinado_advanced,
-            pasos_refinado_advanced,
+            pasos_refinado_advanced, sampling=muestreo,
+            advanced_transition=transicion_advanced,
+            advanced_lowres_scale=escala_inicial_advanced,
         )
         return {"ui": {"h3_config": [config], "text": [info]}, "result": (
             config, config["profile"], config["attention_chunks"],
@@ -114,7 +138,11 @@ class CineH3Optimizer:
 
 
 class CineH3OptimizedSampler:
-    """Ejecuta el primer pase con la politica producida por Optimizer."""
+    """Ejecuta el render con la politica producida por Optimizer.
+
+    Normal: un solo tramo con el sampler del perfil. Progresivo: los primeros
+    pasos a menor resolucion y el final a la del latente, con SelfLift.
+    """
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -131,29 +159,57 @@ class CineH3OptimizedSampler:
     RETURN_NAMES = ("latent", "info")
     FUNCTION = "render"
     CATEGORY = "Cine con IA/H3"
-    DESCRIPTION = "Sampler H3 compatible con MODEL/CONDITIONING/LATENT y controlado por CineConIA H3 Optimizer."
+    DESCRIPTION = ("Sampler H3 compatible con MODEL/CONDITIONING/LATENT y controlado por CineConIA H3 "
+                   "Optimizer. En muestreo Progresivo usa SelfLift (instalado aparte).")
 
     def render(self, model, positivo, latente, config, semilla):
         if not isinstance(config, dict) or config.get("schema") != "cineconia.h3.optimizer/v1":
             raise ValueError("Conecta la salida config de CineConIA H3 Optimizer")
+        started = time.perf_counter()
         sigmas = _call_node(
             "BasicScheduler", model=model, scheduler=config["scheduler"],
             steps=int(config["steps"]), denoise=float(config["denoise"]),
         )
-        sampler = _call_node("KSamplerSelect", sampler_name=config["sampler"])
-        guider = _call_node("BasicGuider", model=model, conditioning=positivo)
-        noise = _call_node("RandomNoise", noise_seed=int(semilla))
-        if sigmas is None or sampler is None or guider is None or noise is None:
+        if sigmas is None:
             raise RuntimeError("Faltan los nodos de sampleo avanzado del core de ComfyUI")
-        output = _call_node(
-            "SamplerCustomAdvanced", noise=noise, guider=guider,
-            sampler=sampler, sigmas=sigmas, latent_image=latente,
-        )
-        if output is None:
-            raise RuntimeError("El sampleo optimizado H3 fallo")
-        info = (
-            "{} · {} pasos · {} / {} · semilla {} · Memory Planner {}"
-            .format(config["profile"], config["steps"], config["sampler"],
-                    config["scheduler"], semilla, config["planner"]["status"])
-        )
-        return output, info
+
+        progressive = config.get("progressive") or {}
+        if progressive.get("enabled"):
+            output, detail = run_selflift(
+                model, positivo, latente, sigmas, int(semilla), progressive, _call_node)
+            elapsed = time.perf_counter() - started
+            low_w, low_h = detail["low"]
+            final = "{}x{}".format(*detail["full"]) if detail["full"] else "resolución del latente"
+            info = (
+                "{} · progresivo SelfLift · {} de {} pasos a {}x{} -> {} · euler / {} · "
+                "semilla {} · {:.0f} s · Memory Planner {}"
+                .format(config["profile"], detail["transition_step"], detail["steps"],
+                        low_w, low_h, final, config["scheduler"], semilla, elapsed,
+                        config["planner"]["status"]))
+            summary = {"mode": "progresivo", "seconds": round(elapsed, 1),
+                       "transition_step": detail["transition_step"], "steps": detail["steps"],
+                       "low": [low_w, low_h], "full": list(detail["full"]) if detail["full"] else None,
+                       "sampler": "euler", "scheduler": config["scheduler"], "seed": int(semilla)}
+        else:
+            sampler = _call_node("KSamplerSelect", sampler_name=config["sampler"])
+            guider = _call_node("BasicGuider", model=model, conditioning=positivo)
+            noise = _call_node("RandomNoise", noise_seed=int(semilla))
+            if sampler is None or guider is None or noise is None:
+                raise RuntimeError("Faltan los nodos de sampleo avanzado del core de ComfyUI")
+            output = _call_node(
+                "SamplerCustomAdvanced", noise=noise, guider=guider,
+                sampler=sampler, sigmas=sigmas, latent_image=latente,
+            )
+            if output is None:
+                raise RuntimeError("El sampleo optimizado H3 fallo")
+            elapsed = time.perf_counter() - started
+            info = (
+                "{} · {} pasos · {} / {} · semilla {} · {:.0f} s · Memory Planner {}"
+                .format(config["profile"], config["steps"], config["sampler"],
+                        config["scheduler"], semilla, elapsed, config["planner"]["status"])
+            )
+            summary = {"mode": "normal", "seconds": round(elapsed, 1), "steps": int(config["steps"]),
+                       "sampler": config["sampler"], "scheduler": config["scheduler"],
+                       "seed": int(semilla)}
+        logging.info("[Cine con IA] Render optimizado H3: %s", info)
+        return {"ui": {"text": [info], "h3_render": [summary]}, "result": (output, info)}
