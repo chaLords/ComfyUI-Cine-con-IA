@@ -1220,6 +1220,13 @@ let LOGO_OK = false;
 LOGO.onload = () => { LOGO_OK = true; app.graph?.setDirtyCanvas(true, true); };
 LOGO.src = new URL("./logo.png", import.meta.url).href;
 
+// Versión oscura, para el extremo ámbar de la cabecera Tungsteno
+// (cineconia_cabecera.js). Sobre ámbar el logo metálico pierde contraste.
+const LOGO_OSCURO = new Image();
+let LOGO_OSCURO_OK = false;
+LOGO_OSCURO.onload = () => { LOGO_OSCURO_OK = true; app.graph?.setDirtyCanvas(true, true); };
+LOGO_OSCURO.src = new URL("./logo_original.png", import.meta.url).href;
+
 const LOGO_H_CUERPO = 38;   // hay hueco libre a la izquierda: logo grande
 const LOGO_H_TITULO = 20;   // no hay hueco: logo chico colgado del titulo
 const LOGO_X = 11;          // margen izquierdo dentro del cuerpo
@@ -1267,13 +1274,18 @@ function marcarNodo(nodeType) {
     if (this.flags?.collapsed || !LOGO_OK) return r;
     try {
       const arriba = entradasReales(this) > 0;
+      // En la cabecera Tungsteno el logo cae sobre ámbar: versión oscura, sin
+      // placa. De muy lejos la cabecera es lisa y oscura, y vuelve el metálico.
+      const oscuro = arriba && LOGO_OSCURO_OK && Boolean(this.constructor?.__cineCabecera)
+        && (app.canvas?.ds?.scale ?? 1) >= 0.5;
+      const img = oscuro ? LOGO_OSCURO : LOGO;
       const H = arriba ? LOGO_H_TITULO : LOGO_H_CUERPO;
-      const W = (LOGO.width / LOGO.height) * H;
+      const W = (img.width / img.height) * H;
       const x = arriba ? this.size[0] - W - 10 : LOGO_X;
       const y = arriba ? -H - 5 : 8;
       ctx.save();
-      ctx.globalAlpha = 0.85;
-      ctx.drawImage(LOGO, x, y, W, H);
+      ctx.globalAlpha = oscuro ? 1 : 0.85;
+      ctx.drawImage(img, x, y, W, H);
       ctx.restore();
     } catch (e) { /* el nodo sigue funcionando igual */ }
     return r;
