@@ -2159,7 +2159,7 @@
       "scale": 0.6,
       "offset": [
         80,
-        150
+        640
       ]
     },
     "frontendVersion": "1.49.6",

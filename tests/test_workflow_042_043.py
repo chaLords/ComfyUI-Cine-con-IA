@@ -90,6 +90,17 @@ class Coherencia:
         self.assertNotIn("widgets_values", c)
         self.assertIn("Cronómetro", self.nota)
 
+    def test_la_nota_y_el_cronometro_se_ven_al_abrir(self):
+        # lienzo tipico de 1920x1000: lo visible en coordenadas del grafo
+        ds = self.workflow["extra"]["ds"]
+        (ox, oy), s = ds["offset"], ds["scale"]
+        x0, y0, x1, y1 = -ox, -oy, 1920 / s - ox, 1000 / s - oy
+        for tipo in ("CineCronometro", "MarkdownNote"):
+            n = next(n for n in self.workflow["nodes"] if n["type"] == tipo)
+            (x, y), (w, h) = n["pos"], n["size"]
+            self.assertTrue(x0 <= x and x + w <= x1, tipo)
+            self.assertTrue(y0 <= y - 30 and y + h <= y1, tipo)   # 30: barra de titulo
+
     def test_una_sola_semilla_para_los_dos_renders(self):
         renders = [n for n in self.workflow["nodes"] if n["type"] == "CineH3OptimizedSampler"]
         self.assertEqual(len(renders), 2)

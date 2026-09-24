@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_workflow041 import Grafo, poner, poner_valores, semilla_como_entrada  # noqa: E402
-from build_workflow042 import cronometro  # noqa: E402
+from build_workflow042 import VISTA, cronometro  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "examples" / "040.REALminimax-H3-CineconIA-Presets-VRAM-v1.json"
@@ -190,6 +190,7 @@ def construir():
     salida_b_grupo["bounding"] = [3790, -65, 520, 1650]
     w["groups"] += [gen_b, salida_b_grupo]
 
+    w.setdefault("extra", {})["ds"] = dict(VISTA)
     g.ordenar()
     OUTPUT.write_text(json.dumps(w, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return w

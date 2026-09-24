@@ -14,6 +14,8 @@ SOURCE = ROOT / "examples" / "041.REALminimax-H3-CineconIA-Progresivo-AB-v1.json
 OUTPUT = ROOT / "examples" / "042.REALminimax-H3-CineconIA-Progresivo-AB-Cronometro-v1.json"
 
 CRONOMETRO_ID = 519
+# vista al abrir: desde y=-640, para que la nota y el Cronómetro (arriba) se vean
+VISTA = {"scale": 0.6, "offset": [80, 640]}
 
 NOTA = """# 042 · Normal contra progresivo, con Cronómetro
 
@@ -68,6 +70,7 @@ def construir():
             n["widgets_values_named"]["filename_prefix"] = prefijo
 
     agregar_cronometro(w, CRONOMETRO_ID, [1640, -560])
+    w.setdefault("extra", {})["ds"] = dict(VISTA)
     OUTPUT.write_text(json.dumps(w, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return w
 
