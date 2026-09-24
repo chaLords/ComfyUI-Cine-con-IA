@@ -244,6 +244,38 @@ function findWidget(node, name) {
   return node.widgets?.find((w) => w.name === name);
 }
 
+/**
+ * Si el widget llega por cable, manda el cable: el valor del widget se ignora
+ * al ejecutar. Devuelve el nodo de origen y el nombre de su salida, o null.
+ */
+function cableDe(node, name) {
+  const input = node.inputs?.find((i) => (i.widget?.name ?? i.name) === name);
+  if (input?.link == null) return null;
+  const graph = node.graph || app.graph;
+  const link = graph?.links?.get?.(input.link) ?? graph?.links?.[input.link];
+  const origen = link ? graph?.getNodeById?.(link.origin_id) : null;
+  if (!origen) return null;
+  return { origen, salida: origen.outputs?.[link.origin_slot]?.name };
+}
+
+// Que dato de la config del Optimizador viaja por cada una de sus salidas.
+const SALIDA_A_CONFIG = { refinar: "refine", escala_refinado: "refine_scale", pasos_refinado: "refine_steps" };
+
+/**
+ * El valor que el nodo va a usar de verdad: el del cable cuando esta conectado
+ * (si el origen es el Optimizador, sale de su vista previa), si no el propio.
+ * `desde` es el titulo del nodo que lo decide; null si lo decide este nodo.
+ */
+function valorEfectivo(node, name) {
+  const w = findWidget(node, name);
+  const cable = cableDe(node, name);
+  if (!cable) return { valor: w?.value, desde: null };
+  const clave = SALIDA_A_CONFIG[cable.salida];
+  const config = cable.origen.__h3Preview?.config;
+  const valor = clave && config ? config[clave] : undefined;
+  return { valor, desde: cable.origen.title || cable.origen.type };
+}
+
 /** Los widgets puramente visuales nunca deben ocupar una posicion guardada. */
 function widgetSeGuarda(w) {
   return Boolean(w) && w.serialize !== false && w.options?.serialize !== false;
@@ -573,7 +605,7 @@ function addChips(node, targetName, items, titulo = null, activa = null, usado =
         ctx.font = "9px 'IBM Plex Mono', Consolas, monospace";
         ctx.textAlign = "left";
         ctx.fillStyle = "#6f7d7e";
-        const etq = titulo.toUpperCase();
+        const etq = (titulo + (cableDe(n, targetName) ? "  ·  viene por cable" : "")).toUpperCase();
         ctx.fillText(etq, pad, ty);
         const tw = ctx.measureText(etq).width;
         ctx.strokeStyle = "#394446";
@@ -584,7 +616,10 @@ function addChips(node, targetName, items, titulo = null, activa = null, usado =
         ctx.stroke();
       }
 
-      const viva = activa ? !!activa(n) : true;
+      // conectado por cable: los botones solo muestran lo que llega, no mandan
+      const cable = cableDe(n, targetName);
+      const mostrado = cable ? valorEfectivo(n, targetName).valor : target.value;
+      const viva = !cable && (activa ? !!activa(n) : true);
       ctx.globalAlpha = viva ? 1 : 0.35;
       ctx.font = "11px 'IBM Plex Mono', Consolas, monospace";
       state.rects = [];
@@ -596,7 +631,7 @@ function addChips(node, targetName, items, titulo = null, activa = null, usado =
         const tw = Math.ceil(ctx.measureText(String(label)).width) + 16;
         if (x + tw > maxX && x > pad) { x = pad; row++; }
         const cy = y + gap + row * (chipH + gap);
-        const on = mismo(target.value, value);
+        const on = mismo(mostrado, value);
         // tres estados con el mismo color, como las pestanas:
         //   elegido ahora  -> naranja entero
         //   ya usado antes -> naranja atenuado
@@ -633,6 +668,7 @@ function addChips(node, targetName, items, titulo = null, activa = null, usado =
       for (const r of state.rects) {
         if (pos[0] >= r.x && pos[0] <= r.x + r.w && pos[1] >= r.y && pos[1] <= r.y + r.h) {
           const target = findWidget(n, targetName);
+          if (cableDe(n, targetName)) return false;   // lo decide el nodo conectado
           if (target) {
             target.value = r.value;
             target.callback?.(target.value);
@@ -4012,20 +4048,29 @@ app.registerExtension({
       marcarNodo(nodeType);
       alCrear(nodeType, function () {
         etiquetar(this);
+        // activar, escala y pasos suelen llegar por cable desde el Optimizador:
+        // entonces manda el cable y aqui solo se muestra lo que va a pasar
         addChips(this, "escala", ESCALAS, "escala",
-          (nd) => !!findWidget(nd, "activar")?.value);
+          (nd) => valorEfectivo(nd, "activar").valor !== false);
         addInfo(this, (nd) => {
-          if (!findWidget(nd, "activar")?.value) return ["escalado apagado", "el latente pasa de largo"];
-          const e = Number(findWidget(nd, "escala")?.value ?? 2);
-          const p = String(findWidget(nd, "pasos")?.value ?? "").split("·")[0].trim();
+          const act = valorEfectivo(nd, "activar");
+          const esc = valorEfectivo(nd, "escala");
+          const pas = valorEfectivo(nd, "pasos");
+          const quien = esc.desde || act.desde || pas.desde;
+          if (act.valor === false) {
+            return ["escalado apagado", quien ? `lo apaga ${quien}` : "el latente pasa de largo"];
+          }
+          const e = Number(esc.valor ?? findWidget(nd, "escala")?.value ?? 2);
+          const p = String(pas.valor ?? findWidget(nd, "pasos")?.value ?? "").split("·")[0].trim();
+          const coste = `coste del refinado:  x${(e * e).toFixed(2)} respecto al primer pase`;
           return [
-            `escala x${e}  ·  ${p}`,
-            `coste del refinado:  x${(e * e).toFixed(2)} respecto al primer pase`,
-            e >= 1.9 ? "⚠ con 16 GB, x1.9 o más puede colgar el equipo" : "",
+            `escala x${+e.toFixed(2)}  ·  ${p}`,
+            quien ? `lo fija ${quien}` : coste,
+            e >= 1.9 ? "⚠ con 16 GB, x1.9 o más puede quedar casi detenido" : (quien ? coste : ""),
           ];
         });
         addProgreso(this, "refinado", (nd) =>
-          Number.parseInt(String(findWidget(nd, "pasos")?.value ?? "0"), 10) || 0);
+          Number.parseInt(String(valorEfectivo(nd, "pasos").valor ?? findWidget(nd, "pasos")?.value ?? "0"), 10) || 0);
       }, 420);
     }
 
