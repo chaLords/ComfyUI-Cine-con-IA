@@ -9,10 +9,13 @@ from .profiles import clamp
 # usa ~63 % de su capacidad a la carga de referencia". Se obtiene dividiendo la
 # carga de referencia de cada preset (ver profiles.py) por 0.63.
 #
-# Ancla real: el render verificado en una RTX 4060 Ti de 16 GB (416x736x192,
-# segundo pase x1.25, troceo 16/16) da 1.5625 / 2.38 = 0.66, MARGEN. La tabla
-# anterior (16 GB = 1.55) lo marcaba como RIESGO aunque se habia renderizado.
-# 8, 12, 24 y 32 GB siguen sin benchmark propio.
+# Datos medidos que la tabla respeta (RTX 4060 Ti, 16 GB):
+#  - 033 v2: 416x736x192, segundo pase x2.0, SIN troceo -> OOM, pico 20.9 GB.
+#    Aqui da 4.0 / 2.38 = 1.68, RIESGO.
+#  - 038: 480x832x192, sin segundo pase, troceo 16/16 -> renderiza.
+#    Aqui da 1.30 / 2.38 = 0.55, MARGEN.
+# Ningun render medido tiene el segundo pase activo con troceo: desde el 035
+# ese pase estaba en bypass. 8, 12, 24 y 32 GB siguen sin benchmark propio.
 CAPACITY = {
     "8 GB": 1.42,
     "12 GB": 1.86,

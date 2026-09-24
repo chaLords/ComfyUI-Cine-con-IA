@@ -46,15 +46,23 @@ luego la lista completa (`Ángulo · lista completa`, `Movimiento · lista compl
 5. **La vista previa** (`/cineconia/h3/preview`) devuelve además `ladder` (el color de
    cada preset) y `base` (los valores del perfil) para dibujar puntos y franjas.
 
-## El ancla real, y lo que sigue sin medir
+## Lo medido, y lo que sigue sin medir
 
-El único dato medido es tu render en la RTX 4060 Ti de 16 GB: 416×736×192, segundo pase
-x1.25, troceo 16/16. **La tabla anterior lo marcaba como RIESGO (1.008) aunque se había
-renderizado.** Con la nueva queda en MARGEN (0.66), y el preset de 16 GB es un poco más
-liviano que ese render.
+> **Corrección (24-09-2026).** La primera versión de este documento decía que el ancla era
+> un render en 16 GB *con segundo pase x1.25*. No era cierto: desde el 035 el segundo pase
+> estaba en bypass en todos los workflows, así que ningún render medido lo tiene activo.
 
-8, 12, 24 y 32 GB siguen sin benchmark. El semáforo no mide VRAM ni garantiza que un
-render quepa.
+Los dos datos medidos en la RTX 4060 Ti de 16 GB, y lo que dice de ellos la tabla nueva:
+
+| Render | Configuración | Resultado real | Tabla nueva |
+|---|---|---|---|
+| 033 v2 | 416×736×192, segundo pase x2.0, **sin troceo** | OOM, pico 20.9 GB | RIESGO (1.68) |
+| 038 | 480×832×192, sin segundo pase, troceo 16/16 | renderiza | MARGEN (0.55) |
+
+La tabla no contradice ninguno de los dos, pero son solo dos puntos. **El segundo pase con
+troceo, que es lo que activa el 040, nunca se ha medido**: el primer render del 040 es la
+primera prueba real de esa combinación. 8, 12, 24 y 32 GB siguen sin benchmark. El semáforo
+no mide VRAM ni garantiza que un render quepa.
 
 ## Pruebas
 

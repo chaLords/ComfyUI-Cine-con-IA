@@ -31,12 +31,20 @@ class EscaleraTests(unittest.TestCase):
                 esperado = "SAFE" if j <= i else "TIGHT" if j == i + 1 else "RISKY"
                 self.assertEqual(estado(gpu, preset), esperado, (gpu, preset))
 
-    def test_render_verificado_en_16gb_queda_en_margen(self):
+    # Los dos renders medidos en la RTX 4060 Ti de 16 GB.
+    def test_033_v2_que_dio_oom_queda_en_riesgo(self):
         hw = {"total_gb": 15.99, "free_gb": 14.0}
         config, _ = build_optimizer_config(
             "Advanced", "16 GB", 416, 736, 192, refine=True,
-            advanced_attention_chunks=16, advanced_ffn_chunks=16,
-            advanced_refine_scale=1.25, hardware=hw)
+            advanced_attention_chunks=1, advanced_ffn_chunks=1,
+            advanced_refine_scale=2.0, hardware=hw)
+        self.assertEqual(config["planner"]["status"], "RISKY")
+
+    def test_038_que_renderiza_queda_en_margen(self):
+        hw = {"total_gb": 15.99, "free_gb": 14.0}
+        config, _ = build_optimizer_config(
+            "Advanced", "16 GB", 480, 832, 192, refine=False,
+            advanced_attention_chunks=16, advanced_ffn_chunks=16, hardware=hw)
         self.assertEqual(config["planner"]["status"], "SAFE")
 
     def test_preset_por_encima_sugiere_el_de_tu_gpu(self):
