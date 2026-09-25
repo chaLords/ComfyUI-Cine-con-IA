@@ -1,6 +1,7 @@
 """El 042 y el 043 son coherentes y sus notas dicen lo que los nodos van a mostrar."""
 import importlib.util
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -16,7 +17,7 @@ SPEC.loader.exec_module(NODES)
 from cineconia_h3.comfy_nodes import CineH3Optimizer  # noqa: E402
 
 EXTERNOS = {"MarkdownNote", "LoadImage", "ModelPreviewOverrideKJ", "VHS_VideoCombine", "PrimitiveInt"}
-VIRTUALES = {"CineCronometro"}   # solo existe en el navegador
+VIRTUALES = {"CineCronometro", "Fast Groups Bypasser (rgthree)"}   # solo existen en el navegador
 GPU16 = {"available": True, "name": "RTX 4060 Ti", "total_gb": 15.99, "free_gb": 14.2, "source": "test"}
 LISTO = {"selflift": True, "upscaler": "minimax_h3_latent_upscaler_3d_bf16.safetensors"}
 # fuera de ComfyUI no hay comfy.samplers: las listas que da el core
@@ -265,6 +266,90 @@ class Workflow044Tests(Coherencia, unittest.TestCase):
         self.assertTrue(prefijos[1].startswith("CineConIA/044_B_rapido_"))
         for p in ("044_A_auto_", "044_B_rapido_"):
             self.assertIn(p, self.nota)
+
+
+
+def centro(node):
+    (x, y), (w, h) = node["pos"], node["size"]
+    return x + w / 2, y + h / 2
+
+
+def dentro(punto, caja):
+    x, y, w, h = caja
+    return x <= punto[0] <= x + w and y <= punto[1] <= y + h
+
+
+class Workflow045Tests(Coherencia, unittest.TestCase):
+    """El interruptor enciende una sola rama: la otra queda en bypass (violeta)."""
+    nombre = "045"
+    BORRADOR = {515, 516, 519, 517, 34003}
+    FINAL = {513, 514, 506, 507, 34000}
+    COMPARTIDOS = {500, 501, 502, 504, 106, 509, 511, 512, 518, 522}
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.grupos = {g["title"]: g["bounding"] for g in cls.workflow["groups"]}
+        cls.interruptor = next(n for n in cls.workflow["nodes"]
+                               if n["type"] == "Fast Groups Bypasser (rgthree)")
+
+    def test_el_interruptor_lista_solo_las_dos_ramas_y_deja_una(self):
+        props = self.interruptor["properties"]
+        self.assertEqual(props["toggleRestriction"], "always one")
+        ramas = [t for t in self.grupos if re.search(props["matchTitle"], t, re.I)]
+        self.assertEqual(sorted(ramas), ["RAMA · 20 pasos · final", "RAMA · 8 pasos · borrador"])
+
+    def test_cada_nodo_de_rama_cae_solo_en_su_grupo(self):
+        borrador, final = self.grupos["RAMA · 8 pasos · borrador"], self.grupos["RAMA · 20 pasos · final"]
+        for ids, suyo, otro in ((self.BORRADOR, borrador, final), (self.FINAL, final, borrador)):
+            for node_id in ids:
+                c = centro(self.nodes[node_id])
+                self.assertTrue(dentro(c, suyo), node_id)
+                self.assertFalse(dentro(c, otro), node_id)
+        for node_id in self.COMPARTIDOS | {self.interruptor["id"]}:
+            c = centro(self.nodes[node_id])
+            self.assertFalse(dentro(c, borrador) or dentro(c, final), node_id)
+
+    def test_arranca_el_borrador_y_el_final_en_bypass(self):
+        self.assertEqual({self.nodes[i]["mode"] for i in self.BORRADOR}, {0})
+        self.assertEqual({self.nodes[i]["mode"] for i in self.FINAL}, {4})
+        self.assertEqual({self.nodes[i]["mode"] for i in self.COMPARTIDOS}, {0})
+
+    def test_nada_compartido_depende_de_una_rama(self):
+        ramas = self.BORRADOR | self.FINAL
+        for _, a, _, b, _, _ in self.workflow["links"]:
+            if a in ramas:
+                self.assertIn(b, ramas, (a, b))
+            if a in self.BORRADOR:
+                self.assertIn(b, self.BORRADOR, (a, b))
+            if a in self.FINAL:
+                self.assertIn(b, self.FINAL, (a, b))
+
+    def test_troceo_fijo_sin_cable(self):
+        cargar = self.nodes[500]
+        for nombre in ("trocear_atencion", "trocear_ffn"):
+            self.assertIsNone(next(i["link"] for i in cargar["inputs"] if i["name"] == nombre))
+            self.assertEqual(cargar["widgets_values_named"][nombre], 32)
+
+    def test_trae_la_escena_de_la_invitacion(self):
+        self.assertIn('"Te invito a ver mi canal, Cine con IA."', self.nodes[511]["widgets_values_named"]["texto"])
+        self.assertEqual(self.nodes[522]["widgets_values_named"]["image"], "composite (2) - copia.png")
+        link = self.enlace(next(i["link"] for i in self.nodes[504]["inputs"] if i["name"] == "referencia_2"))
+        self.assertEqual(link[1], 522)
+        self.assertEqual(self.nodes[512]["widgets_values_named"]["lente"], "50 mm")
+
+    def test_las_dos_ramas_terminan_igual_y_en_margen(self):
+        opt = {n["id"]: n for n in self.workflow["nodes"] if n["type"] == "CineH3Optimizer"}
+        final, borrador = self.preview(opt[513]), self.preview(opt[515])
+        self.assertEqual((borrador["steps"], borrador["sampler"]), (8, "er_sde"))
+        self.assertEqual((final["steps"], final["sampler"]), (20, "res_multistep"))
+        self.assertEqual(final["refine_scale"], borrador["refine_scale"])
+        self.assertEqual((final["planner"]["status"], borrador["planner"]["status"]), ("SAFE", "SAFE"))
+        self.assertFalse(final["progressive"]["requested"] or borrador["progressive"]["requested"])
+        tam = "{}×{}".format(lado_escalado(416, final["refine_scale"]), lado_escalado(736, final["refine_scale"]))
+        self.assertIn(tam, self.nota)
+        for texto in ("~**23 min**", "~**42 min**", "045_borrador_8p_", "045_final_20p_", "rgthree"):
+            self.assertIn(texto, self.nota)
 
 
 if __name__ == "__main__":

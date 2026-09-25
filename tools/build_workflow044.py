@@ -55,7 +55,8 @@ PREFIJOS = {
 }
 
 
-def construir():
+def armar():
+    """El grafo del 044, sin escribirlo (el 045 parte de aqui)."""
     w = b043.armar()
     w["id"] = "cineconia-044-h3-primer-pase-rapido-16gb-20260924"
     nodos = {n["id"]: n for n in w["nodes"]}
@@ -79,7 +80,11 @@ def construir():
 
     for group in w["groups"]:
         group["title"] = GRUPOS.get(group["title"], group["title"])
+    return w
 
+
+def construir():
+    w = armar()
     OUTPUT.write_text(json.dumps(w, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return w
 
