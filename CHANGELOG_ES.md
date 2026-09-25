@@ -8,6 +8,26 @@ Todos los cambios relevantes del proyecto se documentarán en este archivo.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.5.4] - 2026-09-25
+
+### Añadido
+
+- **Cronómetro**, un nodo del navegador: mide la corrida completa y cada nodo, marca los que salieron de caché y guarda las últimas seis corridas en el workflow, por ejemplo normal contra progresivo.
+- Muestreo progresivo en **H3 Optimizer** y **H3 Optimized Sampler**: los primeros pasos van a menor resolución y el resto a la tuya, con el pack opcional comfyui-SelfLift. Ahorra tiempo, no VRAM, y el Optimizador avisa cuando no aplica al tamaño elegido. El sampler ahora muestra cuánto tardó su último render.
+- Todos los nodos Cine con IA llevan la cabecera Tungsteno, con una cápsula de dato vivo (perfil y estado de memoria, modo de muestreo, último tiempo), en la interfaz clásica y en Nodes 2.0.
+- Workflows de ejemplo 041 a 045: normal contra progresivo, lo mismo con el Cronómetro, la receta del 033 contra Auto, un primer pase rápido para 16 GB y un interruptor entre un borrador de 8 pasos y un final de 20 (el 045 usa rgthree-comfy para el interruptor).
+
+### Cambiado
+
+- El semáforo de VRAM se recalibró con renders reales en una tarjeta de 16 GB. Un refinado x2 desde 416×736 a 5 s nunca terminó su primer paso y salía en amarillo; ahora sale en rojo. La escalera de colores de los presets no cambia.
+- La sección de Privacidad nombra el único acceso a la red que hace el paquete: el botón de descarga del nodo Modelos.
+- El análisis de prompts en la interfaz usa `String.match` y `matchAll` en vez de `RegExp.exec`, con el mismo resultado.
+
+### Corregido
+
+- Cuando la escala, los pasos o el encendido de **Escalar y Refinar** llegan por cable desde el Optimizador, sus botones muestran el valor que llega y no responden al clic. Antes, un botón pulsado quedaba encendido mientras se usaba el valor del cable.
+- El logo de la cabecera usa la versión oscura sobre el extremo ámbar, sin la placa redonda.
+
 ## [1.5.3] - 2026-09-22
 
 ### Añadido

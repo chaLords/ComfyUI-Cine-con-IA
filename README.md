@@ -40,7 +40,7 @@ The interface is in Spanish and adds visual controls, memory warnings, render pr
 > This repository contains the nodes and their interface. It does not include ComfyUI, models, LoRAs, VAEs or interpolation and upscaling weights. The **Models** node downloads them into the right folder with one button.
 
 > [!CAUTION]
-> The `feature/cineconia-h3-nodes` branch adds four H3 nodes under development. Their interfaces and execution are implemented, but the VRAM profiles still need real renders and benchmarks. See the [H3 Optimizer v1 notes](docs/H3_OPTIMIZER_V1_ES.md) (Spanish).
+> The four H3 nodes (Scene/Prompt H3, Camera Director H3, H3 Optimizer and H3 Optimized Sampler) are experimental. Their VRAM traffic light is calibrated with real renders on a 16 GB RTX 4060 Ti; 8, 12, 24 and 32 GB cards have no benchmark yet. See the [H3 Optimizer v1 notes](docs/H3_OPTIMIZER_V1_ES.md) (Spanish).
 
 ## Included nodes
 
@@ -57,8 +57,9 @@ The interface is in Spanish and adds visual controls, memory warnings, render pr
 | **Cine con IA · Modelos** (Models) | Shows which files each model family needs, marks the ones already on disk, and downloads the rest straight into the right folder under `models/`, with progress and resume. |
 | **CineConIA · Scene / Prompt H3** | Separates characters, action, setting, style, and sound into a structured H3 scene. |
 | **CineConIA · Camera Director H3** | Adds framing, angle, movement, lens, depth of field, or a complete H3 recipe and compiles the final six-section prompt. |
-| **CineConIA · H3 Optimizer** | Detects VRAM, applies AUTO/8/12/16/24/32 GB profiles, runs the Memory Planner, and returns a reusable configuration. |
+| **CineConIA · H3 Optimizer** | Detects VRAM, applies AUTO/8/12/16/24/32 GB profiles, runs the Memory Planner, and returns a reusable configuration. Optional progressive sampling for larger sizes (needs the comfyui-SelfLift pack). |
 | **CineConIA · H3 Optimized Sampler** | Consumes the Optimizer configuration and runs the first pass through ComfyUI core advanced-sampling nodes. |
+| **Cine con IA · Cronómetro** | Browser-only node, never sent to the server: times the whole run and each node, and keeps the last runs in the workflow so renders can be compared. |
 
 ## Interface highlights
 
@@ -241,7 +242,7 @@ If refinement does not fit in memory, try the following in order:
 
 ## Privacy
 
-The nodes contain no telemetry, tracking, or network requests. All package processing stays inside the local ComfyUI installation.
+The nodes contain no telemetry or tracking. The only network access is the **Models** node: when you press its download button, it fetches the files you picked from their public Hugging Face repositories into `models/`. Nothing is downloaded on its own, and everything else runs inside your local ComfyUI installation.
 
 ## Development
 

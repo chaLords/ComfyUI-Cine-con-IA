@@ -40,7 +40,7 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 > Este repositorio contiene los nodos y su interfaz. No incluye ComfyUI, modelos, LoRAs, VAEs ni pesos de interpolación o escalado. El nodo **Modelos** te los descarga a su carpeta con un botón.
 
 > [!CAUTION]
-> La rama `feature/cineconia-h3-nodes` añade cuatro nodos H3 en desarrollo. Sus interfaces y ejecución están implementadas, pero los perfiles de VRAM todavía necesitan renders y benchmarks reales. Consulta [H3 Optimizer v1](docs/H3_OPTIMIZER_V1_ES.md).
+> Los cuatro nodos H3 (Scene/Prompt H3, Camera Director H3, H3 Optimizer y H3 Optimized Sampler) son experimentales. Su semáforo de VRAM está calibrado con renders reales en una RTX 4060 Ti de 16 GB; las tarjetas de 8, 12, 24 y 32 GB todavía no tienen benchmark. Consulta [H3 Optimizer v1](docs/H3_OPTIMIZER_V1_ES.md).
 
 ## Qué incluye
 
@@ -57,8 +57,9 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 | **Cine con IA · Modelos** | Enseña qué archivos necesita cada familia de modelos, marca los que ya tienes en disco y descarga los que falten directamente a su carpeta dentro de `models/`, con progreso y reanudación. |
 | **CineConIA · Scene / Prompt H3** | Separa personajes, acción, lugar, estilo y sonido y produce una escena estructurada para H3. |
 | **CineConIA · Camera Director H3** | Añade encuadre, ángulo, movimiento, lente, profundidad o una receta H3 completa y compila el prompt final de seis secciones. |
-| **CineConIA · H3 Optimizer** | Detecta VRAM, aplica perfiles AUTO/8/12/16/24/32 GB, ejecuta el Memory Planner y entrega una configuración reutilizable. |
+| **CineConIA · H3 Optimizer** | Detecta VRAM, aplica perfiles AUTO/8/12/16/24/32 GB, ejecuta el Memory Planner y entrega una configuración reutilizable. Muestreo progresivo opcional para tamaños grandes (necesita el pack comfyui-SelfLift). |
 | **CineConIA · H3 Optimized Sampler** | Consume la configuración del Optimizer y ejecuta el primer pase mediante los nodos avanzados del core de ComfyUI. |
+| **Cine con IA · Cronómetro** | Nodo del navegador, no se envía al servidor: mide la corrida completa y cada nodo, y guarda las últimas corridas en el workflow para comparar renders. |
 
 ## Funciones destacadas de la interfaz
 
@@ -243,7 +244,7 @@ Si el refinado no cabe en memoria, prueba en este orden:
 
 ## Privacidad
 
-Los nodos no incluyen telemetría, seguimiento ni llamadas de red. Todo el procesamiento del paquete se realiza dentro de la instalación local de ComfyUI.
+Los nodos no incluyen telemetría ni seguimiento. El único acceso a la red es el del nodo **Modelos**: cuando pulsas su botón de descarga, baja los archivos que elegiste desde sus repositorios públicos de Hugging Face a `models/`. Nada se descarga solo, y todo lo demás ocurre dentro de tu instalación local de ComfyUI.
 
 ## Desarrollo
 

@@ -8,6 +8,26 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.5.4] - 2026-09-25
+
+### Added
+
+- **Cronómetro**, a browser-only node: it times the whole run and each node, marks the ones that came from cache, and keeps the last six runs in the workflow, for example normal against progressive.
+- Progressive sampling in **H3 Optimizer** and **H3 Optimized Sampler**: the first steps run at a lower resolution and the rest at yours, through the optional comfyui-SelfLift pack. It saves time, not VRAM, and the Optimizer says when it does not apply to the chosen size. The sampler now shows how long its last render took.
+- Every Cine con IA node gets the Tungsteno header, with a live capsule (memory profile and state, sampling mode, last time), in both the classic and the Nodes 2.0 interface.
+- Example workflows 041 to 045: normal against progressive, the same with the Cronómetro, the 033 recipe against Auto, a fast first pass for 16 GB, and a switch between an 8-step draft and a 20-step final (045 uses rgthree-comfy for the switch).
+
+### Changed
+
+- The VRAM traffic light is recalibrated with real renders on a 16 GB card. A x2 refine from 416×736 at 5 s never finished its first step and was shown as yellow; it is now red. The colour ladder of the presets is unchanged.
+- The Privacy section names the one network access the package makes: the download button of the Models node.
+- Prompt parsing in the interface uses `String.match` and `matchAll` instead of `RegExp.exec`, with the same results.
+
+### Fixed
+
+- When the scale, steps or on/off switch of **Escalar y Refinar** arrive through a cable from the Optimizer, its buttons show the value that arrives and ignore clicks. Before, a clicked button stayed lit while the cable's value was the one used.
+- The header logo uses the dark version over the amber end, without the round plate.
+
 ## [1.5.3] - 2026-09-22
 
 ### Added

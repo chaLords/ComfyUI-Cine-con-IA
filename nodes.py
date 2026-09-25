@@ -6,6 +6,8 @@ Sin dependencias externas: solo Python estandar.
 import math
 import re
 
+_rx = re.compile   # expresiones regulares precompiladas
+
 try:
     from .cineconia_h3 import (
         CineCameraDirectorH3,
@@ -424,7 +426,7 @@ def _movimiento_camara(movimiento, intensidad=""):
         movimiento, "" if sin_intensidad or not intensidad else " " + intensidad)
 
 
-_RE_CAMARA_MOVIL = re.compile(
+_RE_CAMARA_MOVIL = _rx(
     r"\bthe camera\s+(?:push(?:es|ing)?|pull(?:s|ing)?|zoom(?:s|ing)?|"
     r"pan(?:s|ning)?|tilt(?:s|ing)?|truck(?:s|ing)?|pedestal(?:s|ing)?|"
     r"arc(?:s|ing)?|circles?|follows?|tracks?|shak(?:es|ing)?|roll(?:s|ing)?|"
@@ -454,8 +456,8 @@ def _reforzar_trayectoria_camara(descripcion, bloque):
     return bloque
 
 
-_RE_SHOT1 = re.compile(r"\[Shot\s*1\](?:\s*At\s*[\d:.]+)?", re.IGNORECASE)
-_RE_HUECO = re.compile(r"\{[A-Z][A-Z0-9_]*\}")
+_RE_SHOT1 = _rx(r"\[Shot\s*1\](?:\s*At\s*[\d:.]+)?", re.IGNORECASE)
+_RE_HUECO = _rx(r"\{[A-Z][A-Z0-9_]*\}")
 
 # Que espera cada hueco de las recetas. Espejo de HUECOS_H3 en cineconia.js:
 # el mensaje de error tiene que explicarse solo aunque el prompt venga pegado
@@ -484,7 +486,7 @@ HUECOS_AYUDA = {
 # detras describia el movimiento viejo ("directly in front of him, at his eye
 # height") y con el nuevo ya no es verdad.
 
-_RE_PLANO = [re.compile(x, re.IGNORECASE) for x in (
+_RE_PLANO = [_rx(x, re.IGNORECASE) for x in (
     r"extreme close-?up", r"extreme wide shot", r"medium[- ]wide shot",
     r"tight cinematic close-?up", r"\bclose shot\b", r"\bclose-?up\b",
     r"\bmedium shot\b", r"wide establishing shot", r"\bwide shot\b",
@@ -493,7 +495,7 @@ _RE_PLANO = [re.compile(x, re.IGNORECASE) for x in (
 # Igual que _RE_PLANO pero llevandose el articulo por delante. Solo se usa
 # para BORRAR: si se quita "medium shot" de "A medium shot frames him", el
 # "A" se queda huerfano y la frase pierde el sentido.
-_RE_PLANO_ART = [re.compile(r"(?:\b(?:an?|the)\s+)?(?:" + x.pattern + r")", re.IGNORECASE)
+_RE_PLANO_ART = [_rx(r"(?:\b(?:an?|the)\s+)?(?:" + x.pattern + r")", re.IGNORECASE)
                  for x in _RE_PLANO]
 
 # Angulos ya escritos en el texto. A diferencia del movimiento, aqui se
@@ -502,7 +504,7 @@ _RE_PLANO_ART = [re.compile(r"(?:\b(?:an?|the)\s+)?(?:" + x.pattern + r")", re.I
 # sigue a la coma es encuadre del usuario y hay que respetarlo.
 # El orden manda: lo mas especifico primero. "directly in front of the
 # subject's eye level" tiene que ganar a "at the subject's eye level".
-_RE_ANGULO = [re.compile(x, re.IGNORECASE) for x in (
+_RE_ANGULO = [_rx(x, re.IGNORECASE) for x in (
     r"(?:the camera\s+)?directly in front of (?:the )?(?:subject'?s?|him|her|them|it)(?:'s)?(?:\s+eye[- ]level)?",
     r"(?:the camera\s+)?(?:directly\s+)?(?:in front of|facing) (?:the )?(?:subject'?s?|him|her|them|it)(?:'s)?",
     r"(?:the camera\s+)?directly overhead(?:,?\s*looking (?:straight )?down)?",
@@ -517,7 +519,7 @@ _RE_ANGULO = [re.compile(x, re.IGNORECASE) for x in (
 # El "[^.]*" de siempre se paraba en el punto de "8.00 seconds" y dejaba
 # colgando un ".00 seconds." absurdo. Un punto entre cifras no termina
 # una frase, asi que se deja pasar.
-_RE_MOV = [re.compile(r"\bthe camera\s+" + x +
+_RE_MOV = [_rx(r"\bthe camera\s+" + x +
     r"(?:(?![, ]+(?:while|as|and)\s+(?:he|she|they|the subject)\b)[^.;\n\"]|\.(?=\d))*",
     re.IGNORECASE) for x in (
     r"holds? a static (?:shot|frame)", r"push(?:es|ing)? in", r"pull(?:s|ing)? (?:out|back)",
@@ -530,14 +532,14 @@ _RE_MOV = [re.compile(r"\bthe camera\s+" + x +
 
 # basura que queda al quitar frases: "[Shot 1] : ", " . .", espacios dobles
 _LIMPIEZA = [
-    (re.compile(r"(\[Shot\s*\d+\](?:\s*At\s*[\d:.]+)?)\s*[:,.;]+\s*"), r"\1 "),
-    (re.compile(r"\s+([.,;:])"), r"\1"),
-    (re.compile(r"([.;])\s*[.;]+"), r"\1"),
-    (re.compile(r"[ \t]{2,}"), " "),
-    (re.compile(r"\.\s*\."), "."),
+    (_rx(r"(\[Shot\s*\d+\](?:\s*At\s*[\d:.]+)?)\s*[:,.;]+\s*"), r"\1 "),
+    (_rx(r"\s+([.,;:])"), r"\1"),
+    (_rx(r"([.;])\s*[.;]+"), r"\1"),
+    (_rx(r"[ \t]{2,}"), " "),
+    (_rx(r"\.\s*\."), "."),
     # dos puntos o coma que se quedan colgando delante de un punto
-    (re.compile(r"\s*[:;,]\s*(?=[.?!]|$)"), ""),
-    (re.compile(r"(^|[.?!]\s+)[:;,]\s*"), r"\1"),
+    (_rx(r"\s*[:;,]\s*(?=[.?!]|$)"), ""),
+    (_rx(r"(^|[.?!]\s+)[:;,]\s*"), r"\1"),
 ]
 
 

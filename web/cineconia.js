@@ -1942,7 +1942,7 @@ function accionDelPlano(node) {
   const plano = d.slice(marca).replace(/\[Shot\s*1\](?:\s*At\s*[\d:.]+)?\s*/i, "");
   const frases = plano.split(/(?<=\.)\s+/);
   for (const frase of frases) {
-    const sujeto = /^\s*(?:<Subject\s*1>|He|She|They)\s+(.+)/i.exec(frase);
+    const sujeto = frase.match(/^\s*(?:<Subject\s*1>|He|She|They)\s+(.+)/i);
     if (sujeto) return limpiarAccion(sujeto[1]);
   }
   return "";
@@ -1957,21 +1957,21 @@ function limpiarAccion(texto) {
 /** Lo que la descripcion dice que hay detras del personaje. */
 function loQueHayDetras(node) {
   const d = String(findWidget(node, "detailed_description")?.value || "");
-  const m = /\bwith ([^.]*?) (?:behind|around) (?:him|her|them)\b/i.exec(d);
+  const m = d.match(/\bwith ([^.]*?) (?:behind|around) (?:him|her|them)\b/i);
   return m ? m[1].trim() : "";
 }
 
 /** La toma que el resumen dice que se rueda, si la nombra. */
 function tomaDelResumen(node) {
   const s = String(findWidget(node, "summary")?.value || "");
-  const m = /as the camera performs (?:a|an)\s+([^.,\n]+)/i.exec(s);
+  const m = s.match(/as the camera performs (?:a|an)\s+([^.,\n]+)/i);
   return m ? m[1].trim() : "";
 }
 
 /** El lugar que nombra el resumen, sin su articulo. */
 function lugarDelResumen(node) {
   const s = String(findWidget(node, "summary")?.value || "");
-  const m = /\b(?:in|on) (?:a|an|the) ([^,.]{3,60})/i.exec(s);
+  const m = s.match(/\b(?:in|on) (?:a|an|the) ([^,.]{3,60})/i);
   return m ? m[1].trim() : "";
 }
 
@@ -2099,8 +2099,8 @@ function escenaDelNodo(node, ficha) {
   const lee = (n) => String(findWidget(node, n)?.value || "").trim();
   const def = lee("subject_definitions").split("\n")[0] || "";
   const desc = lee("detailed_description");
-  const actuacion = /As the shot plays out, <Subject 1>'s ([^]*?)(?:\n|$)/i.exec(desc);
-  const sitio = /\[Shot\s*1\][^.]*?\b(?:He|She|They|<Subject\s*1>)\s+([^,.]*)/i.exec(desc);
+  const actuacion = desc.match(/As the shot plays out, <Subject 1>'s ([^]*?)(?:\n|$)/i);
+  const sitio = desc.match(/\[Shot\s*1\][^.]*?\b(?:He|She|They|<Subject\s*1>)\s+([^,.]*)/i);
   return {
     personaje: def.replace(/^<Subject\s*1>\s+is\s+/i, "").replace(/\s*(?:His|Her|Their) exact facial[^]*$/i, "").trim(),
     lugar: lugarDelResumen(node),
@@ -2155,7 +2155,7 @@ function instruccionHuecos(nombre, huecos) {
 function repartirHuecos(texto, cajas) {
   let puestos = 0;
   for (const linea of String(texto || "").split(/\r?\n/)) {
-    const m = /^\s*(\{[A-Z_]+\})\s*[=:]\s*(.+?)\s*$/.exec(linea);
+    const m = linea.match(/^\s*(\{[A-Z_]+\})\s*[=:]\s*(.+?)\s*$/);
     if (!m) continue;
     const campo = cajas[m[1]];
     if (!campo) continue;
@@ -3040,11 +3040,9 @@ function parsearPerfil(texto, perfil) {
     ")\\s*\\**\\s*[:：]?[ \\t]*$|^[ \\t>#*_\\-]{0,6}(?:\\d{1,2}[.)]\\s*)?\\**\\s*(" +
     nombres.join("|") + ")\\s*\\**\\s*[:：][ \\t]*\\**[ \\t]*", "gmi");
   const marcas = [];
-  let m;
-  while ((m = rx.exec(texto)) !== null) {
+  for (const m of String(texto).matchAll(rx)) {
     const c = clavePerfil(perfil, m[1] || m[2]);
     if (c) marcas.push({ clave: c, ini: m.index, fin: m.index + m[0].length });
-    if (rx.lastIndex === m.index) rx.lastIndex++;
   }
   if (!marcas.length) {
     const destino = Object.entries(perfil.secciones).find(([k]) => k !== "mode" && k !== "negative_prompt");
@@ -3129,11 +3127,9 @@ function parsearPrompt(texto) {
     "gmi");
 
   const marcas = [];
-  let m;
-  while ((m = rx.exec(texto)) !== null) {
+  for (const m of String(texto).matchAll(rx)) {
     const c = claveP6(m[1] || m[2]);
     if (c) marcas.push({ clave: c, ini: m.index, fin: m.index + m[0].length });
-    if (rx.lastIndex === m.index) rx.lastIndex++;
   }
 
   if (!marcas.length) {
