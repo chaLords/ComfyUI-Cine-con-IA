@@ -60,6 +60,7 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 | **CineConIA · H3 Optimizer** | Detecta VRAM, aplica perfiles AUTO/8/12/16/24/32 GB, ejecuta el Memory Planner y entrega una configuración reutilizable. Muestreo progresivo opcional para tamaños grandes (necesita el pack comfyui-SelfLift). |
 | **CineConIA · H3 Optimized Sampler** | Consume la configuración del Optimizer y ejecuta el primer pase mediante los nodos avanzados del core de ComfyUI. |
 | **Cine con IA · Cronómetro** | Nodo del navegador, no se envía al servidor: mide la corrida completa y cada nodo, y guarda las últimas corridas en el workflow para comparar renders. |
+| **Cine con IA · Interruptor** | Nodo del navegador, no se envía al servidor: lista los grupos cuyo título empieza por un prefijo ("RAMA" por defecto) y deja encendido solo uno. Los demás pasan a bypass (violeta) y no se ejecutan. |
 
 ## Funciones destacadas de la interfaz
 

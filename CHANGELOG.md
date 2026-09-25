@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Interruptor**, a browser-only node: it lists the groups whose title starts with a prefix ("RAMA" by default) and keeps only one of them on. The others go to bypass (purple) and do not run. It replaces rgthree-comfy's Fast Groups Bypasser in the pack's workflows.
+- Example workflow 046: the 045 with the pack's own Interruptor, without rgthree-comfy. The 045 stays as it was.
+
 ## [1.5.4] - 2026-09-25
 
 ### Added

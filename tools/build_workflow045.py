@@ -78,7 +78,8 @@ def interruptor():
     }
 
 
-def construir():
+def armar():
+    """El 045 completo, sin escribirlo (el 046 parte de aqui)."""
     w = b044.armar()
     w["id"] = "cineconia-045-h3-interruptor-8-20-20260924"
     g = Grafo(w)
@@ -135,6 +136,11 @@ def construir():
     nota["widgets_values_named"] = {"text": NOTA}
 
     g.ordenar()
+    return w
+
+
+def construir():
+    w = armar()
     OUTPUT.write_text(json.dumps(w, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return w
 

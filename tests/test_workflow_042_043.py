@@ -17,7 +17,7 @@ SPEC.loader.exec_module(NODES)
 from cineconia_h3.comfy_nodes import CineH3Optimizer  # noqa: E402
 
 EXTERNOS = {"MarkdownNote", "LoadImage", "ModelPreviewOverrideKJ", "VHS_VideoCombine", "PrimitiveInt"}
-VIRTUALES = {"CineCronometro", "Fast Groups Bypasser (rgthree)"}   # solo existen en el navegador
+VIRTUALES = {"CineCronometro", "CineInterruptor", "Fast Groups Bypasser (rgthree)"}   # solo existen en el navegador
 GPU16 = {"available": True, "name": "RTX 4060 Ti", "total_gb": 15.99, "free_gb": 14.2, "source": "test"}
 LISTO = {"selflift": True, "upscaler": "minimax_h3_latent_upscaler_3d_bf16.safetensors"}
 # fuera de ComfyUI no hay comfy.samplers: las listas que da el core
@@ -285,15 +285,17 @@ class Workflow045Tests(Coherencia, unittest.TestCase):
     BORRADOR = {515, 516, 519, 517, 34003}
     FINAL = {513, 514, 506, 507, 34000}
     COMPARTIDOS = {500, 501, 502, 504, 106, 509, 511, 512, 518, 522}
+    SALIDA = "045"
+    EN_NOTA = ("rgthree",)
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.grupos = {g["title"]: g["bounding"] for g in cls.workflow["groups"]}
-        cls.interruptor = next(n for n in cls.workflow["nodes"]
-                               if n["type"] == "Fast Groups Bypasser (rgthree)")
+        cls.interruptor = cls.nodes[521]
 
     def test_el_interruptor_lista_solo_las_dos_ramas_y_deja_una(self):
+        self.assertEqual(self.interruptor["type"], "Fast Groups Bypasser (rgthree)")
         props = self.interruptor["properties"]
         self.assertEqual(props["toggleRestriction"], "always one")
         ramas = [t for t in self.grupos if re.search(props["matchTitle"], t, re.I)]
@@ -348,8 +350,45 @@ class Workflow045Tests(Coherencia, unittest.TestCase):
         self.assertFalse(final["progressive"]["requested"] or borrador["progressive"]["requested"])
         tam = "{}×{}".format(lado_escalado(416, final["refine_scale"]), lado_escalado(736, final["refine_scale"]))
         self.assertIn(tam, self.nota)
-        for texto in ("~**23 min**", "~**42 min**", "045_borrador_8p_", "045_final_20p_", "rgthree"):
+        for texto in ("~**23 min**", "~**42 min**", self.SALIDA + "_borrador_8p_", self.SALIDA + "_final_20p_") + self.EN_NOTA:
             self.assertIn(texto, self.nota)
+
+    def test_cada_rama_guarda_su_video(self):
+        prefijos = {n["id"]: n["widgets_values"]["filename_prefix"] for n in self.workflow["nodes"]
+                    if n["type"] == "VHS_VideoCombine"}
+        self.assertTrue(prefijos[34003].startswith("CineConIA/{}_borrador_8p_".format(self.SALIDA)))
+        self.assertTrue(prefijos[34000].startswith("CineConIA/{}_final_20p_".format(self.SALIDA)))
+
+
+class Workflow046Tests(Workflow045Tests):
+    """El 045 con el Interruptor de Cine con IA en vez del de rgthree."""
+    nombre = "046"
+    SALIDA = "046"
+    EN_NOTA = ("RAMA", "Cronómetro", "sin rgthree-comfy")
+
+    def test_el_interruptor_lista_solo_las_dos_ramas_y_deja_una(self):
+        # la misma regla que web/cineconia_interruptor.js: titulo que empieza por el prefijo
+        self.assertEqual(self.interruptor["type"], "CineInterruptor")
+        self.assertEqual((self.interruptor["inputs"], self.interruptor["outputs"]), ([], []))
+        prefijo = self.interruptor["properties"]["prefijo"].strip().lower()
+        ramas = [t for t in self.grupos if t.strip().lower().startswith(prefijo)]
+        self.assertEqual(sorted(ramas), ["RAMA · 20 pasos · final", "RAMA · 8 pasos · borrador"])
+        self.assertNotIn("widgets_values", self.interruptor)
+
+    def test_ya_no_necesita_rgthree(self):
+        tipos = {n["type"] for n in self.workflow["nodes"]}
+        self.assertFalse(any("rgthree" in t for t in tipos))
+        self.assertNotIn("Necesita rgthree", self.nota)
+
+    def test_es_el_045_con_otro_interruptor(self):
+        antes = cargar("045")
+        self.assertEqual(antes["links"], self.workflow["links"])
+        self.assertEqual(antes["groups"], self.workflow["groups"])
+        iguales = {n["id"] for n in antes["nodes"]} - {510, 521, 34000, 34003}
+        for n in antes["nodes"]:
+            if n["id"] in iguales:
+                self.assertEqual(n, self.nodes[n["id"]], n["id"])
+        self.assertEqual(self.interruptor["pos"], next(n for n in antes["nodes"] if n["id"] == 521)["pos"])
 
 
 if __name__ == "__main__":

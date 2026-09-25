@@ -60,6 +60,7 @@ The interface is in Spanish and adds visual controls, memory warnings, render pr
 | **CineConIA · H3 Optimizer** | Detects VRAM, applies AUTO/8/12/16/24/32 GB profiles, runs the Memory Planner, and returns a reusable configuration. Optional progressive sampling for larger sizes (needs the comfyui-SelfLift pack). |
 | **CineConIA · H3 Optimized Sampler** | Consumes the Optimizer configuration and runs the first pass through ComfyUI core advanced-sampling nodes. |
 | **Cine con IA · Cronómetro** | Browser-only node, never sent to the server: times the whole run and each node, and keeps the last runs in the workflow so renders can be compared. |
+| **Cine con IA · Interruptor** | Browser-only node, never sent to the server: lists the groups whose title starts with a prefix ("RAMA" by default) and keeps only one of them on. The others go to bypass (purple) and do not run. |
 
 ## Interface highlights
 
