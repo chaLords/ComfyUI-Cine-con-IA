@@ -15,6 +15,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **Interruptor**, a browser-only node: it lists the groups whose title starts with a prefix ("RAMA" by default) and keeps only one of them on. The others go to bypass (purple) and do not run. It replaces rgthree-comfy's Fast Groups Bypasser in the pack's workflows.
 - Example workflow 046: the 045 with the pack's own Interruptor, without rgthree-comfy. The 045 stays as it was.
 
+### Fixed
+
+- **Escalar y Refinar** no longer passes the latent through silently when the H3 latent upscaler (the Comfyui Minimax H3 Latent Upscaler pack) is missing. The video used to come out at first-pass size and the node seemed to do nothing; now it stops and says what to install. If the upscaler fails, it shows the real error (for example, running out of VRAM or a model it cannot find).
+- The node's info panel warns before running when that upscaler is not installed.
+
 ## [1.5.4] - 2026-09-25
 
 ### Added

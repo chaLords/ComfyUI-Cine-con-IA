@@ -991,6 +991,26 @@ def _llamar_nodo(node_id, **kwargs):
     return None
 
 
+def _nodo_existe(node_id):
+    """True si ComfyUI tiene registrado ese nodo (de su core o de otro paquete)."""
+    try:
+        import nodes as comfy_nodes
+        return node_id in comfy_nodes.NODE_CLASS_MAPPINGS
+    except Exception:
+        return False
+
+
+FALTA_ESCALADOR = (
+    "Falta el nodo MinimaxH3LatentUpscaler3D del paquete 'Comfyui Minimax H3 Latent "
+    "Upscaler' (https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler). "
+    "Sin el, Escalar y Refinar no puede subir la resolucion y el video saldria del "
+    "tamano del primer pase.\n"
+    "Instalalo desde el Manager (busca 'Minimax H3 Latent Upscaler') y reinicia "
+    "ComfyUI. Si prefieres quedarte con el primer pase, apaga 'refinar' en el "
+    "Optimizador (o 'activar' en este nodo si no llega por cable)."
+)
+
+
 def _lista(carpeta):
     try:
         import folder_paths
@@ -1651,8 +1671,14 @@ class CineEscalarRefinar:
         if not activar:
             return (latente, "escalado y refinado: apagado")
 
+        # Sin el escalador no hay segundo pase. Antes se devolvia el latente
+        # tal cual y el video salia del tamano del primer pase sin avisar.
+        if not _nodo_existe("MinimaxH3LatentUpscaler3D"):
+            raise RuntimeError(FALTA_ESCALADOR)
+
         latente_video, latente_audio = _separar_av(latente)
 
+        _ULTIMO_ERROR["texto"] = ""
         grande = _llamar_nodo(
             "MinimaxH3LatentUpscaler3D",
             latent=latente_video,
@@ -1665,7 +1691,16 @@ class CineEscalarRefinar:
             precision="fp16",
         )
         if grande is None:
-            return (latente, "falta el nodo MinimaxH3LatentUpscaler3D: se devuelve el latente sin escalar")
+            causa = _ULTIMO_ERROR["texto"] or "desconocido"
+            if _sin_memoria(causa):
+                raise RuntimeError(
+                    "No hay VRAM suficiente para escalar el latente x{}. Baja la Escala "
+                    "(en el Optimizador o en este nodo) o el Tamano en Proporcion y Tamano.\n"
+                    "Error original: {}".format(escala, causa))
+            raise RuntimeError(
+                "El escalador latente de H3 (MinimaxH3LatentUpscaler3D) fallo y el video "
+                "habria salido sin escalar ni refinar. Revisa que el modelo '{}' este en "
+                "models/latent_upscale_models.\nError original: {}".format(modelo_escalador, causa))
 
         juntos = _unir_av(grande, latente_audio)
 

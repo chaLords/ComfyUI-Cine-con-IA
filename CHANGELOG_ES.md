@@ -15,6 +15,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 - **Interruptor**, un nodo del navegador: lista los grupos cuyo título empieza por un prefijo ("RAMA" por defecto) y deja encendido solo uno. Los demás pasan a bypass (violeta) y no se ejecutan. Reemplaza al Fast Groups Bypasser de rgthree-comfy en los workflows del paquete.
 - Workflow de ejemplo 046: el 045 con el Interruptor propio, sin rgthree-comfy. El 045 queda como estaba.
 
+### Corregido
+
+- **Escalar y Refinar** ya no deja pasar el latente sin avisar cuando falta el escalador latente de H3 (paquete Comfyui Minimax H3 Latent Upscaler). Antes el video salía del tamaño del primer pase y parecía que el nodo no hacía nada; ahora se detiene y dice qué instalar. Si el escalador falla, muestra el error real (por ejemplo, falta de VRAM o el modelo que no encuentra).
+- La ficha del nodo avisa antes de ejecutar si ese escalador no está instalado.
+
 ## [1.5.4] - 2026-09-25
 
 ### Añadido

@@ -1216,6 +1216,15 @@ function addProgreso(node, titulo, obtenerTotal = null) {
 }
 
 /** Bloque de texto informativo, calculado en vivo. */
+/**
+ * El escalador latente de H3 viene de otro paquete (LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler).
+ * true / false si ComfyUI lo tiene registrado; null si todavia no se puede saber.
+ */
+function hayEscaladorH3() {
+  const tipos = globalThis.LiteGraph?.registered_node_types;
+  return tipos ? "MinimaxH3LatentUpscaler3D" in tipos : null;
+}
+
 function addInfo(node, fn) {
   const w = {
     type: "cineconia_info",
@@ -4055,6 +4064,11 @@ app.registerExtension({
           const quien = esc.desde || act.desde || pas.desde;
           if (act.valor === false) {
             return ["escalado apagado", quien ? `lo apaga ${quien}` : "el latente pasa de largo"];
+          }
+          if (hayEscaladorH3() === false) {
+            return ["⚠ falta el escalador latente de H3",
+              "instala 'Minimax H3 Latent Upscaler' con el Manager",
+              "sin él, este nodo detiene el render"];
           }
           const e = Number(esc.valor ?? findWidget(nd, "escala")?.value ?? 2);
           const p = String(pas.valor ?? findWidget(nd, "pasos")?.value ?? "").split("·")[0].trim();

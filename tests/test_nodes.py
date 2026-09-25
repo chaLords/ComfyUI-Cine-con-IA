@@ -610,3 +610,50 @@ class CameraReaderOrderTests(unittest.TestCase):
         for trozo in ("framed as a medium shot", "at his eye level", "pushes in",
                       "tightening to a close-up", "already lowered out of the frame"):
             self.assertIn(trozo, salida, trozo)
+
+
+class EscalarRefinarTests(unittest.TestCase):
+    """Sin el escalador latente de H3 el nodo avisa; ya no deja pasar el latente a escondidas."""
+
+    LATENTE = {"samples": SimpleNamespace(tensors=["video", "audio"])}
+
+    def escalar(self, mapeo, activar=True):
+        comfy = SimpleNamespace(NODE_CLASS_MAPPINGS=mapeo)
+        with patch.dict(sys.modules, {"nodes": comfy, "torch": SimpleNamespace()}):
+            return NODES.CineEscalarRefinar().escalar(
+                None, None, self.LATENTE, activar, 1.27,
+                "minimax_h3_latent_upscaler_3d_bf16.safetensors", "4 pasos  ·  recomendado", "er_sde", 835)
+
+    def test_apagado_pasa_de_largo_aunque_falte_el_escalador(self):
+        latente, info = self.escalar({}, activar=False)
+        self.assertIs(latente, self.LATENTE)
+        self.assertIn("apagado", info)
+
+    def test_sin_el_paquete_del_escalador_se_detiene_y_dice_que_instalar(self):
+        with self.assertRaises(RuntimeError) as ctx:
+            self.escalar({})
+        texto = str(ctx.exception)
+        for trozo in ("MinimaxH3LatentUpscaler3D", "LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler",
+                      "Manager", "refinar"):
+            self.assertIn(trozo, texto)
+
+    def test_si_el_escalador_falla_por_memoria_lo_dice(self):
+        class Escalador:
+            @staticmethod
+            def execute(**kwargs):
+                raise RuntimeError("CUDA out of memory. Tried to allocate 2.00 GiB")
+        with self.assertRaises(RuntimeError) as ctx:
+            self.escalar({"MinimaxH3LatentUpscaler3D": Escalador})
+        self.assertIn("VRAM", str(ctx.exception))
+        self.assertIn("out of memory", str(ctx.exception))
+
+    def test_si_el_escalador_falla_por_otra_cosa_nombra_el_modelo(self):
+        class Escalador:
+            @staticmethod
+            def execute(**kwargs):
+                raise FileNotFoundError("no such file")
+        with self.assertRaises(RuntimeError) as ctx:
+            self.escalar({"MinimaxH3LatentUpscaler3D": Escalador})
+        texto = str(ctx.exception)
+        self.assertIn("minimax_h3_latent_upscaler_3d_bf16.safetensors", texto)
+        self.assertIn("no such file", texto)
