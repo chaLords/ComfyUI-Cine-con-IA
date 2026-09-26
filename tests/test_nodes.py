@@ -549,6 +549,60 @@ class SceneGuideModeTests(unittest.TestCase):
         self.assertIn("guia en el fotograma 0", result[3])
 
 
+class SceneMissingPictureTests(unittest.TestCase):
+    """Una <Picture N> que no llega no deja su definicion en el prompt."""
+
+    PROMPT = ("subject_definitions:\n"
+              "<Subject 1> is the man in <Picture 1>.\n"
+              "<Picture 2> is the location.\n"
+              "  <picture 3> is an expression sheet of <Subject 1>.\n"
+              "\n"
+              "retention_analysis:\n"
+              "<Picture 3> (appears in [Shot 1]): teeth and mouth only.\n"
+              "He smiles as in <Picture 3>.")
+
+    def _run(self, *refs):
+        seen = {}
+
+        def all_node(name, **kwargs):
+            seen.update(kwargs)
+            return ("positive", "latent")
+
+        nombres = ("referencia_1", "referencia_2", "referencia_3")
+        with patch.object(NODES, "_llamar_nodo_todo", side_effect=all_node):
+            result = NODES.CineEscenaH3().escena(
+                clip=object(), vae_video=object(), vae_audio=object(),
+                prompt=self.PROMPT, width=544, height=928, length=124,
+                tamano_referencia="max", fotograma_guia=0, modo_guia="flexible  ·  prioriza camara",
+                **dict(zip(nombres, refs)))
+        return seen["prompt"], result[3]
+
+    def test_con_las_tres_imagenes_el_prompt_no_cambia(self):
+        prompt, info = self._run(object(), object(), object())
+        self.assertEqual(prompt, self.PROMPT)
+        self.assertNotIn("Picture", info)
+
+    def test_sin_la_tercera_se_quitan_sus_dos_lineas(self):
+        prompt, info = self._run(object(), object(), None)
+        self.assertNotIn("expression sheet", prompt)
+        self.assertNotIn("teeth and mouth only", prompt)
+        self.assertIn("<Picture 2> is the location.", prompt)
+        # nombrarla en medio de una frase no borra la frase
+        self.assertIn("He smiles as in <Picture 3>.", prompt)
+        self.assertIn("sin <Picture 3>", info)
+
+    def test_con_una_sola_se_quitan_la_2_y_la_3(self):
+        prompt, info = self._run(object())
+        self.assertNotIn("the location", prompt)
+        self.assertIn("<Subject 1> is the man in <Picture 1>.", prompt)
+        self.assertIn("sin <Picture 2>, <Picture 3>", info)
+
+    def test_la_funcion_sola(self):
+        self.assertEqual(NODES._quitar_imagenes_ausentes(None, 0), ("", []))
+        self.assertEqual(NODES._quitar_imagenes_ausentes("a\r\n<Picture 1> x", 1), ("a\r\n<Picture 1> x", []))
+        self.assertEqual(NODES._quitar_imagenes_ausentes("a\r\n<Picture 2> x\r\nb", 1), ("a\r\nb", [2]))
+
+
 class PromptPreviewRouteTests(unittest.TestCase):
     def setUp(self):
         self.handlers = {}

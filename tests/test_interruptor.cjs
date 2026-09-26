@@ -10,7 +10,7 @@ function setup() {
   let extension;
   const context = vm.createContext({
     app: {registerExtension(e) { extension = e; }, graph: null, canvas: {}},
-    pintarCabecera() {}, COLOR_BASE: '#283436',
+    pintarCabecera() {}, COLOR_BASE: '#283436', anchoFijoAlNodo: (w) => w, esLienzoPrincipal: () => true,
   });
   vm.runInContext(source, context);
   return {extension, fn: n => vm.runInContext(n, context)};
@@ -135,7 +135,7 @@ test('se registra como nodo virtual de la categoría Cine con IA', () => {
   let extension;
   const context = vm.createContext({
     app: {registerExtension(e) { extension = e; }, graph: null, canvas: {}},
-    pintarCabecera() {}, COLOR_BASE: '#283436',
+    pintarCabecera() {}, COLOR_BASE: '#283436', anchoFijoAlNodo: (w) => w, esLienzoPrincipal: () => true,
     LGraphNode, LiteGraph: {registerNodeType(tipo, clase) { registrado = [tipo, clase]; }},
   });
   vm.runInContext(source, context);
@@ -176,7 +176,7 @@ test('el clic en una fila enciende esa rama', () => {
     fillText() {}, save() {}, restore() {}, measureText: (s) => ({width: String(s).length * 6})};
   const context = vm.createContext({
     app: {registerExtension(e) { extension = e; }, graph: g, canvas: {graph: g, setDirty() {}}},
-    pintarCabecera() {}, COLOR_BASE: '#283436',
+    pintarCabecera() {}, COLOR_BASE: '#283436', anchoFijoAlNodo: (w) => w, esLienzoPrincipal: () => true,
     LGraphNode, LiteGraph: {registerNodeType(tipo, clase) { registrado = [tipo, clase]; }},
   });
   vm.runInContext(source, context);

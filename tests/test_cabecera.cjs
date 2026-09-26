@@ -181,3 +181,26 @@ test('donde la cabecera lleva el logo no hay placa: solo el degradé', async () 
   ratio.onDrawTitleBar(ctx2, 30, [460, 300], 1, '#283436');
   assert.equal(ctx2.log.filter(l => l[0] === 'roundRect').length, 1);
 });
+
+test('el ancho que deja el panel lateral no se le pega al widget', () => {
+  const {fn} = setup();
+  const w = fn('anchoFijoAlNodo')({name: 'x', width: 298});
+  assert.equal(w.width, undefined);
+  w.width = 298;               // lo que hace el panel al pintarlo
+  assert.equal(w.width, undefined);
+  assert.equal(w.name, 'x');
+});
+
+test('solo el lienzo del grafo cuenta como principal', () => {
+  const principal = {id: 'grafo'};
+  const context = vm.createContext({
+    app: {registerExtension() {}, graph: null, canvas: {canvas: principal}},
+    LiteGraph: {}, document: {getElementById() { return null; }, createElement() { return {}; }, head: {append() {}}},
+    setInterval() { return 0; },
+  });
+  vm.runInContext(source, context);
+  const es = vm.runInContext('esLienzoPrincipal', context);
+  assert.equal(es({canvas: principal}), true);
+  assert.equal(es({canvas: {id: 'panel'}}), false);
+  assert.equal(es({}), true);            // sin lienzo conocido: se trata como principal
+});

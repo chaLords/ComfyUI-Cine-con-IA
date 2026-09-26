@@ -50,7 +50,7 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 | **Cine con IA · Duración** | Convierte segundos y FPS en una cantidad válida de fotogramas. Incluye la rejilla de MiniMax H3 y ajustes avanzados para otros modelos. |
 | **Cine con IA · Prompt** | Construye y separa prompts específicos para MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 o cualquier modelo mediante el modo Libre. |
 | **Cine con IA · Cargar modelo** | Carga el modelo, codificador de texto y VAEs de video/audio. Encadena hasta cuatro LoRAs y aplica optimizaciones de VRAM, sigma shift y vista previa cuando están disponibles. |
-| **Cine con IA · Escena** | Crea el condicionamiento y el latente audiovisual de H3. Acepta hasta tres imágenes de referencia y una imagen guía anclada a un fotograma. |
+| **Cine con IA · Escena** | Crea el condicionamiento y el latente audiovisual de H3. Acepta hasta tres imágenes de referencia y una imagen guía anclada a un fotograma. Una línea del prompt que empieza por `<Picture N>` se deja fuera si esa imagen no está conectada. |
 | **Cine con IA · Render** | Ejecuta el primer pase de muestreo con controles directos de pasos, sampler, scheduler, semilla y denoise. |
 | **Cine con IA · Escalar y Refinar** | Escala el latente de video con un upscaler 3D y realiza un segundo pase de refinado. Incluye perfiles de 3, 4 y 5 pasos y mensajes claros ante falta de VRAM. |
 | **Cine con IA · Salida** | Decodifica video y audio, interpola fotogramas opcionalmente y entrega un objeto `VIDEO`, fotogramas, audio, FPS e información del resultado. |
@@ -59,8 +59,9 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 | **CineConIA · Camera Director H3** | Añade encuadre, ángulo, movimiento, lente, profundidad o una receta H3 completa y compila el prompt final de seis secciones. |
 | **CineConIA · H3 Optimizer** | Detecta VRAM, aplica perfiles AUTO/8/12/16/24/32 GB, ejecuta el Memory Planner y entrega una configuración reutilizable. Muestreo progresivo opcional para tamaños grandes (necesita el pack comfyui-SelfLift). |
 | **CineConIA · H3 Optimized Sampler** | Consume la configuración del Optimizer y ejecuta el primer pase mediante los nodos avanzados del core de ComfyUI. |
-| **Cine con IA · Cronómetro** | Nodo del navegador, no se envía al servidor: mide la corrida completa y cada nodo, y guarda las últimas corridas en el workflow para comparar renders. |
+| **Cine con IA · Cronómetro** | Nodo del navegador, no se envía al servidor: mide la corrida completa y cada nodo, y guarda en el workflow las últimas 20 corridas con modelo, pasos, sampler, resolución final y duración. Un clic en una corrida muestra su desglose por nodo; *Copiar tabla* copia el historial para una hoja de cálculo. |
 | **Cine con IA · Interruptor** | Nodo del navegador, no se envía al servidor: lista los grupos cuyo título empieza por un prefijo ("RAMA" por defecto) y deja encendido solo uno. Los demás pasan a bypass (violeta) y no se ejecutan. |
+| **Cine con IA · Selector** | Nodo del navegador, no se envía al servidor: filas de botones independientes (por ejemplo MODELO y PASOS) que ponen valores en otros nodos o encienden y apagan un nodo, para combinar opciones sin duplicar ramas. Nombra el video según lo elegido. |
 
 ## Funciones destacadas de la interfaz
 

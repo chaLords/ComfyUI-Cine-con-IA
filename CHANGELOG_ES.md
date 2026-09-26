@@ -15,11 +15,19 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 - **Interruptor**, un nodo del navegador: lista los grupos cuyo título empieza por un prefijo ("RAMA" por defecto) y deja encendido solo uno. Los demás pasan a bypass (violeta) y no se ejecutan. Reemplaza al Fast Groups Bypasser de rgthree-comfy en los workflows del paquete.
 - Workflow de ejemplo 046: el 045 con el Interruptor propio, sin rgthree-comfy. El 045 queda como estaba.
 - Workflow de ejemplo 047: el modelo ref2va oficial contra Singularity v1.3 con la misma semilla, a 0.50 MP (704×1184 al final) y en plano medio corto para dar más definición a la cara. Cada rama carga solo su modelo.
+- **Selector**, un nodo del navegador: filas de botones independientes que ponen valores en otros nodos del workflow (el modelo del Cargar modelo, el modo y los pasos del Optimizador, encender o apagar un nodo). Así "Singularity con 8 pasos" es un clic en cada fila, sin copiar ramas. Arma solo el nombre del video y avisa en rojo si un valor no existe en tu instalación.
+- Workflow de ejemplo 048: un solo camino con el Selector (modelo oficial o Singularity v1.3, 8 pasos de borrador o 20 de final, con o sin lámina de expresiones como tercera referencia), gestos más lentos y una sonrisa con dientes en el prompt.
+
+### Cambiado
+
+- **Cronómetro**: guarda las últimas 20 corridas con el modelo, los pasos, el sampler, la resolución final, la duración y lo que marcaban el Interruptor o el Selector. Un clic en una corrida muestra su desglose por nodo, y *Copiar tabla* copia el historial para pegarlo en una hoja de cálculo. La cápsula de la cabecera ya no se queda en "EN CURSO" cuando la corrida terminó.
+- **Escena**: si el prompt trae una línea que empieza por `<Picture N>` y esa imagen no está conectada, esa línea no se envía. Así un workflow puede traer escrita la línea de una referencia opcional y basta con encenderla o apagarla.
 
 ### Corregido
 
 - **Escalar y Refinar** ya no deja pasar el latente sin avisar cuando falta el escalador latente de H3 (paquete Comfyui Minimax H3 Latent Upscaler). Antes el video salía del tamaño del primer pase y parecía que el nodo no hacía nada; ahora se detiene y dice qué instalar. Si el escalador falla, muestra el error real (por ejemplo, falta de VRAM o el modelo que no encuentra).
 - La ficha del nodo avisa antes de ejecutar si ese escalador no está instalado.
+- Con el panel lateral de parámetros abierto, el Cronómetro, el Interruptor y el Selector ya no se dibujan apretados en la mitad del nodo ni reciben los clics en el botón equivocado.
 
 ## [1.5.4] - 2026-09-25
 

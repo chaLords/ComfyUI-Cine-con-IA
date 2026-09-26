@@ -74,6 +74,32 @@ function configConectada(node) {
 }
 
 /**
+ * El panel lateral del frontend nuevo (Parámetros) pinta los widgets del nodo
+ * elegido en su propio lienzo, más angosto, y les deja puesto widget.width con
+ * ese ancho. Después el lienzo principal dibuja el widget y decide los clics con
+ * ese ancho: los botones quedan apretados en la mitad del nodo. Con esto el
+ * widget ignora ese ancho y siempre usa el del nodo.
+ */
+export function anchoFijoAlNodo(widget) {
+  try {
+    Object.defineProperty(widget, "width", {
+      configurable: true, enumerable: false, get() { return undefined; }, set() {},
+    });
+  } catch { /* si el frontend no lo deja, queda como estaba */ }
+  return widget;
+}
+
+/**
+ * true si se está pintando en el lienzo del grafo, no en el panel lateral. Las
+ * zonas de clic solo se guardan de este dibujo: las del panel tienen otro
+ * ancho y otra altura y los clics en el nodo caerían en el botón equivocado.
+ */
+export function esLienzoPrincipal(ctx) {
+  const principal = app?.canvas?.canvas;
+  return !principal || !ctx?.canvas || ctx.canvas === principal;
+}
+
+/**
  * El dato vivo de cada nodo: {texto, corto, punto} o null.
  * enCabeceraHtml: en Nodes 2.0 la cabecera no lleva logo, así que la Escena
  * muestra su tamaño.

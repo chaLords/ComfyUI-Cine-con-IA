@@ -1482,6 +1482,29 @@ def _ajustar(imagen, width, height):
 # el redimensionado de la imagen guia. Cinco nodos en uno.
 # ---------------------------------------------------------------------------
 
+_LINEA_DE_IMAGEN = re.compile(r"^\s*<\s*picture\s*(\d+)\s*>", re.IGNORECASE)
+
+
+def _quitar_imagenes_ausentes(prompt, n_refs):
+    """Quita del prompt las lineas que definen una <Picture N> que no llego.
+
+    Solo las que EMPIEZAN por <Picture N> (la definicion de esa imagen y su
+    linea de retention_analysis): asi un workflow puede traer la linea de la
+    tercera referencia escrita y basta con encender o apagar esa imagen. Una
+    frase que solo la nombra en medio del texto se deja como esta.
+    Devuelve (prompt, numeros de las imagenes quitadas).
+    """
+    texto = str(prompt or "")
+    quedan, quitadas = [], []
+    for linea in texto.split("\n"):
+        m = _LINEA_DE_IMAGEN.match(linea)
+        if m and int(m.group(1)) > n_refs:
+            quitadas.append(int(m.group(1)))
+            continue
+        quedan.append(linea)
+    return ("\n".join(quedan) if quitadas else texto), sorted(set(quitadas))
+
+
 class CineEscenaH3:
     """Arma el condicionamiento y el latente vacio a partir del prompt y las referencias."""
 
@@ -1539,6 +1562,8 @@ class CineEscenaH3:
             if not any(img is imagen_guia for img in refs.values()):
                 refs["ref_image_{}".format(len(refs))] = imagen_guia
 
+        prompt, sin_imagen = _quitar_imagenes_ausentes(prompt, len(refs))
+
         par = _llamar_nodo_todo(
             "MiniMaxH3ReferenceToVideo",
             clip=clip, vae=vae_video, audio_vae=vae_audio,
@@ -1551,6 +1576,9 @@ class CineEscenaH3:
         positivo, latente = par[0], par[1]
 
         notas = ["{} referencia(s)".format(len(refs))] if refs else ["sin referencias"]
+        if sin_imagen:
+            notas.append("sin {}: su linea del prompt no se usa".format(
+                ", ".join("<Picture {}>".format(k) for k in sin_imagen)))
 
         # El anclaje de la imagen guia lleva dentro un latente del tamano de
         # este pase. En el segundo pase el latente ya esta escalado y ese

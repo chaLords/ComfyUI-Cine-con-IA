@@ -136,7 +136,8 @@ def mover_rama(w, rama, ids):
                                           trocear_ffn=TROCEO))
 
 
-def construir():
+def armar():
+    """El 047 completo, sin escribirlo (el 048 parte de aqui)."""
     w = b045.armar()
     w["id"] = "cineconia-047-h3-oficial-vs-singularity-20260926"
     g = Grafo(w)
@@ -196,6 +197,11 @@ def construir():
     nota["widgets_values_named"] = {"text": NOTA}
 
     g.ordenar()
+    return w
+
+
+def construir():
+    w = armar()
     OUTPUT.write_text(json.dumps(w, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return w
 

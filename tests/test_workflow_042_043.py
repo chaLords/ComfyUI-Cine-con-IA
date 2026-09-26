@@ -17,7 +17,7 @@ SPEC.loader.exec_module(NODES)
 from cineconia_h3.comfy_nodes import CineH3Optimizer  # noqa: E402
 
 EXTERNOS = {"MarkdownNote", "LoadImage", "ModelPreviewOverrideKJ", "VHS_VideoCombine", "PrimitiveInt"}
-VIRTUALES = {"CineCronometro", "CineInterruptor", "Fast Groups Bypasser (rgthree)"}   # solo existen en el navegador
+VIRTUALES = {"CineCronometro", "CineInterruptor", "CineSelector", "Fast Groups Bypasser (rgthree)"}   # solo existen en el navegador
 GPU16 = {"available": True, "name": "RTX 4060 Ti", "total_gb": 15.99, "free_gb": 14.2, "source": "test"}
 LISTO = {"selflift": True, "upscaler": "minimax_h3_latent_upscaler_3d_bf16.safetensors"}
 # fuera de ComfyUI no hay comfy.samplers: las listas que da el core
@@ -462,6 +462,159 @@ class Workflow047Tests(Coherencia, unittest.TestCase):
         self.assertTrue(p[34000].startswith("CineConIA/047_singularity_"))
         for texto in ("047_oficial_", "047_singularity_", "Cronómetro"):
             self.assertIn(texto, self.nota)
+
+
+
+def opcion_puesta(nodes, opcion):
+    """Lo mismo que coincide() en web/cineconia_selector.js, sobre el JSON."""
+    for v in opcion["valores"]:
+        n = nodes[v["nodo"]]
+        if "modo" in v:
+            if n["mode"] != v["modo"]:
+                return False
+        elif n["widgets_values_named"].get(v["widget"]) != v["valor"]:
+            return False
+    return True
+
+
+class Workflow048Tests(Coherencia, unittest.TestCase):
+    """Un solo camino: el Selector elige modelo, pasos y la lamina 3 sin duplicar ramas."""
+    nombre = "048"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.selector = cls.nodes[540]
+        cls.filas = cls.selector["properties"]["filas"]
+        cls.texto = cls.nodes[511]["widgets_values_named"]["texto"]
+
+    def fila(self, clave):
+        return next(f for f in self.filas if f["clave"] == clave)
+
+    def opcion(self, fila, clave):
+        return next(o for o in self.fila(fila)["opciones"] if o["clave"] == clave)
+
+    def test_una_sola_semilla_para_los_dos_renders(self):
+        renders = [n for n in self.workflow["nodes"] if n["type"] == "CineH3OptimizedSampler"]
+        self.assertEqual(len(renders), 1)
+        semilla = self.nodes[self.origen(renders[0], "semilla")]
+        self.assertEqual((semilla["type"], semilla["widgets_values"]), ("PrimitiveInt", [833, "fixed"]))
+
+    def test_un_solo_camino_sin_interruptor(self):
+        tipos = [n["type"] for n in self.workflow["nodes"]]
+        for tipo in ("CineCargarH3", "CineEscenaH3", "CineH3Optimizer", "CineEscalarRefinar",
+                     "CineSalida", "VHS_VideoCombine", "CineSelector"):
+            self.assertEqual(tipos.count(tipo), 1, tipo)
+        self.assertNotIn("CineInterruptor", tipos)
+        self.assertFalse([g for g in self.workflow["groups"] if g["title"].upper().startswith("RAMA")])
+        # todo encendido salvo la lamina 3
+        self.assertEqual({n["id"] for n in self.workflow["nodes"] if n["mode"] != 0}, {541})
+
+    def test_el_selector_es_virtual_y_sus_destinos_existen(self):
+        s = self.selector
+        self.assertEqual((s["type"], s["inputs"], s["outputs"]), ("CineSelector", [], []))
+        self.assertNotIn("widgets_values", s)
+        self.assertEqual([f["nombre"] for f in self.filas], ["MODELO", "PASOS", "LÁMINA 3"])
+        with patch("cineconia_h3.comfy_nodes._samplers", return_value=SAMPLERS), \
+                patch("cineconia_h3.comfy_nodes._schedulers", return_value=SCHEDULERS):
+            spec = CineH3Optimizer.INPUT_TYPES()
+        listas = {**spec["required"], **spec["optional"]}
+        for f in self.filas:
+            self.assertEqual(len(f["opciones"]), 2, f["nombre"])
+            for o in f["opciones"]:
+                for v in o["valores"]:
+                    n = self.nodes[v["nodo"]]
+                    if "modo" in v:
+                        self.assertIn(v["modo"], (0, 4))
+                        continue
+                    self.assertIn(v["widget"], n["widgets_values_named"], (o["clave"], v))
+                    if n["type"] == "CineH3Optimizer":
+                        tipo = listas[v["widget"]][0]
+                        if isinstance(tipo, (list, tuple)):
+                            self.assertIn(v["valor"], tipo, v)
+        salida = s["properties"]["salida"]
+        self.assertEqual((salida["nodo"], salida["widget"]), (34003, "filename_prefix"))
+        for f in self.filas:
+            self.assertIn("{" + f["clave"] + "}", salida["plantilla"])
+
+    def test_arranca_en_singularity_20_pasos_sin_lamina_3(self):
+        elegidas = [[o["clave"] for o in f["opciones"] if opcion_puesta(self.nodes, o)] for f in self.filas]
+        self.assertEqual(elegidas, [["singularity"], ["20p"], ["2ref"]])
+        nombre = self.selector["properties"]["salida"]["plantilla"]
+        for f, [clave] in zip(self.filas, elegidas):
+            nombre = nombre.replace("{" + f["clave"] + "}", clave)
+        self.assertEqual(self.nodes[34003]["widgets_values"]["filename_prefix"], nombre)
+        self.assertTrue(nombre.startswith("CineConIA/048_singularity_20p_2ref_"))
+        self.assertIn("048_singularity_20p_2ref_", self.nota)
+
+    def test_los_modelos_son_los_del_047(self):
+        modelos = [o["valores"][0]["valor"] for o in self.fila("modelo")["opciones"]]
+        w047 = cargar("047")
+        del047 = sorted(n["widgets_values_named"]["modelo"] for n in w047["nodes"] if n["type"] == "CineCargarH3")
+        self.assertEqual(sorted(modelos), del047)
+        cargar_h3 = self.nodes[500]["widgets_values_named"]
+        self.assertEqual((cargar_h3["trocear_atencion"], cargar_h3["trocear_ffn"]), (32, 32))
+
+    def test_borrador_y_final_terminan_en_704x1184_y_en_verde(self):
+        self.assertEqual(self.nodes[501]["widgets_values_named"]["tamano"], "0.50 MP")
+        final = self.preview(self.nodes[515])
+        self.assertEqual((final["steps"], final["sampler"], final["scheduler"]), (20, "res_multistep", "simple"))
+        borrador_valores = {v["widget"]: v["valor"] for v in self.opcion("pasos", "8p")["valores"]}
+        borrador = self.preview(self.nodes[515], **borrador_valores)
+        self.assertEqual((borrador["steps"], borrador["sampler"], borrador["scheduler"]), (8, "er_sde", "beta"))
+        for c in (final, borrador):
+            self.assertEqual(c["planner"]["status"], "SAFE")
+            lado = "{}×{}".format(lado_escalado(544, c["refine_scale"]), lado_escalado(928, c["refine_scale"]))
+            self.assertEqual(lado, "704×1184")
+        self.assertIn("704×1184", self.nota)
+
+    def test_la_lamina_3_va_a_la_escena_y_su_linea_se_quita_sin_ella(self):
+        lamina = self.nodes[541]
+        self.assertEqual((lamina["type"], lamina["mode"]), ("LoadImage", 4))
+        self.assertIn("<Picture 3>", lamina["title"])
+        self.assertEqual(self.origen(self.nodes[504], "referencia_3"), 541)
+        self.assertEqual(self.origen(self.nodes[504], "referencia_1"), 509)
+        self.assertEqual(self.origen(self.nodes[504], "referencia_2"), 522)
+        lineas = [l for l in self.texto.split("\n") if l.startswith("<Picture 3>")]
+        self.assertEqual(len(lineas), 2)
+        sin, quitadas = NODES._quitar_imagenes_ausentes(self.texto, 2)
+        self.assertEqual(quitadas, [3])
+        self.assertNotIn("<Picture 3>", sin)
+        con, quitadas = NODES._quitar_imagenes_ausentes(self.texto, 3)
+        self.assertEqual((con, quitadas), (self.texto, []))
+        # la lamina 3 esta dentro del grupo de entradas
+        entradas = next(g["bounding"] for g in self.workflow["groups"] if g["title"].startswith("ENTRADAS"))
+        self.assertTrue(dentro(centro(lamina), entradas))
+
+    def test_gestos_lentos_y_sonrisa_con_dientes(self):
+        self.assertNotIn("salute", self.texto)
+        self.assertNotIn("brim of his cap with two fingers", self.texto)
+        self.assertIn("slowly", self.texto)
+        self.assertIn("teeth", self.texto)
+        self.assertIn("soft key light", self.texto)
+
+    def test_el_selector_se_ve_al_abrir(self):
+        ds = self.workflow["extra"]["ds"]
+        (ox, oy), s = ds["offset"], ds["scale"]
+        x0, y0, x1, y1 = -ox, -oy, 1920 / s - ox, 1000 / s - oy
+        (x, y), (w, h) = self.selector["pos"], self.selector["size"]
+        self.assertTrue(x0 <= x and x + w <= x1)
+        self.assertTrue(y0 <= y - 30 and y + h <= y1)
+
+    def test_nota_cronometro_y_selector_no_pisan_los_grupos(self):
+        techo = min(g["bounding"][1] for g in self.workflow["groups"])
+        for node_id in (510, 520, 540):
+            (x, y), (w, h) = self.nodes[node_id]["pos"], self.nodes[node_id]["size"]
+            self.assertLess(y + h, techo - 20, node_id)
+        # el Cronometro nuevo (historial de 20 y dos botones) mide ~556 px
+        self.assertGreaterEqual(self.nodes[520]["size"][1], 556)
+
+    def test_cada_nodo_del_render_cae_en_generacion(self):
+        gen = next(g["bounding"] for g in self.workflow["groups"] if g["title"].startswith("GENERACIÓN"))
+        for node_id in (500, 504, 106, 515, 516, 519, 517, 34003):
+            self.assertTrue(dentro(centro(self.nodes[node_id]), gen), node_id)
+        ids = [g["id"] for g in self.workflow["groups"]]
+        self.assertEqual(len(ids), len(set(ids)))
 
 
 if __name__ == "__main__":

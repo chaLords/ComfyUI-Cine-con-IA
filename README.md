@@ -50,7 +50,7 @@ The interface is in Spanish and adds visual controls, memory warnings, render pr
 | **Cine con IA · Duración** | Converts seconds and FPS into a valid frame count. Includes the MiniMax H3 frame grid and advanced settings for other models. |
 | **Cine con IA · Prompt** | Builds and parses model-specific prompts for MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1, or any model through Free mode. |
 | **Cine con IA · Cargar modelo** | Loads the model, text encoder, and video/audio VAEs. Chains up to four LoRAs and applies VRAM optimizations, sigma shift, and live preview when available. |
-| **Cine con IA · Escena** | Creates H3 conditioning and the audiovisual latent. Accepts up to three reference images and a guide image anchored to a selected frame. |
+| **Cine con IA · Escena** | Creates H3 conditioning and the audiovisual latent. Accepts up to three reference images and a guide image anchored to a selected frame. A prompt line that starts with `<Picture N>` is left out when that image is not connected. |
 | **Cine con IA · Render** | Runs the first sampling pass with direct controls for steps, sampler, scheduler, seed, and denoise. |
 | **Cine con IA · Escalar y Refinar** | Upscales the video latent with a 3D upscaler and performs a second refinement pass. Includes 3-, 4-, and 5-step profiles and clear out-of-VRAM messages. |
 | **Cine con IA · Salida** | Decodes video and audio, optionally interpolates frames, and returns a `VIDEO` object, frames, audio, FPS, and result information. |
@@ -59,8 +59,9 @@ The interface is in Spanish and adds visual controls, memory warnings, render pr
 | **CineConIA · Camera Director H3** | Adds framing, angle, movement, lens, depth of field, or a complete H3 recipe and compiles the final six-section prompt. |
 | **CineConIA · H3 Optimizer** | Detects VRAM, applies AUTO/8/12/16/24/32 GB profiles, runs the Memory Planner, and returns a reusable configuration. Optional progressive sampling for larger sizes (needs the comfyui-SelfLift pack). |
 | **CineConIA · H3 Optimized Sampler** | Consumes the Optimizer configuration and runs the first pass through ComfyUI core advanced-sampling nodes. |
-| **Cine con IA · Cronómetro** | Browser-only node, never sent to the server: times the whole run and each node, and keeps the last runs in the workflow so renders can be compared. |
+| **Cine con IA · Cronómetro** | Browser-only node, never sent to the server: times the whole run and each node, and keeps the last 20 runs in the workflow with model, steps, sampler, final resolution and duration. Click a run to see its per-node breakdown; *Copiar tabla* copies the history for a spreadsheet. |
 | **Cine con IA · Interruptor** | Browser-only node, never sent to the server: lists the groups whose title starts with a prefix ("RAMA" by default) and keeps only one of them on. The others go to bypass (purple) and do not run. |
+| **Cine con IA · Selector** | Browser-only node, never sent to the server: independent rows of buttons (for example MODEL and STEPS) that set values on other nodes or turn a node on or off, so options combine without duplicating branches. It names the video after what is selected. |
 
 ## Interface highlights
 

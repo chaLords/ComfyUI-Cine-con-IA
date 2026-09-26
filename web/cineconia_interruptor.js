@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { pintarCabecera, COLOR_BASE } from "./cineconia_cabecera.js";
+import { pintarCabecera, COLOR_BASE, anchoFijoAlNodo, esLienzoPrincipal } from "./cineconia_cabecera.js";
 
 /**
  * Cine con IA · Interruptor
@@ -260,7 +260,7 @@ function crearClase() {
       this.__campo = campo;
 
       const estado = { rects: [], ramas: 0 };
-      this.addCustomWidget({
+      const widget = this.addCustomWidget({
         type: "cineconia_interruptor",
         name: "__interruptor",
         value: null,
@@ -270,8 +270,11 @@ function crearClase() {
         draw(ctx, n, width, y) {
           const prefijo = n.properties?.prefijo || PREFIJO;
           const { ramas } = resumen(grafoDe(n), prefijo);
-          estado.rects = [];
-          dibujar(ctx, width, y, prefijo, ramas, estado.rects);
+          const rects = [];
+          dibujar(ctx, width, y, prefijo, ramas, rects);
+          // las zonas de clic, solo del lienzo del grafo (no del panel lateral)
+          if (!esLienzoPrincipal(ctx)) return;
+          estado.rects = rects;
           // crece o encoge con el número de ramas
           if (ramas.length !== estado.ramas) {
             estado.ramas = ramas.length;
@@ -290,6 +293,7 @@ function crearClase() {
           return true;
         },
       });
+      anchoFijoAlNodo(widget);
       this.size = [440, this.computeSize()[1]];
       // La cápsula de la cabecera (cineconia_cabecera.js) lee este dato. Se
       // calcula al pedirlo: la cabecera se pinta antes que el cuerpo y así no

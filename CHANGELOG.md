@@ -15,11 +15,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **Interruptor**, a browser-only node: it lists the groups whose title starts with a prefix ("RAMA" by default) and keeps only one of them on. The others go to bypass (purple) and do not run. It replaces rgthree-comfy's Fast Groups Bypasser in the pack's workflows.
 - Example workflow 046: the 045 with the pack's own Interruptor, without rgthree-comfy. The 045 stays as it was.
 - Example workflow 047: the official ref2va model against Singularity v1.3 with the same seed, at 0.50 MP (704×1184 at the end) and in a close medium shot to give the face more definition. Each branch loads only its own model.
+- **Selector**, a browser-only node: independent rows of buttons that set values on other nodes of the workflow (the model of Load model, the Optimizer's mode and steps, turning a node on or off). "Singularity with 8 steps" is one click per row, without copying branches. It names the video by itself and shows in red any value your install does not have.
+- Example workflow 048: a single path with the Selector (official model or Singularity v1.3, 8 draft steps or 20 final ones, with or without an expression sheet as the third reference), slower gestures and a smile that shows the teeth in the prompt.
+
+### Changed
+
+- **Cronómetro**: keeps the last 20 runs with the model, steps, sampler, final resolution, duration and what the Interruptor or the Selector were set to. Clicking a run shows its per-node breakdown, and *Copiar tabla* copies the history to paste into a spreadsheet. The header capsule no longer stays on "EN CURSO" after the run has finished.
+- **Escena**: when the prompt has a line that starts with `<Picture N>` and that image is not connected, the line is not sent. A workflow can carry the line of an optional reference already written, and turning the image on or off is enough.
 
 ### Fixed
 
 - **Escalar y Refinar** no longer passes the latent through silently when the H3 latent upscaler (the Comfyui Minimax H3 Latent Upscaler pack) is missing. The video used to come out at first-pass size and the node seemed to do nothing; now it stops and says what to install. If the upscaler fails, it shows the real error (for example, running out of VRAM or a model it cannot find).
 - The node's info panel warns before running when that upscaler is not installed.
+- With the side parameters panel open, the Cronómetro, the Interruptor and the Selector are no longer drawn squeezed into half of the node, and their clicks no longer land on the wrong button.
 
 ## [1.5.4] - 2026-09-25
 
