@@ -14,6 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - **Interruptor**, a browser-only node: it lists the groups whose title starts with a prefix ("RAMA" by default) and keeps only one of them on. The others go to bypass (purple) and do not run. It replaces rgthree-comfy's Fast Groups Bypasser in the pack's workflows.
 - Example workflow 046: the 045 with the pack's own Interruptor, without rgthree-comfy. The 045 stays as it was.
+- Example workflow 047: the official ref2va model against Singularity v1.3 with the same seed, at 0.50 MP (704×1184 at the end) and in a close medium shot to give the face more definition. Each branch loads only its own model.
 
 ### Fixed
 

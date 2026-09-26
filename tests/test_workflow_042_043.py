@@ -391,5 +391,78 @@ class Workflow046Tests(Workflow045Tests):
         self.assertEqual(self.interruptor["pos"], next(n for n in antes["nodes"] if n["id"] == 521)["pos"])
 
 
+
+class Workflow047Tests(Coherencia, unittest.TestCase):
+    """Dos modelos con todo lo demas igual: cada rama carga el suyo y nada se cruza."""
+    nombre = "047"
+    OFICIAL = {500, 504, 106, 515, 516, 519, 517, 34003}
+    SINGULARITY = {530, 531, 532, 513, 514, 506, 507, 34000}
+    COMPARTIDOS = {501, 502, 509, 511, 512, 518, 522}
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.grupos = {g["title"]: g["bounding"] for g in cls.workflow["groups"]}
+
+    def test_el_interruptor_lista_las_dos_ramas(self):
+        inter = self.nodes[521]
+        self.assertEqual(inter["type"], "CineInterruptor")
+        ramas = [t for t in self.grupos if t.lower().startswith(inter["properties"]["prefijo"].lower())]
+        self.assertEqual(sorted(ramas), ["RAMA · Singularity v1.3", "RAMA · modelo oficial (ref2va int8)"])
+
+    def test_cada_nodo_cae_en_su_rama(self):
+        oficial = self.grupos["RAMA · modelo oficial (ref2va int8)"]
+        singular = self.grupos["RAMA · Singularity v1.3"]
+        for ids, suyo, otro in ((self.OFICIAL, oficial, singular), (self.SINGULARITY, singular, oficial)):
+            for node_id in ids:
+                c = centro(self.nodes[node_id])
+                self.assertTrue(dentro(c, suyo), node_id)
+                self.assertFalse(dentro(c, otro), node_id)
+        for node_id in self.COMPARTIDOS:
+            c = centro(self.nodes[node_id])
+            self.assertFalse(dentro(c, oficial) or dentro(c, singular), node_id)
+
+    def test_ninguna_rama_depende_de_la_otra(self):
+        for _, a, _, b, _, _ in self.workflow["links"]:
+            self.assertFalse(a in self.OFICIAL and b in self.SINGULARITY, (a, b))
+            self.assertFalse(a in self.SINGULARITY and b in self.OFICIAL, (a, b))
+            if a in self.OFICIAL | self.SINGULARITY:
+                self.assertIn(b, self.OFICIAL | self.SINGULARITY, (a, b))
+
+    def test_arranca_la_oficial_y_la_otra_en_bypass(self):
+        self.assertEqual({self.nodes[i]["mode"] for i in self.OFICIAL}, {0})
+        self.assertEqual({self.nodes[i]["mode"] for i in self.SINGULARITY}, {4})
+
+    def test_solo_cambia_el_modelo(self):
+        a, b = self.nodes[500]["widgets_values_named"], self.nodes[530]["widgets_values_named"]
+        self.assertEqual(a["modelo"], "minimax\\minimax_h3_ref2va_pruned_int8_convrot.safetensors")
+        self.assertEqual(b["modelo"], "minimax\\Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors")
+        self.assertEqual({k: v for k, v in a.items() if k != "modelo"}, {k: v for k, v in b.items() if k != "modelo"})
+        self.assertEqual((a["trocear_atencion"], a["trocear_ffn"]), (32, 32))
+        for x, y in ((515, 513), (504, 531), (106, 532), (519, 506), (517, 507)):
+            self.assertEqual(self.nodes[x]["widgets_values_named"], self.nodes[y]["widgets_values_named"], (x, y))
+        # la misma semilla en los dos renders
+        self.assertEqual(self.origen(self.nodes[516], "semilla"), self.origen(self.nodes[514], "semilla"))
+
+    def test_mas_definicion_y_en_margen(self):
+        self.assertEqual(self.nodes[501]["widgets_values_named"]["tamano"], "0.50 MP")
+        cam = self.nodes[512]["widgets_values_named"]
+        self.assertEqual((cam["plano"], cam["movimiento"], cam["lente"]), ("plano medio corto", "fijo", "50 mm"))
+        c = self.preview(self.nodes[515])
+        self.assertEqual((c["steps"], c["sampler"]), (20, "res_multistep"))
+        self.assertEqual(c["planner"]["status"], "SAFE")
+        final = "{}×{}".format(lado_escalado(544, c["refine_scale"]), lado_escalado(928, c["refine_scale"]))
+        self.assertEqual(final, "704×1184")
+        self.assertIn(final, self.nota)
+        self.assertIn("soft key light", self.nodes[511]["widgets_values_named"]["texto"])
+
+    def test_cada_rama_guarda_su_video(self):
+        p = {i: self.nodes[i]["widgets_values"]["filename_prefix"] for i in (34003, 34000)}
+        self.assertTrue(p[34003].startswith("CineConIA/047_oficial_"))
+        self.assertTrue(p[34000].startswith("CineConIA/047_singularity_"))
+        for texto in ("047_oficial_", "047_singularity_", "Cronómetro"):
+            self.assertIn(texto, self.nota)
+
+
 if __name__ == "__main__":
     unittest.main()

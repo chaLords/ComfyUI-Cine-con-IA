@@ -14,6 +14,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 
 - **Interruptor**, un nodo del navegador: lista los grupos cuyo título empieza por un prefijo ("RAMA" por defecto) y deja encendido solo uno. Los demás pasan a bypass (violeta) y no se ejecutan. Reemplaza al Fast Groups Bypasser de rgthree-comfy en los workflows del paquete.
 - Workflow de ejemplo 046: el 045 con el Interruptor propio, sin rgthree-comfy. El 045 queda como estaba.
+- Workflow de ejemplo 047: el modelo ref2va oficial contra Singularity v1.3 con la misma semilla, a 0.50 MP (704×1184 al final) y en plano medio corto para dar más definición a la cara. Cada rama carga solo su modelo.
 
 ### Corregido
 

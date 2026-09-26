@@ -1,0 +1,2606 @@
+{
+  "id": "cineconia-047-h3-oficial-vs-singularity-20260926",
+  "revision": 0,
+  "last_node_id": 34003,
+  "last_link_id": 79,
+  "nodes": [
+    {
+      "id": 510,
+      "type": "MarkdownNote",
+      "pos": [
+        -20,
+        -560
+      ],
+      "size": [
+        1600,
+        480
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Cómo se usa · 047 oficial contra Singularity",
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "# 047 · Modelo oficial contra Singularity, con más definición\n\nEl 046 con **dos modelos** en el Interruptor, para ver cuál da mejor cara con **la misma semilla, el mismo prompt y los mismos ajustes**. La rama apagada queda en violeta y no carga su modelo.\n\n- **Modelo oficial**: `minimax_h3_ref2va_pruned_int8_convrot`, el del primer video de la invitación.\n- **Singularity v1.3**: `Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8`, el del 046.\n\n**Qué cambia respecto al 046 para ganar definición en la cara**\n\n- Tamaño **0.50 MP**: el primer pase va a **544×928** y el refinado ×1.27 sube a **704×1184** (antes 544×928 al final). En 16 GB queda en verde.\n- **Plano medio corto** con cámara fija y lente de 50 mm: la cara ocupa muchos más píxeles.\n- Una **luz suave de frente** en el prompt, para que la escena nocturna no se coma el detalle de la piel.\n\nLas dos ramas usan el Optimizador en Auto (20 pasos). Con el ComfyUI nuevo el 046 final tardó ~11 min a 0.30 MP; aquí calcula **~20-25 min por rama**.\n\n**Cómo se usa.** Carga la lámina en *Lámina de personaje* y el estudio en *Estudio*. Enciende una rama en el Interruptor y ejecuta; después enciende la otra y ejecuta otra vez. Los videos se guardan como `CineConIA/047_oficial_…` y `CineConIA/047_singularity_…`, y el **Cronómetro** guarda el tiempo de cada uno.\n\n*Si un modelo no aparece en la lista de su Cargar H3, elígelo a mano: el nombre depende de la carpeta donde lo tengas. El troceo queda fijo en 32/32 en los dos cargadores.*"
+      ],
+      "widgets_values_named": {
+        "text": "# 047 · Modelo oficial contra Singularity, con más definición\n\nEl 046 con **dos modelos** en el Interruptor, para ver cuál da mejor cara con **la misma semilla, el mismo prompt y los mismos ajustes**. La rama apagada queda en violeta y no carga su modelo.\n\n- **Modelo oficial**: `minimax_h3_ref2va_pruned_int8_convrot`, el del primer video de la invitación.\n- **Singularity v1.3**: `Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8`, el del 046.\n\n**Qué cambia respecto al 046 para ganar definición en la cara**\n\n- Tamaño **0.50 MP**: el primer pase va a **544×928** y el refinado ×1.27 sube a **704×1184** (antes 544×928 al final). En 16 GB queda en verde.\n- **Plano medio corto** con cámara fija y lente de 50 mm: la cara ocupa muchos más píxeles.\n- Una **luz suave de frente** en el prompt, para que la escena nocturna no se coma el detalle de la piel.\n\nLas dos ramas usan el Optimizador en Auto (20 pasos). Con el ComfyUI nuevo el 046 final tardó ~11 min a 0.30 MP; aquí calcula **~20-25 min por rama**.\n\n**Cómo se usa.** Carga la lámina en *Lámina de personaje* y el estudio en *Estudio*. Enciende una rama en el Interruptor y ejecuta; después enciende la otra y ejecuta otra vez. Los videos se guardan como `CineConIA/047_oficial_…` y `CineConIA/047_singularity_…`, y el **Cronómetro** guarda el tiempo de cada uno.\n\n*Si un modelo no aparece en la lista de su Cargar H3, elígelo a mano: el nombre depende de la carpeta donde lo tengas. El troceo queda fijo en 32/32 en los dos cargadores.*"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 502,
+      "type": "CineDuracion",
+      "pos": [
+        0,
+        540
+      ],
+      "size": [
+        420,
+        310
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "INT",
+          "links": [
+            1,
+            17,
+            29,
+            39,
+            61,
+            71
+          ]
+        },
+        {
+          "name": "segundos_reales",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineDuracion"
+      },
+      "widgets_values": [
+        5,
+        "24  ·  nativo H3",
+        17,
+        5,
+        5,
+        false
+      ],
+      "widgets_values_named": {
+        "segundos": 5,
+        "fps": "24  ·  nativo H3",
+        "rejilla": 17,
+        "desfase": 5,
+        "minimo_fotogramas": 5,
+        "avanzado": false
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
+    },
+    {
+      "id": 501,
+      "type": "CineRatioSize",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        420,
+        460
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            15,
+            27,
+            37,
+            69
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            16,
+            28,
+            38,
+            70
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineRatioSize"
+      },
+      "widgets_values": [
+        "9:16  vertical (reels, tiktok)",
+        "0.50 MP",
+        0.3,
+        32
+      ],
+      "widgets_values_named": {
+        "proporcion": "9:16  vertical (reels, tiktok)",
+        "tamano": "0.50 MP",
+        "personalizado_mp": 0.3,
+        "multiplo_de": 32
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
+    },
+    {
+      "id": 509,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        940
+      ],
+      "size": [
+        420,
+        360
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            11,
+            67
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "title": "Lámina de personaje  ·  <Picture 1>",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.2",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "hf_20260822_170025_17eea7c3-7976-48b6-8c02-6d61c9f03fcf.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "hf_20260822_170025_17eea7c3-7976-48b6-8c02-6d61c9f03fcf.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 511,
+      "type": "CineSimplePromptH3",
+      "pos": [
+        500,
+        0
+      ],
+      "size": [
+        500,
+        540
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "scene",
+          "type": "CINECONIA_H3_SCENE",
+          "links": [
+            36
+          ]
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "01 · Prompt · bienvenida con boina",
+      "properties": {
+        "Node name for S&R": "CineSimplePromptH3"
+      },
+      "widgets_values": [
+        "subject_definitions:\n<Subject 1> is the adult man in <Picture 1>, a character reference sheet whose three panels show the same man: his face, his outfit from the front and his outfit from the back. He has thick black hair swept back with a few loose strands falling over his forehead and a full, well-groomed black beard. He wears a grey herringbone wool flat cap, a long black wool overcoat with a black velvet collar and a burgundy lining, worn open, over a navy pinstripe three-piece suit with a buttoned waistcoat and a thin gold watch chain across it, a white shirt with a rust-red tie, and black leather gloves. The cap sits on his head, slightly tilted forward, as the panels show it above the collar. His exact facial structure, features, skin texture and proportions stay identical to <Picture 1> in every frame.\n<Picture 2> is the location: a small creative studio at night, used as the set exactly as shown.\n\nsummary:\n[reference generation] The target video shows <Subject 1> seated behind the wooden table in the foreground of the studio in <Picture 2>, looking into the lens and welcoming the viewer to his channel, as the camera holds a locked-off close medium shot from the chest up.\n\nretention_analysis:\n<Subject 1> (appears in [Shot 1]): fully_preserved - his face, skin texture, hair, beard, flat cap, overcoat, pinstripe suit, watch chain, tie and gloves are held identical to <Picture 1> in every frame with zero drift.\n<Picture 2> (appears in [Shot 1]): fully_preserved - the room, its furniture, its lighting and the black wall lettering \"Cine con IA\" are held identical to <Picture 2>; whatever part of the lettering is in frame stays sharp.\n\ndetailed_description:\nThe target video is live-action and cinematic, shot on an ARRI Alexa Mini with a 50mm prime at eye level, locked off, in the night light of <Picture 2>: charcoal-blue walls with lifted shadows, the warm cone of the black floor lamp on the wall, the green glass banker's lamp glowing on the corner desk and the city lights in the window, softly out of focus behind him. A soft key light from just left of the camera lights his face clearly and evenly under the brim of the cap, showing the texture of his skin and beard and the catchlights in his eyes; his face is the brightest, sharpest part of the frame.\n[Shot 1] <Subject 1> sits behind the wooden table, his gloved hands resting together on the tabletop at the bottom edge of the frame, looking straight into the lens. He speaks in Spanish with a natural Chilean accent, calm and warm, his lips in sync with every word:\n0.3-0.9 s: \"Hola.\" He gives a small nod with a slight smile.\n1.1-3.2 s: \"Bienvenidos a Cine con IA.\" His right gloved hand rises into the frame and opens palm-up toward the camera on \"bienvenidos\".\n3.5-4.5 s: \"Empecemos.\" He touches the brim of his cap with two fingers of his right hand, a brief salute.\nFrom 4.5 s to the end his hand is still coming down and his eyes stay on the lens; he never holds a frozen pose.\n\"IA\" is spoken as two separate letters: \"i, a\".\n\noverall_soundscape:\nHis voice, close and clear: a medium-pitched male voice, unhurried and warm, with a natural Chilean Spanish accent. Under it, the quiet room tone of a small studio at night, the soft creak of his leather gloves and the rustle of the wool overcoat when his arm moves. Nothing but his voice and these on-set sounds.\n\nnon_diegetic_music:\nN/A"
+      ],
+      "widgets_values_named": {
+        "texto": "subject_definitions:\n<Subject 1> is the adult man in <Picture 1>, a character reference sheet whose three panels show the same man: his face, his outfit from the front and his outfit from the back. He has thick black hair swept back with a few loose strands falling over his forehead and a full, well-groomed black beard. He wears a grey herringbone wool flat cap, a long black wool overcoat with a black velvet collar and a burgundy lining, worn open, over a navy pinstripe three-piece suit with a buttoned waistcoat and a thin gold watch chain across it, a white shirt with a rust-red tie, and black leather gloves. The cap sits on his head, slightly tilted forward, as the panels show it above the collar. His exact facial structure, features, skin texture and proportions stay identical to <Picture 1> in every frame.\n<Picture 2> is the location: a small creative studio at night, used as the set exactly as shown.\n\nsummary:\n[reference generation] The target video shows <Subject 1> seated behind the wooden table in the foreground of the studio in <Picture 2>, looking into the lens and welcoming the viewer to his channel, as the camera holds a locked-off close medium shot from the chest up.\n\nretention_analysis:\n<Subject 1> (appears in [Shot 1]): fully_preserved - his face, skin texture, hair, beard, flat cap, overcoat, pinstripe suit, watch chain, tie and gloves are held identical to <Picture 1> in every frame with zero drift.\n<Picture 2> (appears in [Shot 1]): fully_preserved - the room, its furniture, its lighting and the black wall lettering \"Cine con IA\" are held identical to <Picture 2>; whatever part of the lettering is in frame stays sharp.\n\ndetailed_description:\nThe target video is live-action and cinematic, shot on an ARRI Alexa Mini with a 50mm prime at eye level, locked off, in the night light of <Picture 2>: charcoal-blue walls with lifted shadows, the warm cone of the black floor lamp on the wall, the green glass banker's lamp glowing on the corner desk and the city lights in the window, softly out of focus behind him. A soft key light from just left of the camera lights his face clearly and evenly under the brim of the cap, showing the texture of his skin and beard and the catchlights in his eyes; his face is the brightest, sharpest part of the frame.\n[Shot 1] <Subject 1> sits behind the wooden table, his gloved hands resting together on the tabletop at the bottom edge of the frame, looking straight into the lens. He speaks in Spanish with a natural Chilean accent, calm and warm, his lips in sync with every word:\n0.3-0.9 s: \"Hola.\" He gives a small nod with a slight smile.\n1.1-3.2 s: \"Bienvenidos a Cine con IA.\" His right gloved hand rises into the frame and opens palm-up toward the camera on \"bienvenidos\".\n3.5-4.5 s: \"Empecemos.\" He touches the brim of his cap with two fingers of his right hand, a brief salute.\nFrom 4.5 s to the end his hand is still coming down and his eyes stay on the lens; he never holds a frozen pose.\n\"IA\" is spoken as two separate letters: \"i, a\".\n\noverall_soundscape:\nHis voice, close and clear: a medium-pitched male voice, unhurried and warm, with a natural Chilean Spanish accent. Under it, the quiet room tone of a small studio at night, the soft creak of his leather gloves and the rustle of the wool overcoat when his arm moves. Nothing but his voice and these on-set sounds.\n\nnon_diegetic_music:\nN/A"
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
+    },
+    {
+      "id": 512,
+      "type": "CineCameraDirectorH3",
+      "pos": [
+        1080,
+        0
+      ],
+      "size": [
+        500,
+        1180
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "scene",
+          "type": "CINECONIA_H3_SCENE",
+          "link": 36
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            14,
+            68
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "02 · Director de cámara",
+      "properties": {
+        "Node name for S&R": "CineCameraDirectorH3"
+      },
+      "widgets_values": [
+        "plano medio corto",
+        "frontal",
+        "fijo",
+        "normal",
+        "50 mm",
+        "natural",
+        "A single locked-off frontal shot at his seated eye level, framed from the chest up with his face in the upper third of the frame and the flat cap fully inside it. Behind him the charcoal-blue wall, the \"Cine con IA\" lettering and the warm lamp glow stay softly out of focus. The camera does not move, zoom or cut at any point.",
+        false
+      ],
+      "widgets_values_named": {
+        "plano": "plano medio corto",
+        "angulo": "frontal",
+        "movimiento": "fijo",
+        "intensidad": "normal",
+        "lente": "50 mm",
+        "profundidad_campo": "natural",
+        "instruccion_camara": "A single locked-off frontal shot at his seated eye level, framed from the chest up with his face in the upper third of the frame and the flat cap fully inside it. Behind him the charcoal-blue wall, the \"Cine con IA\" lettering and the warm lamp glow stay softly out of focus. The camera does not move, zoom or cut at any point.",
+        "reglas_continuidad": false
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
+    },
+    {
+      "id": 513,
+      "type": "CineH3Optimizer",
+      "pos": [
+        3520,
+        1400
+      ],
+      "size": [
+        500,
+        900
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 27
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 28
+        },
+        {
+          "name": "frames",
+          "type": "INT",
+          "link": 29
+        }
+      ],
+      "outputs": [
+        {
+          "name": "config",
+          "type": "CINECONIA_H3_CONFIG",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "perfil_activo",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "trocear_atencion",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "trocear_ffn",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "refinar",
+          "type": "BOOLEAN",
+          "links": [
+            33
+          ]
+        },
+        {
+          "name": "escala_refinado",
+          "type": "FLOAT",
+          "links": [
+            34
+          ]
+        },
+        {
+          "name": "pasos_refinado",
+          "type": "COMBO",
+          "links": [
+            35
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "05 · Memoria · Singularity",
+      "properties": {
+        "Node name for S&R": "CineH3Optimizer"
+      },
+      "widgets_values": [
+        416,
+        736,
+        124,
+        "Auto",
+        "AUTO",
+        70,
+        65,
+        65,
+        60,
+        true,
+        50,
+        20,
+        "res_multistep",
+        "simple",
+        1,
+        16,
+        16,
+        1.25,
+        "4 pasos  ·  recomendado",
+        "Normal",
+        10,
+        0
+      ],
+      "widgets_values_named": {
+        "width": 416,
+        "height": 736,
+        "frames": 124,
+        "modo": "Auto",
+        "perfil": "AUTO",
+        "calidad": 70,
+        "detalle": 65,
+        "movimiento": 65,
+        "resolucion": 60,
+        "refinar": true,
+        "ahorro_vram": 50,
+        "pasos_advanced": 20,
+        "sampler_advanced": "res_multistep",
+        "scheduler_advanced": "simple",
+        "denoise_advanced": 1,
+        "trocear_atencion_advanced": 16,
+        "trocear_ffn_advanced": 16,
+        "escala_refinado_advanced": 1.25,
+        "pasos_refinado_advanced": "4 pasos  ·  recomendado",
+        "muestreo": "Normal",
+        "transicion_advanced": 10,
+        "escala_inicial_advanced": 0
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
+    },
+    {
+      "id": 500,
+      "type": "CineCargarH3",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        790,
+        740
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "trocear_atencion",
+          "type": "INT",
+          "link": null
+        },
+        {
+          "name": "trocear_ffn",
+          "type": "INT",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "vae_video",
+          "type": "VAE",
+          "links": [
+            3,
+            7,
+            53
+          ]
+        },
+        {
+          "name": "vae_audio",
+          "type": "VAE",
+          "links": [
+            8,
+            54
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineCargarH3"
+      },
+      "widgets_values": [
+        "minimax\\minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax_h3_video_vae_int8_convrot.safetensors",
+        "minimax_h3_audio_vae_fp32.safetensors",
+        32,
+        32,
+        6,
+        3,
+        "ninguno",
+        0,
+        false,
+        "ninguno",
+        0,
+        "ninguno",
+        0,
+        "ninguno",
+        0,
+        "MiniMax H3"
+      ],
+      "widgets_values_named": {
+        "modelo": "minimax\\minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+        "codificador_texto": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "vae_video": "minimax_h3_video_vae_int8_convrot.safetensors",
+        "vae_audio": "minimax_h3_audio_vae_fp32.safetensors",
+        "trocear_atencion": 32,
+        "trocear_ffn": 32,
+        "shift_video": 6,
+        "shift_audio": 3,
+        "lora": "ninguno",
+        "lora_fuerza": 0,
+        "vista_previa": false,
+        "lora_2": "ninguno",
+        "lora_fuerza_2": 0,
+        "lora_3": "ninguno",
+        "lora_fuerza_3": 0,
+        "lora_4": "ninguno",
+        "lora_fuerza_4": 0,
+        "perfil": "MiniMax H3"
+      },
+      "color": "#283436",
+      "bgcolor": "#172123",
+      "title": "03 · Modelo oficial"
+    },
+    {
+      "id": 106,
+      "type": "ModelPreviewOverrideKJ",
+      "pos": [
+        3020,
+        490
+      ],
+      "size": [
+        460,
+        570
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "preview_frames",
+          "type": "INT",
+          "widget": {
+            "name": "preview_frames"
+          },
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            42,
+            46
+          ]
+        }
+      ],
+      "title": "Vista previa · oficial",
+      "properties": {
+        "cnr_id": "comfyui-kjnodes",
+        "ver": "60cd6bc1870db94c6eeb05fbe455147a8e91c4e9",
+        "Node name for S&R": "ModelPreviewOverrideKJ"
+      },
+      "widgets_values": [
+        1024,
+        80,
+        true,
+        1,
+        12,
+        "taeh3.safetensors",
+        ""
+      ],
+      "widgets_values_named": {
+        "max_resolution": 1024,
+        "jpeg_quality": 80,
+        "suppress_default_preview": true,
+        "preview_frames": 1,
+        "preview_fps": 12,
+        "tiny_vae": "taeh3.safetensors",
+        "preview": ""
+      }
+    },
+    {
+      "id": 504,
+      "type": "CineEscenaH3",
+      "pos": [
+        3020,
+        0
+      ],
+      "size": [
+        460,
+        460
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 6
+        },
+        {
+          "name": "vae_video",
+          "type": "VAE",
+          "link": 7
+        },
+        {
+          "name": "vae_audio",
+          "type": "VAE",
+          "link": 8
+        },
+        {
+          "name": "referencia_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 11
+        },
+        {
+          "name": "referencia_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 60
+        },
+        {
+          "name": "referencia_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "imagen_guia",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 14
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 15
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 16
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            43
+          ]
+        },
+        {
+          "name": "positive_escalar",
+          "type": "CONDITIONING",
+          "links": [
+            47
+          ]
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            44
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineEscenaH3"
+      },
+      "widgets_values": [
+        "",
+        416,
+        736,
+        124,
+        "max  ·  mas identidad",
+        0,
+        "flexible  ·  prioriza camara"
+      ],
+      "widgets_values_named": {
+        "prompt": "",
+        "width": 416,
+        "height": 736,
+        "length": 124,
+        "tamano_referencia": "max  ·  mas identidad",
+        "fotograma_guia": 0,
+        "modo_guia": "flexible  ·  prioriza camara"
+      },
+      "color": "#283436",
+      "bgcolor": "#172123",
+      "title": "04 · Escena · oficial"
+    },
+    {
+      "id": 514,
+      "type": "CineH3OptimizedSampler",
+      "pos": [
+        4060,
+        1400
+      ],
+      "size": [
+        460,
+        330
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 73
+        },
+        {
+          "name": "positivo",
+          "type": "CONDITIONING",
+          "link": 77
+        },
+        {
+          "name": "latente",
+          "type": "LATENT",
+          "link": 78
+        },
+        {
+          "name": "config",
+          "type": "CINECONIA_H3_CONFIG",
+          "link": 30
+        },
+        {
+          "name": "semilla",
+          "type": "INT",
+          "widget": {
+            "name": "semilla"
+          },
+          "link": 58
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "06 · Render · Singularity",
+      "properties": {
+        "Node name for S&R": "CineH3OptimizedSampler"
+      },
+      "widgets_values": [
+        833
+      ],
+      "widgets_values_named": {
+        "semilla": 833
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
+    },
+    {
+      "id": 506,
+      "type": "CineEscalarRefinar",
+      "pos": [
+        4060,
+        1820
+      ],
+      "size": [
+        460,
+        500
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 74
+        },
+        {
+          "name": "positivo",
+          "type": "CONDITIONING",
+          "link": 79
+        },
+        {
+          "name": "latente",
+          "type": "LATENT",
+          "link": 21
+        },
+        {
+          "name": "activar",
+          "type": "BOOLEAN",
+          "link": 33
+        },
+        {
+          "name": "escala",
+          "type": "FLOAT",
+          "link": 34
+        },
+        {
+          "name": "pasos",
+          "type": "COMBO",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineEscalarRefinar"
+      },
+      "widgets_values": [
+        true,
+        1.25,
+        "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+        "4 pasos  ·  recomendado",
+        "er_sde",
+        835,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "activar": true,
+        "escala": 1.25,
+        "modelo_escalador": "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+        "pasos": "4 pasos  ·  recomendado",
+        "sampler": "er_sde",
+        "semilla": 835,
+        "control_after_generate": "fixed"
+      },
+      "color": "#283436",
+      "bgcolor": "#172123",
+      "title": "07 · Escalar y refinar · Singularity"
+    },
+    {
+      "id": 507,
+      "type": "CineSalida",
+      "pos": [
+        4560,
+        1400
+      ],
+      "size": [
+        460,
+        340
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "latente",
+          "type": "LATENT",
+          "link": 22
+        },
+        {
+          "name": "vae_video",
+          "type": "VAE",
+          "link": 75
+        },
+        {
+          "name": "vae_audio",
+          "type": "VAE",
+          "link": 76
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        },
+        {
+          "name": "fotogramas",
+          "type": "IMAGE",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            24
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            25
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineSalida"
+      },
+      "widgets_values": [
+        "x2  ·  48 fps",
+        "film_net_fp16.safetensors",
+        24
+      ],
+      "widgets_values_named": {
+        "interpolar": "x2  ·  48 fps",
+        "modelo_interpolacion": "film_net_fp16.safetensors",
+        "fps_base": 24
+      },
+      "color": "#283436",
+      "bgcolor": "#172123",
+      "title": "08 · Salida · Singularity"
+    },
+    {
+      "id": 34000,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        5060,
+        1400
+      ],
+      "size": [
+        460,
+        1060
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 23
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 24
+        },
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "frame_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": []
+        }
+      ],
+      "title": "Vídeo · Singularity",
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "CineConIA/047_singularity_%date:yyyyMMdd_hhmmss%",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 16,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "widgets_values_named": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "CineConIA/047_singularity_%date:yyyyMMdd_hhmmss%",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 16,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      }
+    },
+    {
+      "id": 515,
+      "type": "CineH3Optimizer",
+      "pos": [
+        3520,
+        0
+      ],
+      "size": [
+        500,
+        900
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 37
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 38
+        },
+        {
+          "name": "frames",
+          "type": "INT",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "config",
+          "type": "CINECONIA_H3_CONFIG",
+          "links": [
+            45
+          ]
+        },
+        {
+          "name": "perfil_activo",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "trocear_atencion",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "trocear_ffn",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "refinar",
+          "type": "BOOLEAN",
+          "links": [
+            49
+          ]
+        },
+        {
+          "name": "escala_refinado",
+          "type": "FLOAT",
+          "links": [
+            50
+          ]
+        },
+        {
+          "name": "pasos_refinado",
+          "type": "COMBO",
+          "links": [
+            51
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "05 · Memoria · oficial",
+      "properties": {
+        "Node name for S&R": "CineH3Optimizer"
+      },
+      "widgets_values": [
+        416,
+        736,
+        124,
+        "Auto",
+        "AUTO",
+        70,
+        65,
+        65,
+        60,
+        true,
+        50,
+        20,
+        "res_multistep",
+        "simple",
+        1,
+        16,
+        16,
+        1.25,
+        "4 pasos  ·  recomendado",
+        "Normal",
+        10,
+        0
+      ],
+      "widgets_values_named": {
+        "width": 416,
+        "height": 736,
+        "frames": 124,
+        "modo": "Auto",
+        "perfil": "AUTO",
+        "calidad": 70,
+        "detalle": 65,
+        "movimiento": 65,
+        "resolucion": 60,
+        "refinar": true,
+        "ahorro_vram": 50,
+        "pasos_advanced": 20,
+        "sampler_advanced": "res_multistep",
+        "scheduler_advanced": "simple",
+        "denoise_advanced": 1,
+        "trocear_atencion_advanced": 16,
+        "trocear_ffn_advanced": 16,
+        "escala_refinado_advanced": 1.25,
+        "pasos_refinado_advanced": "4 pasos  ·  recomendado",
+        "muestreo": "Normal",
+        "transicion_advanced": 10,
+        "escala_inicial_advanced": 0
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
+    },
+    {
+      "id": 516,
+      "type": "CineH3OptimizedSampler",
+      "pos": [
+        4060,
+        0
+      ],
+      "size": [
+        460,
+        330
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 42
+        },
+        {
+          "name": "positivo",
+          "type": "CONDITIONING",
+          "link": 43
+        },
+        {
+          "name": "latente",
+          "type": "LATENT",
+          "link": 44
+        },
+        {
+          "name": "config",
+          "type": "CINECONIA_H3_CONFIG",
+          "link": 45
+        },
+        {
+          "name": "semilla",
+          "type": "INT",
+          "widget": {
+            "name": "semilla"
+          },
+          "link": 59
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            48
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "06 · Render · oficial",
+      "properties": {
+        "Node name for S&R": "CineH3OptimizedSampler"
+      },
+      "widgets_values": [
+        833
+      ],
+      "widgets_values_named": {
+        "semilla": 833
+      },
+      "color": "#283436",
+      "bgcolor": "#172123"
+    },
+    {
+      "id": 519,
+      "type": "CineEscalarRefinar",
+      "pos": [
+        4060,
+        420
+      ],
+      "size": [
+        460,
+        500
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 46
+        },
+        {
+          "name": "positivo",
+          "type": "CONDITIONING",
+          "link": 47
+        },
+        {
+          "name": "latente",
+          "type": "LATENT",
+          "link": 48
+        },
+        {
+          "name": "activar",
+          "type": "BOOLEAN",
+          "link": 49
+        },
+        {
+          "name": "escala",
+          "type": "FLOAT",
+          "link": 50
+        },
+        {
+          "name": "pasos",
+          "type": "COMBO",
+          "link": 51
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            52
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineEscalarRefinar"
+      },
+      "widgets_values": [
+        true,
+        1.25,
+        "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+        "4 pasos  ·  recomendado",
+        "er_sde",
+        835,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "activar": true,
+        "escala": 1.25,
+        "modelo_escalador": "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+        "pasos": "4 pasos  ·  recomendado",
+        "sampler": "er_sde",
+        "semilla": 835,
+        "control_after_generate": "fixed"
+      },
+      "color": "#283436",
+      "bgcolor": "#172123",
+      "title": "07 · Escalar y refinar · oficial"
+    },
+    {
+      "id": 517,
+      "type": "CineSalida",
+      "pos": [
+        4560,
+        0
+      ],
+      "size": [
+        460,
+        340
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "latente",
+          "type": "LATENT",
+          "link": 52
+        },
+        {
+          "name": "vae_video",
+          "type": "VAE",
+          "link": 53
+        },
+        {
+          "name": "vae_audio",
+          "type": "VAE",
+          "link": 54
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        },
+        {
+          "name": "fotogramas",
+          "type": "IMAGE",
+          "links": [
+            55
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            56
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            57
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineSalida"
+      },
+      "widgets_values": [
+        "x2  ·  48 fps",
+        "film_net_fp16.safetensors",
+        24
+      ],
+      "widgets_values_named": {
+        "interpolar": "x2  ·  48 fps",
+        "modelo_interpolacion": "film_net_fp16.safetensors",
+        "fps_base": 24
+      },
+      "color": "#283436",
+      "bgcolor": "#172123",
+      "title": "08 · Salida · oficial"
+    },
+    {
+      "id": 34003,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        5060,
+        0
+      ],
+      "size": [
+        460,
+        1060
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 55
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 56
+        },
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "frame_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": 57
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": []
+        }
+      ],
+      "title": "Vídeo · modelo oficial",
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "CineConIA/047_oficial_%date:yyyyMMdd_hhmmss%",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 16,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "widgets_values_named": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "CineConIA/047_oficial_%date:yyyyMMdd_hhmmss%",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 16,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      }
+    },
+    {
+      "id": 518,
+      "type": "PrimitiveInt",
+      "pos": [
+        1660,
+        0
+      ],
+      "size": [
+        300,
+        110
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            58,
+            59
+          ]
+        }
+      ],
+      "title": "Semilla compartida A/B",
+      "properties": {
+        "Node name for S&R": "PrimitiveInt"
+      },
+      "widgets_values": [
+        833,
+        "fixed"
+      ]
+    },
+    {
+      "id": 520,
+      "type": "CineCronometro",
+      "pos": [
+        1640,
+        -560
+      ],
+      "size": [
+        460,
+        400
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Cine con IA · Cronómetro",
+      "properties": {
+        "historial": []
+      }
+    },
+    {
+      "id": 522,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        1340
+      ],
+      "size": [
+        420,
+        360
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            60,
+            72
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "title": "Estudio Cine con IA  ·  <Picture 2>",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.2",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "hf_20260902_015550_ffac00f1-39de-4f62-8820-546f8e3ef067.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "hf_20260902_015550_ffac00f1-39de-4f62-8820-546f8e3ef067.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 521,
+      "type": "CineInterruptor",
+      "pos": [
+        2170,
+        -560
+      ],
+      "size": [
+        440,
+        190
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Interruptor · modelo",
+      "properties": {
+        "prefijo": "RAMA"
+      }
+    },
+    {
+      "id": 530,
+      "type": "CineCargarH3",
+      "pos": [
+        2200,
+        1400
+      ],
+      "size": [
+        790,
+        740
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "trocear_atencion",
+          "type": "INT",
+          "link": null
+        },
+        {
+          "name": "trocear_ffn",
+          "type": "INT",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            62
+          ]
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            64
+          ]
+        },
+        {
+          "name": "vae_video",
+          "type": "VAE",
+          "links": [
+            63,
+            65,
+            75
+          ]
+        },
+        {
+          "name": "vae_audio",
+          "type": "VAE",
+          "links": [
+            66,
+            76
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineCargarH3"
+      },
+      "widgets_values": [
+        "minimax\\Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax_h3_video_vae_int8_convrot.safetensors",
+        "minimax_h3_audio_vae_fp32.safetensors",
+        32,
+        32,
+        6,
+        3,
+        "ninguno",
+        0,
+        false,
+        "ninguno",
+        0,
+        "ninguno",
+        0,
+        "ninguno",
+        0,
+        "MiniMax H3"
+      ],
+      "widgets_values_named": {
+        "modelo": "minimax\\Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+        "codificador_texto": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "vae_video": "minimax_h3_video_vae_int8_convrot.safetensors",
+        "vae_audio": "minimax_h3_audio_vae_fp32.safetensors",
+        "trocear_atencion": 32,
+        "trocear_ffn": 32,
+        "shift_video": 6,
+        "shift_audio": 3,
+        "lora": "ninguno",
+        "lora_fuerza": 0,
+        "vista_previa": false,
+        "lora_2": "ninguno",
+        "lora_fuerza_2": 0,
+        "lora_3": "ninguno",
+        "lora_fuerza_3": 0,
+        "lora_4": "ninguno",
+        "lora_fuerza_4": 0,
+        "perfil": "MiniMax H3"
+      },
+      "color": "#283436",
+      "bgcolor": "#172123",
+      "title": "03 · Modelo Singularity v1.3"
+    },
+    {
+      "id": 531,
+      "type": "CineEscenaH3",
+      "pos": [
+        3020,
+        1400
+      ],
+      "size": [
+        460,
+        460
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 64
+        },
+        {
+          "name": "vae_video",
+          "type": "VAE",
+          "link": 65
+        },
+        {
+          "name": "vae_audio",
+          "type": "VAE",
+          "link": 66
+        },
+        {
+          "name": "referencia_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 67
+        },
+        {
+          "name": "referencia_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 72
+        },
+        {
+          "name": "referencia_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "imagen_guia",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 68
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 69
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 70
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": 71
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            77
+          ]
+        },
+        {
+          "name": "positive_escalar",
+          "type": "CONDITIONING",
+          "links": [
+            79
+          ]
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            78
+          ]
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CineEscenaH3"
+      },
+      "widgets_values": [
+        "",
+        416,
+        736,
+        124,
+        "max  ·  mas identidad",
+        0,
+        "flexible  ·  prioriza camara"
+      ],
+      "widgets_values_named": {
+        "prompt": "",
+        "width": 416,
+        "height": 736,
+        "length": 124,
+        "tamano_referencia": "max  ·  mas identidad",
+        "fotograma_guia": 0,
+        "modo_guia": "flexible  ·  prioriza camara"
+      },
+      "color": "#283436",
+      "bgcolor": "#172123",
+      "title": "04 · Escena · Singularity"
+    },
+    {
+      "id": 532,
+      "type": "ModelPreviewOverrideKJ",
+      "pos": [
+        3020,
+        1890
+      ],
+      "size": [
+        460,
+        570
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 62
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": 63
+        },
+        {
+          "name": "preview_frames",
+          "type": "INT",
+          "widget": {
+            "name": "preview_frames"
+          },
+          "link": 61
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            73,
+            74
+          ]
+        }
+      ],
+      "title": "Vista previa · Singularity",
+      "properties": {
+        "cnr_id": "comfyui-kjnodes",
+        "ver": "60cd6bc1870db94c6eeb05fbe455147a8e91c4e9",
+        "Node name for S&R": "ModelPreviewOverrideKJ"
+      },
+      "widgets_values": [
+        1024,
+        80,
+        true,
+        1,
+        12,
+        "taeh3.safetensors",
+        ""
+      ],
+      "widgets_values_named": {
+        "max_resolution": 1024,
+        "jpeg_quality": 80,
+        "suppress_default_preview": true,
+        "preview_frames": 1,
+        "preview_fps": 12,
+        "tiny_vae": "taeh3.safetensors",
+        "preview": ""
+      }
+    }
+  ],
+  "links": [
+    [
+      1,
+      502,
+      0,
+      106,
+      2,
+      "INT"
+    ],
+    [
+      2,
+      500,
+      0,
+      106,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      500,
+      2,
+      106,
+      1,
+      "VAE"
+    ],
+    [
+      6,
+      500,
+      1,
+      504,
+      0,
+      "CLIP"
+    ],
+    [
+      7,
+      500,
+      2,
+      504,
+      1,
+      "VAE"
+    ],
+    [
+      8,
+      500,
+      3,
+      504,
+      2,
+      "VAE"
+    ],
+    [
+      11,
+      509,
+      0,
+      504,
+      3,
+      "IMAGE"
+    ],
+    [
+      14,
+      512,
+      0,
+      504,
+      7,
+      "STRING"
+    ],
+    [
+      15,
+      501,
+      0,
+      504,
+      8,
+      "INT"
+    ],
+    [
+      16,
+      501,
+      1,
+      504,
+      9,
+      "INT"
+    ],
+    [
+      17,
+      502,
+      0,
+      504,
+      10,
+      "INT"
+    ],
+    [
+      21,
+      514,
+      0,
+      506,
+      2,
+      "LATENT"
+    ],
+    [
+      22,
+      506,
+      0,
+      507,
+      0,
+      "LATENT"
+    ],
+    [
+      23,
+      507,
+      1,
+      34000,
+      0,
+      "IMAGE"
+    ],
+    [
+      24,
+      507,
+      2,
+      34000,
+      1,
+      "AUDIO"
+    ],
+    [
+      25,
+      507,
+      3,
+      34000,
+      4,
+      "FLOAT"
+    ],
+    [
+      27,
+      501,
+      0,
+      513,
+      0,
+      "INT"
+    ],
+    [
+      28,
+      501,
+      1,
+      513,
+      1,
+      "INT"
+    ],
+    [
+      29,
+      502,
+      0,
+      513,
+      2,
+      "INT"
+    ],
+    [
+      30,
+      513,
+      0,
+      514,
+      3,
+      "CINECONIA_H3_CONFIG"
+    ],
+    [
+      33,
+      513,
+      4,
+      506,
+      3,
+      "BOOLEAN"
+    ],
+    [
+      34,
+      513,
+      5,
+      506,
+      4,
+      "FLOAT"
+    ],
+    [
+      35,
+      513,
+      6,
+      506,
+      5,
+      "COMBO"
+    ],
+    [
+      36,
+      511,
+      0,
+      512,
+      0,
+      "CINECONIA_H3_SCENE"
+    ],
+    [
+      37,
+      501,
+      0,
+      515,
+      0,
+      "INT"
+    ],
+    [
+      38,
+      501,
+      1,
+      515,
+      1,
+      "INT"
+    ],
+    [
+      39,
+      502,
+      0,
+      515,
+      2,
+      "INT"
+    ],
+    [
+      42,
+      106,
+      0,
+      516,
+      0,
+      "MODEL"
+    ],
+    [
+      43,
+      504,
+      0,
+      516,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      44,
+      504,
+      2,
+      516,
+      2,
+      "LATENT"
+    ],
+    [
+      45,
+      515,
+      0,
+      516,
+      3,
+      "CINECONIA_H3_CONFIG"
+    ],
+    [
+      46,
+      106,
+      0,
+      519,
+      0,
+      "MODEL"
+    ],
+    [
+      47,
+      504,
+      1,
+      519,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      48,
+      516,
+      0,
+      519,
+      2,
+      "LATENT"
+    ],
+    [
+      49,
+      515,
+      4,
+      519,
+      3,
+      "BOOLEAN"
+    ],
+    [
+      50,
+      515,
+      5,
+      519,
+      4,
+      "FLOAT"
+    ],
+    [
+      51,
+      515,
+      6,
+      519,
+      5,
+      "COMBO"
+    ],
+    [
+      52,
+      519,
+      0,
+      517,
+      0,
+      "LATENT"
+    ],
+    [
+      53,
+      500,
+      2,
+      517,
+      1,
+      "VAE"
+    ],
+    [
+      54,
+      500,
+      3,
+      517,
+      2,
+      "VAE"
+    ],
+    [
+      55,
+      517,
+      1,
+      34003,
+      0,
+      "IMAGE"
+    ],
+    [
+      56,
+      517,
+      2,
+      34003,
+      1,
+      "AUDIO"
+    ],
+    [
+      57,
+      517,
+      3,
+      34003,
+      4,
+      "FLOAT"
+    ],
+    [
+      58,
+      518,
+      0,
+      514,
+      4,
+      "INT"
+    ],
+    [
+      59,
+      518,
+      0,
+      516,
+      4,
+      "INT"
+    ],
+    [
+      60,
+      522,
+      0,
+      504,
+      4,
+      "IMAGE"
+    ],
+    [
+      61,
+      502,
+      0,
+      532,
+      2,
+      "INT"
+    ],
+    [
+      62,
+      530,
+      0,
+      532,
+      0,
+      "MODEL"
+    ],
+    [
+      63,
+      530,
+      2,
+      532,
+      1,
+      "VAE"
+    ],
+    [
+      64,
+      530,
+      1,
+      531,
+      0,
+      "CLIP"
+    ],
+    [
+      65,
+      530,
+      2,
+      531,
+      1,
+      "VAE"
+    ],
+    [
+      66,
+      530,
+      3,
+      531,
+      2,
+      "VAE"
+    ],
+    [
+      67,
+      509,
+      0,
+      531,
+      3,
+      "IMAGE"
+    ],
+    [
+      68,
+      512,
+      0,
+      531,
+      7,
+      "STRING"
+    ],
+    [
+      69,
+      501,
+      0,
+      531,
+      8,
+      "INT"
+    ],
+    [
+      70,
+      501,
+      1,
+      531,
+      9,
+      "INT"
+    ],
+    [
+      71,
+      502,
+      0,
+      531,
+      10,
+      "INT"
+    ],
+    [
+      72,
+      522,
+      0,
+      531,
+      4,
+      "IMAGE"
+    ],
+    [
+      73,
+      532,
+      0,
+      514,
+      0,
+      "MODEL"
+    ],
+    [
+      74,
+      532,
+      0,
+      506,
+      0,
+      "MODEL"
+    ],
+    [
+      75,
+      530,
+      2,
+      507,
+      1,
+      "VAE"
+    ],
+    [
+      76,
+      530,
+      3,
+      507,
+      2,
+      "VAE"
+    ],
+    [
+      77,
+      531,
+      0,
+      514,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      78,
+      531,
+      2,
+      514,
+      2,
+      "LATENT"
+    ],
+    [
+      79,
+      531,
+      1,
+      506,
+      1,
+      "CONDITIONING"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "ENTRADAS · formato, duración y referencia",
+      "bounding": [
+        -30,
+        -65,
+        480,
+        1790
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "ESCENA · texto",
+      "bounding": [
+        470,
+        -65,
+        560,
+        655
+      ],
+      "color": "#966c45",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "CÁMARA · encuadre y movimiento",
+      "bounding": [
+        1050,
+        -65,
+        560,
+        1330
+      ],
+      "color": "#966c45",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 1,
+      "title": "SEMILLA · la misma en las dos ramas",
+      "bounding": [
+        1630,
+        -65,
+        520,
+        240
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 1,
+      "title": "RAMA · modelo oficial (ref2va int8)",
+      "bounding": [
+        2170,
+        -65,
+        3380,
+        1330
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 1,
+      "title": "RAMA · Singularity v1.3",
+      "bounding": [
+        2170,
+        1335,
+        3380,
+        1330
+      ],
+      "color": "#42666d",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6,
+      "offset": [
+        80,
+        640
+      ]
+    },
+    "frontendVersion": "1.49.6",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4,
+  "seed_widgets": {}
+}
