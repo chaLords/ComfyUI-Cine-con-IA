@@ -14,8 +14,9 @@ import { pintarCabecera, COLOR_BASE, anchoFijoAlNodo, esLienzoPrincipal } from "
  * ejecución); el desglose por nodo, de los avisos "executing" que ComfyUI manda
  * al pasar de un nodo al siguiente. Los nodos en caché no cuentan: no corrieron.
  *
- * Cada corrida del historial guarda también con qué se hizo (modelo, pasos,
- * sampler, resolución final, duración, rama del Interruptor o del Selector) y
+ * Cada corrida del historial guarda también con qué se hizo (modelo de
+ * cualquier cargador, LoRA, pasos, sampler, progresivo, refinado, semilla,
+ * resolución final, duración, rama del Interruptor o del Selector) y
  * su desglose por nodo: un clic en la corrida lo vuelve a mostrar. "Copiar
  * tabla" deja todo el historial listo para pegar en una planilla.
  */
@@ -163,34 +164,93 @@ export function entradaHistorial(resumen, renders = [], fecha = new Date(), deta
   return e;
 }
 
-export function textoHistorial(e) {
+/** [{nombre: "TAO", fuerza: 1}] -> "TAO ×1"; varias LoRA van unidas con "+". */
+export function textoLoras(loras) {
+  return (loras || []).map((l) => `${l.nombre} ×${l.fuerza}`).join(" + ");
+}
+
+/**
+ * Una fila del historial en dos partes: lo que distingue la corrida (modelo,
+ * pasos, LoRA, progresivo, resolución) a la izquierda y el total a la
+ * derecha, para que el tiempo no se corte aunque la fila sea larga.
+ */
+export function partesHistorial(e) {
+  const estado = e.estado && e.estado !== "listo" ? e.estado : "";
   const d = e.detalle;
   if (d) {
     const partes = [e.cuando];
     if (d.modelo) partes.push(d.modelo);
     if (d.pasos) partes.push(`${d.pasos}p`);
+    const loras = textoLoras(d.loras);
+    if (loras) partes.push(loras);
+    if (d.progresivo === "sí") partes.push("progresivo");
+    else if (d.progresivo) partes.push(`progresivo ${d.progresivo}`);
     if (d.resolucion) partes.push(d.resolucion);
-    partes.push(formatoCorto(e.total));
-    if (e.estado && e.estado !== "listo") partes.push(e.estado);
-    return partes.join(" · ");
+    return { texto: partes.join(" · "), total: [formatoCorto(e.total), estado].filter(Boolean).join(" · ") };
   }
-  const partes = [`${e.cuando}`, `total ${formatoCorto(e.total)}`];
+  const partes = [e.cuando, `total ${formatoCorto(e.total)}`];
   for (const r of e.renders || []) partes.push(`${r.modo} ${formatoCorto(r.ms)}`);
-  if (e.estado && e.estado !== "listo") partes.push(e.estado);
+  if (estado) partes.push(estado);
+  return { texto: partes.join(" · "), total: "" };
+}
+
+export function textoHistorial(e) {
+  const p = partesHistorial(e);
+  return p.total ? `${p.texto} · ${p.total}` : p.texto;
+}
+
+/**
+ * El resto de lo que distingue una corrida, para la línea bajo el reloj:
+ * sampler, LoRA, progresivo, refinado, semilla y lo que marcaba el Selector.
+ */
+export function lineaDetalle(d) {
+  if (!d) return "";
+  const partes = [];
+  if (d.sampler) partes.push(d.scheduler ? `${d.sampler}/${d.scheduler}` : String(d.sampler));
+  if (Array.isArray(d.loras)) partes.push(d.loras.length ? "LoRA " + textoLoras(d.loras) : "sin LoRA");
+  if (d.progresivo === "sí") partes.push("progresivo" + (d.progresivo_paso ? " " + d.progresivo_paso : ""));
+  else if (d.progresivo) partes.push(`progresivo ${d.progresivo}`);
+  if (d.refinado) partes.push(d.refinado === "no" ? "sin refinado" : `refina ${d.refinado}`);
+  if (d.semilla != null && d.semilla !== "") partes.push(`semilla ${d.semilla}`);
+  if (d.rama) partes.push(`Selector: ${d.rama}`);
   return partes.join(" · ");
+}
+
+// Etiquetas de precisión y empaquetado que no ayudan a distinguir un archivo.
+const RUIDO_NOMBRE = /^(bf16|fp16|fp32|fp8|e4m3fn|e5m2|int4|int8|nvfp4|awq|scaled|pruned|convrot|comfyui|comfy|rank\d+)$/i;
+
+/**
+ * Nombre corto y legible de cualquier archivo de modelo o LoRA:
+ * "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors" -> "wan2.2 i2v high noise 14B".
+ * Si no entra, se corta entre palabras.
+ */
+export function nombreCorto(archivo, max = 28, quitar = []) {
+  let base = String(archivo || "").split(/[\\/]/).pop().replace(/\.(safetensors|gguf|ckpt|pt|pth|bin|sft)$/i, "");
+  if (!base) return "";
+  base = base.replace(/Q(\d)_K_([SML])/gi, "Q$1K$2");      // cuantización GGUF: Q4_K_M -> Q4KM
+  const fuera = quitar.map((q) => q.toLowerCase());
+  let partes = base.split(/[_\-\s]+/).filter((t) => t && !RUIDO_NOMBRE.test(t) && !fuera.includes(t.toLowerCase()));
+  if (!partes.length) partes = [base];
+  if (partes.join(" ").length <= max) return partes.join(" ");
+  while (partes.length > 1 && partes.join(" ").length + 1 > max) partes = partes.slice(0, -1);
+  const s = partes.join(" ");
+  return (s.length > max - 1 ? s.slice(0, max - 1) : s) + "…";
 }
 
 /** "minimax\\Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors" -> "Singularity v1.3". */
 export function nombreModelo(archivo) {
-  const base = String(archivo || "").split(/[\\/]/).pop().replace(/\.(safetensors|gguf|ckpt|pt|pth|bin)$/i, "");
+  const base = String(archivo || "").split(/[\\/]/).pop().replace(/\.(safetensors|gguf|ckpt|pt|pth|bin|sft)$/i, "");
   if (!base) return "";
   if (/singularity/i.test(base)) {
     const v = base.match(/v(\d+(?:\.\d+)*)/i);
     return "Singularity" + (v ? " v" + v[1] : "");
   }
   if (/minimax_h3_ref2va/i.test(base)) return "H3 oficial";
-  return base.length > 22 ? base.slice(0, 21) + "…" : base;
+  return nombreCorto(base);
 }
+
+/** "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors" -> "turbo 4step v0.1". */
+export const nombreLora = (archivo) => nombreCorto(archivo, 24, ["minimax", "h3", "lora", "ref2v", "ref2va"]);
 
 /** El redondeo de MinimaxH3LatentUpscaler3D (align 32, VAE 16). */
 export function ladoEscalado(px, escala) {
@@ -200,35 +260,117 @@ export function ladoEscalado(px, escala) {
 const activo = (n) => (n?.mode ?? 0) === 0;
 const claseDe = (n) => n?.comfyClass || n?.type;
 const valorWidget = (n, name) => n?.widgets?.find((w) => w.name === name)?.value;
+const tieneWidget = (n, name) => (n?.widgets || []).some((w) => w.name === name);
+const round2 = (x) => Math.round(Number(x) * 100) / 100;
+const entradaCon = (n, name) => (n?.inputs || []).find((i) => (i.name === name || i.widget?.name === name) && i.link != null);
+
+/** El valor de una entrada: el del nodo del otro lado del cable, o el de su widget. */
+function valorEntrada(graph, n, name) {
+  const entrada = entradaCon(n, name);
+  let fuente = n;
+  if (entrada) {
+    const links = graph?.links;
+    const link = links?.get?.(entrada.link) ?? links?.[entrada.link];
+    const id = link?.origin_id ?? (Array.isArray(link) ? link[1] : undefined);
+    fuente = graph?.getNodeById?.(id) ?? (graph?._nodes || graph?.nodes || []).find((x) => x.id === id);
+    if (!fuente) return {};
+  }
+  return { valor: entrada ? fuente.widgets?.[0]?.value : valorWidget(n, name), control: valorWidget(fuente, "control_after_generate") };
+}
+
+/**
+ * Los archivos de modelo de los cargadores encendidos, sin repetir: el Cargar
+ * H3 primero y después los UNET, GGUF y checkpoints de cualquier workflow
+ * (Wan, LTX, Hunyuan...).
+ */
+export function modelosDelGrafo(nodos) {
+  const cine = nodos.filter((n) => claseDe(n) === "CineCargarH3").map((n) => valorWidget(n, "modelo"));
+  const otros = nodos.filter((n) => claseDe(n) !== "CineCargarH3")
+    .map((n) => valorWidget(n, "unet_name") ?? valorWidget(n, "ckpt_name"));
+  return [...new Set([...cine, ...otros].filter(Boolean).map(String))];
+}
+
+/** Las LoRA que de verdad actúan: las cuatro del Cargar H3 y los LoraLoader de ComfyUI. Fuerza 0 no cuenta. */
+export function lorasDelGrafo(nodos) {
+  const out = [];
+  const sumar = (archivo, fuerza) => {
+    const f = Number(fuerza);
+    if (!archivo || archivo === "ninguno" || archivo === "None" || !Number.isFinite(f) || f === 0) return;
+    out.push({ nombre: nombreLora(archivo), fuerza: round2(f), archivo: String(archivo).split(/[\\/]/).pop() });
+  };
+  for (const n of nodos) {
+    if (claseDe(n) === "CineCargarH3") {
+      sumar(valorWidget(n, "lora"), valorWidget(n, "lora_fuerza"));
+      for (const i of [2, 3, 4]) sumar(valorWidget(n, `lora_${i}`), valorWidget(n, `lora_fuerza_${i}`));
+    } else if (tieneWidget(n, "lora_name")) {
+      sumar(valorWidget(n, "lora_name"), valorWidget(n, "strength_model"));
+    }
+  }
+  return out;
+}
 
 /**
  * Con qué se va a hacer esta corrida, leído del grafo al empezar: el modelo
- * del Cargar H3 encendido, pasos/sampler/resolución del Optimizador (o del
- * Render H3 si no hay Optimizador) y la rama del Interruptor o del Selector.
+ * (del Cargar H3 o de cualquier cargador UNET/GGUF/checkpoint), las LoRA,
+ * pasos/sampler/resolución del Optimizador (o del Render H3, o del KSampler de
+ * cualquier workflow), si el progresivo se aplicó, el refinado, la semilla y
+ * la rama del Interruptor o del Selector.
  * config: la del servidor si ya llegó ("executed" del Optimizador).
  */
 export function detalleCorrida(graph, config = null) {
   const nodos = (graph?._nodes || graph?.nodes || []).filter(activo);
   const deClase = (c) => nodos.find((n) => claseDe(n) === c);
+  const primero = (name) => nodos.find((n) => tieneWidget(n, name));
   const d = {};
-  const cargar = deClase("CineCargarH3");
-  if (cargar) {
-    const archivo = valorWidget(cargar, "modelo");
-    d.modelo = nombreModelo(archivo);
-    d.archivo = String(archivo || "").split(/[\\/]/).pop();
+  const modelos = modelosDelGrafo(nodos);
+  if (modelos.length) {
+    d.modelo = nombreModelo(modelos[0]) + (modelos.length > 1 ? ` +${modelos.length - 1}` : "");
+    d.archivo = modelos.map((m) => m.split(/[\\/]/).pop()).join(" + ");
   }
+  d.loras = lorasDelGrafo(nodos);
   const c = config || deClase("CineH3Optimizer")?.__h3Preview?.config;
   const render = deClase("CineRenderH3");
+  const refinar = deClase("CineEscalarRefinar");
+  // Manda el Escalar y refinar si está en el grafo; lo que le llega por cable
+  // sale del Optimizador, y entonces vale lo que dice su config.
+  const deRefinar = (name, clave) => (c && entradaCon(refinar, name) ? c[clave] : valorWidget(refinar, name));
+  const refina = refinar ? deRefinar("activar", "refine") !== false : Boolean(c?.refine);
+  const escala = Number(refinar ? deRefinar("escala", "refine_scale") : c?.refine_scale) || 1;
   if (c) {
     d.pasos = c.steps; d.sampler = c.sampler; d.scheduler = c.scheduler;
     if (c.width && c.height) {
-      const e = c.refine ? Number(c.refine_scale) || 1 : 1;
+      const e = refina ? escala : 1;
       d.resolucion = e > 1 ? `${ladoEscalado(c.width, e)}×${ladoEscalado(c.height, e)}` : `${c.width}×${c.height}`;
     }
     if (c.frames) d.segundos = Math.round((c.frames / 24) * 10) / 10;
+    const p = c.progressive;
+    if (p?.requested) {
+      d.progresivo = p.enabled ? "sí" : "no aplicó";
+      if (p.enabled && p.transition_step) d.progresivo_paso = `${p.transition_step}/${p.steps || c.steps}`;
+    }
   } else if (render) {
     d.pasos = valorWidget(render, "pasos"); d.sampler = valorWidget(render, "sampler");
     d.scheduler = valorWidget(render, "scheduler");
+  } else {
+    // cualquier otro workflow: KSampler, o BasicScheduler + KSamplerSelect
+    const pasos = primero("steps"), sampler = primero("sampler_name"), scheduler = primero("scheduler");
+    if (pasos) d.pasos = valorWidget(pasos, "steps");
+    if (sampler) d.sampler = valorWidget(sampler, "sampler_name");
+    if (scheduler) d.scheduler = valorWidget(scheduler, "scheduler");
+    const lienzo = nodos.find((n) => Number(valorWidget(n, "width")) > 0 && Number(valorWidget(n, "height")) > 0);
+    if (lienzo) d.resolucion = `${valorWidget(lienzo, "width")}×${valorWidget(lienzo, "height")}`;
+  }
+  if (refinar || c) {
+    const pasosRef = String((refinar ? deRefinar("pasos", "refine_steps") : c?.refine_steps) ?? "").match(/\d+/)?.[0];
+    d.refinado = refina ? `×${round2(escala)}${pasosRef ? ` ${pasosRef}p` : ""}` : "no";
+  }
+  // La semilla del render. Si cambia sola al encolar (randomize, increment),
+  // el número del widget ya es el de la próxima corrida: no se inventa.
+  const sembrador = deClase("CineH3OptimizedSampler") || render || primero("seed") || primero("noise_seed");
+  const campo = ["semilla", "seed", "noise_seed"].find((x) => tieneWidget(sembrador, x) || entradaCon(sembrador, x));
+  if (campo) {
+    const { valor, control } = valorEntrada(graph, sembrador, campo);
+    if (valor != null && valor !== "") d.semilla = control && control !== "fixed" ? `variable (${control})` : valor;
   }
   const ramas = nodos.filter((n) => ["CineInterruptor", "CineSelector"].includes(claseDe(n)))
     .map((n) => n.__cabeceraDato?.texto).filter(Boolean);
@@ -237,7 +379,7 @@ export function detalleCorrida(graph, config = null) {
 }
 
 const COLUMNAS = ["fecha", "estado", "total", "modelo", "pasos", "sampler", "scheduler",
-  "resolucion", "segundos", "rama", "archivo", "nodos"];
+  "resolucion", "segundos", "lora", "progresivo", "refinado", "semilla", "rama", "archivo", "nodos"];
 
 /** El historial como tabla (separada por tabuladores) para pegar en una planilla. */
 export function tablaHistorial(historial) {
@@ -245,9 +387,12 @@ export function tablaHistorial(historial) {
   for (const e of historial || []) {
     const d = e.detalle || {};
     const nodos = (e.tramos || []).map((x) => `${x.titulo} ${formatoCorto(x.ms)}`).join(" | ");
+    const loras = (d.loras || []).map((l) => `${l.nombre} ×${l.fuerza}${l.archivo ? ` (${l.archivo})` : ""}`).join(" + ");
+    const progresivo = d.progresivo === "sí" ? `sí${d.progresivo_paso ? " " + d.progresivo_paso : ""}` : d.progresivo || "";
     filas.push([e.cuando, e.estado || "", formatoCorto(e.total), d.modelo || "", d.pasos ?? "",
-      d.sampler || "", d.scheduler || "", d.resolucion || "", d.segundos ?? "", d.rama || "",
-      d.archivo || "", nodos].map((v) => String(v).replace(/[\t\n]/g, " ")).join("\t"));
+      d.sampler || "", d.scheduler || "", d.resolucion || "", d.segundos ?? "", loras, progresivo,
+      d.refinado || "", d.semilla ?? "", d.rama || "", d.archivo || "", nodos]
+      .map((v) => String(v).replace(/[\t\n]/g, " ")).join("\t"));
   }
   return filas.join("\n");
 }
@@ -327,8 +472,11 @@ function dibujar(ctx, node, width, y, medidor, ahora, zonas) {
   let yy = y + CAB + 58;
   ctx.font = "11px " + MONO;
   ctx.fillStyle = INFO;
+  // en curso: el nodo que corre; si no, el resto de la corrida elegida o de la última
   const ahoraTxt = medidor.estado === "corriendo" && medidor.actual ? "ahora: " + medidor.actual.titulo
-    : medidor.estado === "espera" ? "Ejecuta el workflow y aquí aparece cuánto tarda cada paso." : "";
+    : elegida ? lineaDetalle(elegida.detalle)
+    : medidor.estado === "espera" ? "Ejecuta el workflow y aquí aparece cuánto tarda cada paso."
+    : lineaDetalle(historial[0]?.detalle);
   if (ahoraTxt) ctx.fillText(recortar(ctx, ahoraTxt, width - PAD * 2), PAD, yy);
 
   // desglose por nodo: el de la corrida elegida en el historial, o el de ahora
@@ -376,7 +524,14 @@ function dibujar(ctx, node, width, y, medidor, ahora, zonas) {
       ctx.beginPath(); ctx.roundRect(PAD - 4, yy - FILA_HIST / 2, width - PAD * 2 + 8, FILA_HIST, 3); ctx.fill();
     }
     ctx.fillStyle = sel ? AMBAR : e.estado === "listo" ? INFO : TENUE;
-    ctx.fillText(recortar(ctx, textoHistorial(e), width - PAD * 2), PAD, yy);
+    const fila = partesHistorial(e);
+    const anchoTotal = fila.total ? ctx.measureText(fila.total).width + 10 : 0;
+    ctx.fillText(recortar(ctx, fila.texto, width - PAD * 2 - anchoTotal), PAD, yy);
+    if (fila.total) {
+      ctx.textAlign = "right";
+      ctx.fillText(fila.total, width - PAD, yy);
+      ctx.textAlign = "left";
+    }
     zonas.push({ y: yy - FILA_HIST / 2, h: FILA_HIST, i });
     yy += FILA_HIST;
   });

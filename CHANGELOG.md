@@ -20,6 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- **Cronómetro**: each run also records the LoRAs and their strength, whether the progressive mode was really applied, the refine pass (scale and steps) and the seed, and it recognises the model of any loader (UNET, GGUF or checkpoint, for Wan, LTX, Hunyuan and others), not only Load Model H3. The list shows model, steps, LoRA, progressive and resolution, with the total always visible on the right; the line under the clock shows the rest (sampler, refine, seed, Selector). *Copiar tabla* adds the lora, progresivo, refinado and semilla columns.
 - **Cronómetro**: keeps the last 20 runs with the model, steps, sampler, final resolution, duration and what the Interruptor or the Selector were set to. Clicking a run shows its per-node breakdown, and *Copiar tabla* copies the history to paste into a spreadsheet. The header capsule no longer stays on "EN CURSO" after the run has finished.
 - **Escena**: when the prompt has a line that starts with `<Picture N>` and that image is not connected, the line is not sent. A workflow can carry the line of an optional reference already written, and turning the image on or off is enough.
 

@@ -20,6 +20,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 
 ### Cambiado
 
+- **Cronómetro**: cada corrida guarda también las LoRA y su fuerza, si el modo progresivo se aplicó de verdad, el refinado (escala y pasos) y la semilla, y reconoce el modelo de cualquier cargador (UNET, GGUF o checkpoint: Wan, LTX, Hunyuan y otros), no solo del Cargar modelo H3. La lista muestra modelo, pasos, LoRA, progresivo y resolución, con el total siempre visible a la derecha; la línea bajo el reloj muestra el resto (sampler, refinado, semilla, Selector). *Copiar tabla* suma las columnas lora, progresivo, refinado y semilla.
 - **Cronómetro**: guarda las últimas 20 corridas con el modelo, los pasos, el sampler, la resolución final, la duración y lo que marcaban el Interruptor o el Selector. Un clic en una corrida muestra su desglose por nodo, y *Copiar tabla* copia el historial para pegarlo en una hoja de cálculo. La cápsula de la cabecera ya no se queda en "EN CURSO" cuando la corrida terminó.
 - **Escena**: si el prompt trae una línea que empieza por `<Picture N>` y esa imagen no está conectada, esa línea no se envía. Así un workflow puede traer escrita la línea de una referencia opcional y basta con encenderla o apagarla.
 
