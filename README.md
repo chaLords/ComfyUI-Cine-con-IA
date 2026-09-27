@@ -19,6 +19,7 @@
   <img alt="Nine stable nodes and four experimental nodes" src="https://img.shields.io/badge/nodes-9%20%2B%204%20H3-e08a3c?style=flat-square">
   <img alt="Spanish interface" src="https://img.shields.io/badge/interface-Spanish-2ea043?style=flat-square">
   <a href="https://www.youtube.com/@cineconia.oficial"><img alt="YouTube channel" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
+  <a href="https://discord.gg/hXKJ78cEua"><img alt="Discord community" src="https://img.shields.io/badge/discord-Cine%20con%20IA-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
 </p>
 
 <p align="center">
@@ -27,10 +28,14 @@
   <a href="#recommended-workflow">▶️ How it is used</a> ·
   <a href="#using-the-prompt-node">✍️ The Prompt node</a> ·
   <a href="CHANGELOG.md">🛠 Changelog</a> ·
-  <a href="https://www.youtube.com/@cineconia.oficial">📺 Tutorials</a>
+  <a href="https://www.youtube.com/@cineconia.oficial">📺 Tutorials</a> ·
+  <a href="https://discord.gg/hXKJ78cEua">💬 Discord</a>
 </p>
 
 ---
+
+> [!TIP]
+> **💬 Join the Cine con IA community on Discord** (Spanish-speaking): questions, bugs, ideas and your own renders. [discord.gg/hXKJ78cEua](https://discord.gg/hXKJ78cEua) · Tutorials on [YouTube](https://www.youtube.com/@cineconia.oficial).
 
 Custom nodes that simplify cinematic AI video workflows in ComfyUI. The display names are deliberately generic so the pack can grow and work with several models. Its first complete flow integrates MiniMax H3 — preparation, prompt, loading, generation, refinement and output — while the Prompt node offers dedicated tabs for MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 and a model-agnostic Free mode.
 

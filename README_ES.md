@@ -19,6 +19,7 @@
   <img alt="Nueve nodos estables y cuatro experimentales" src="https://img.shields.io/badge/nodos-9%20%2B%204%20H3-e08a3c?style=flat-square">
   <img alt="Interfaz en español" src="https://img.shields.io/badge/interfaz-espa%C3%B1ol-2ea043?style=flat-square">
   <a href="https://www.youtube.com/@cineconia.oficial"><img alt="Canal de YouTube" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
+  <a href="https://discord.gg/hXKJ78cEua"><img alt="Comunidad en Discord" src="https://img.shields.io/badge/discord-Cine%20con%20IA-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
 </p>
 
 <p align="center">
@@ -27,10 +28,14 @@
   <a href="#flujo-recomendado">▶️ Cómo se usa</a> ·
   <a href="#uso-del-nodo-prompt">✍️ El nodo Prompt</a> ·
   <a href="CHANGELOG_ES.md">🛠 Novedades</a> ·
-  <a href="https://www.youtube.com/@cineconia.oficial">📺 Tutoriales</a>
+  <a href="https://www.youtube.com/@cineconia.oficial">📺 Tutoriales</a> ·
+  <a href="https://discord.gg/hXKJ78cEua">💬 Discord</a>
 </p>
 
 ---
+
+> [!TIP]
+> **💬 Únete a la comunidad de Cine con IA en Discord:** dudas, errores, ideas y tus propios renders. [discord.gg/hXKJ78cEua](https://discord.gg/hXKJ78cEua) · Tutoriales en [YouTube](https://www.youtube.com/@cineconia.oficial).
 
 Nodos personalizados para simplificar los flujos cinematográficos de vídeo con IA en ComfyUI. Los nombres visibles son deliberadamente genéricos para que el paquete pueda crecer y trabajar con varios modelos. Su primer flujo completo integra MiniMax H3 —preparación, prompt, carga, generación, refinado y salida— mientras que el nodo Prompt ofrece pestañas específicas para MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 y un modo Libre independiente del modelo.
 
