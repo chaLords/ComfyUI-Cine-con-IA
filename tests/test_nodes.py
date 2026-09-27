@@ -711,3 +711,50 @@ class EscalarRefinarTests(unittest.TestCase):
         texto = str(ctx.exception)
         self.assertIn("minimax_h3_latent_upscaler_3d_bf16.safetensors", texto)
         self.assertIn("no such file", texto)
+
+
+class CronometroRegistroTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.carpeta = tempfile.TemporaryDirectory()
+        self.ruta = str(Path(self.carpeta.name) / "cineconia" / "registro_cronometro.csv")
+        NODES._REGISTRO["vistos"] = []
+
+    def tearDown(self):
+        self.carpeta.cleanup()
+
+    def leer(self):
+        return Path(self.ruta).read_text(encoding="utf-8")
+
+    def test_the_first_run_creates_the_file_with_header_for_excel(self):
+        fila = {"fecha": "2026-09-27 12:40", "workflow": "048", "modelo": "Singularity Ref2VA v1.3",
+                "pasos": "3", "lora": "TaoMate-H3 3 pasos ×1", "total": "7:21"}
+        self.assertTrue(NODES.anotar_registro(fila, "p1", self.ruta))
+        texto = self.leer()
+        self.assertTrue(texto.startswith("\ufefffecha;workflow;estado;total;modelo;"))
+        lineas = texto.lstrip("\ufeff").splitlines()
+        self.assertEqual(len(lineas), 2)
+        self.assertIn("2026-09-27 12:40;048;;7:21;Singularity Ref2VA v1.3;3;", lineas[1])
+        self.assertIn(";TaoMate-H3 3 pasos ×1;", lineas[1])
+
+    def test_each_run_is_written_once_and_later_runs_are_appended(self):
+        self.assertTrue(NODES.anotar_registro({"total": "1:00"}, "p1", self.ruta))
+        self.assertFalse(NODES.anotar_registro({"total": "1:00"}, "p1", self.ruta))
+        self.assertTrue(NODES.anotar_registro({"total": "2:00"}, "p2", self.ruta))
+        texto = self.leer()
+        self.assertEqual(texto.count("\ufeff"), 1)
+        self.assertEqual(texto.count("fecha;workflow"), 1)
+        self.assertEqual(len(texto.splitlines()), 3)
+
+    def test_unknown_columns_are_ignored_and_formulas_are_not_executed(self):
+        NODES.anotar_registro({"rama": "=HYPERLINK(\"x\")", "semilla": "-5", "otra": "no va",
+                               "nodos": "a;b\n c"}, None, self.ruta)
+        fila = self.leer().splitlines()[1]
+        self.assertIn("'=HYPERLINK", fila)
+        self.assertIn(";-5;", fila)
+        self.assertNotIn("no va", fila)
+        self.assertIn('"a;b c"', fila)
+
+    def test_a_bad_row_is_refused(self):
+        with self.assertRaises(ValueError):
+            NODES.anotar_registro(["no", "es", "fila"], None, self.ruta)

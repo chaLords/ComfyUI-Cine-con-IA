@@ -92,11 +92,11 @@ test('la cabecera dice si está corriendo o cómo terminó', () => {
   assert.equal(fn('datoCabecera')(m, 0).punto, '#ed6976');
 });
 
-test('el nombre del modelo se lee corto', () => {
+test('el modelo se anota con su nombre oficial', () => {
   const {fn} = setup();
   const nm = fn('nombreModelo');
-  assert.equal(nm('minimax\\Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors'), 'Singularity v1.3');
-  assert.equal(nm('minimax\\minimax_h3_ref2va_pruned_int8_convrot.safetensors'), 'H3 oficial');
+  assert.equal(nm('minimax\\Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors'), 'Singularity Ref2VA v1.3');
+  assert.equal(nm('minimax\\minimax_h3_ref2va_pruned_int8_convrot.safetensors'), 'MiniMax H3 Ref2VA');
   assert.equal(nm('otro/modelo.gguf'), 'modelo');
   assert.equal(nm(''), '');
 });
@@ -118,7 +118,7 @@ const CONFIG = {steps: 20, sampler: 'res_multistep', scheduler: 'simple', width:
 test('cada corrida sabe con qué se hizo', () => {
   const {fn} = setup();
   const d = plano(fn('detalleCorrida')(grafo(CONFIG)));
-  assert.deepEqual(d, {modelo: 'Singularity v1.3', archivo: 'Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors',
+  assert.deepEqual(d, {modelo: 'Singularity Ref2VA v1.3', archivo: 'Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors',
     pasos: 20, sampler: 'res_multistep', scheduler: 'simple', resolucion: '704×1184', segundos: 5.2,
     loras: [], refinado: '×1.27', rama: 'Singularity v1.3 · 20 · final'});
   // la config que manda el servidor manda sobre la vista previa
@@ -135,12 +135,12 @@ test('el historial guarda el detalle y el desglose por nodo, y se copia como tab
   const r = m.terminar(866000, 'listo');
   const d = fn('detalleCorrida')(grafo(CONFIG));
   const e = fn('entradaHistorial')(r, [], new Date(2026, 8, 26, 13, 57), d);
-  assert.equal(fn('textoHistorial')(e), '26/09 13:57 · Singularity v1.3 · 20p · 704×1184 · 14:26');
+  assert.equal(fn('textoHistorial')(e), '26/09 13:57 · Singularity Ref2VA v1.3 · 20p · 704×1184 · 14:26');
   assert.deepEqual(plano(e.tramos), [{titulo: '06 · Render', ms: 654000}, {titulo: '07 · Escalar', ms: 212000}]);
   const tabla = fn('tablaHistorial')([e]).split('\n');
   assert.equal(tabla.length, 2);
   assert.ok(tabla[0].startsWith('fecha\testado\ttotal\tmodelo\tpasos'));
-  assert.ok(tabla[1].includes('Singularity v1.3\t20\tres_multistep\tsimple\t704×1184\t5.2'));
+  assert.ok(tabla[1].includes('Singularity Ref2VA v1.3\t20\tres_multistep\tsimple\t704×1184\t5.2'));
   assert.ok(tabla[1].endsWith('06 · Render 10:54 | 07 · Escalar 3:32'));
 });
 
@@ -151,13 +151,75 @@ test('las corridas viejas, sin detalle, se siguen leyendo igual', () => {
   assert.ok(fn('tablaHistorial')([vieja]).split('\n')[1].startsWith('26/09 12:51\tlisto\t10:56'));
 });
 
-test('el nombre corto sirve para cualquier modelo y LoRA', () => {
+test('los modelos y LoRA conocidos salen con su nombre oficial; el resto, corto', () => {
   const {fn} = setup();
-  assert.equal(fn('nombreModelo')('wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors'), 'wan2.2 i2v high noise 14B');
-  assert.equal(fn('nombreModelo')('diffusion_models/ltx-2.5-dev-fp8.safetensors'), 'ltx 2.5 dev');
-  assert.equal(fn('nombreModelo')('wan2.2_t2v_Q4_K_M.gguf'), 'wan2.2 t2v Q4KM');
-  assert.equal(fn('nombreLora')('minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors'), 'turbo 4step v0.1');
-  assert.equal(fn('nombreLora')('wan2.2_i2v_lightx2v_4steps_lora_v1.safetensors'), 'wan2.2 i2v lightx2v…');
+  assert.equal(fn('nombreModelo')('wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors'), 'Wan2.2 I2V A14B');
+  assert.equal(fn('nombreModelo')('diffusion_models/ltx-2.5-dev-fp8.safetensors'), 'LTX-2.5 Dev');
+  assert.equal(fn('nombreModelo')('wan2.2_t2v_Q4_K_M.gguf'), 'Wan2.2 T2V Q4KM');
+  assert.equal(fn('nombreModelo')('mi_modelo_raro_v2_fp8.safetensors'), 'mi modelo raro v2');
+  assert.equal(fn('nombreLora')('minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors'), 'H3 Ref2V Turbo 4 pasos v0.1');
+  assert.equal(fn('nombreLora')('wan2.2_i2v_lightx2v_4steps_lora_v1.safetensors'), 'Wan2.2 I2V Lightx2v 4 pasos v1');
+  assert.equal(fn('nombreLora')('mi_lora_de_estilo_rank16.safetensors'), 'mi de estilo');
+});
+
+test('cada familia del catálogo tiene su nombre oficial', () => {
+  const {fn} = setup();
+  const modelos = {
+    'minimax_h3_fl2va_pruned_int8_convrot.safetensors': 'MiniMax H3 FL2VA',
+    'Minimax-h3_Singularity_ref2va_v1.3_Pruned_w4a8.safetensors': 'Singularity Ref2VA v1.3 w4a8',
+    'wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors': 'Wan2.2 T2V A14B',
+    'wan2.2_animate_14B_int8_convrot.safetensors': 'Wan2.2 Animate 14B',
+    'wan2.2_ti2v_5B_fp16.safetensors': 'Wan2.2 TI2V 5B',
+    'ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors': 'LTX-2.5 22B Distilled',
+    'hunyuanvideo1.5_480p_i2v_step_distilled_fp8_scaled.safetensors': 'HunyuanVideo 1.5 480p I2V step-distilled',
+    'hunyuanvideo1.5_720p_i2v_cfg_distilled_fp8_scaled.safetensors': 'HunyuanVideo 1.5 720p I2V cfg-distilled',
+    'hunyuanvideo1.5_720p_sr_distilled_fp8_scaled.safetensors': 'HunyuanVideo 1.5 720p SR distilled',
+    'hunyuanvideo1.5_480p_i2v_fp16.safetensors': 'HunyuanVideo 1.5 480p I2V',
+  };
+  for (const [archivo, nombre] of Object.entries(modelos)) assert.equal(fn('nombreModelo')(archivo), nombre, archivo);
+  const loras = {
+    'minimaxH3\\TaoMate-H3-3step-ComfyUI.safetensors': 'TaoMate-H3 3 pasos',
+    'taomate_h3_3step_comfy.safetensors': 'TaoMate-H3 3 pasos',
+    'minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors': 'H3 FL2V Turbo 4 pasos v1.0 768p',
+    'minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors': 'H3 FL2V Turbo 8 pasos v1.0',
+    'wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors': 'Wan2.2 I2V Lightx2v 4 pasos v1 high',
+    'wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors': 'Wan2.2 T2V Lightx2v 4 pasos v1.1 low',
+    'hunyuanvideo1.5_t2v_480p_lightx2v_4step_lora_rank_32_bf16.safetensors': 'HunyuanVideo 1.5 T2V 480p Lightx2v 4 pasos',
+    'ltx-2.5-22b-distilled-lora-450-bf16.safetensors': 'LTX-2.5 22B Distilled LoRA 450',
+  };
+  for (const [archivo, nombre] of Object.entries(loras)) assert.equal(fn('nombreLora')(archivo), nombre, archivo);
+});
+
+test('las corridas guardadas antes también salen con el nombre oficial', () => {
+  const {fn} = setup();
+  const e = {cuando: '27/09 12:40', estado: 'listo', total: 441000, detalle: {
+    modelo: 'H3 oficial', archivo: 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', pasos: 3,
+    loras: [{nombre: 'TaoMate 3step', fuerza: 1, archivo: 'TaoMate-H3-3step-ComfyUI.safetensors'}]}};
+  assert.equal(fn('textoHistorial')(e), '27/09 12:40 · MiniMax H3 Ref2VA · 3p · TaoMate-H3 3 pasos ×1 · 7:21');
+  assert.ok(fn('tablaHistorial')([e]).split('\n')[1].includes('\tMiniMax H3 Ref2VA\t3\t'));
+  assert.equal(fn('lineaDetalle')(e.detalle), 'LoRA TaoMate-H3 3 pasos ×1');
+  // sin archivo guardado se respeta el nombre que tenía
+  assert.equal(fn('modeloDe')({modelo: 'Algo viejo'}), 'Algo viejo');
+});
+
+test('el registro lleva la fecha completa, el workflow y las columnas del servidor', () => {
+  const {fn} = setup();
+  const e = {cuando: '27/09 12:40', estado: 'listo', total: 441000, detalle: {
+    archivo: 'Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors', pasos: 3, progresivo: 'sí',
+    loras: [{nombre: 'x', fuerza: 1, archivo: 'TaoMate-H3-3step-ComfyUI.safetensors'}]}};
+  const fila = plano(fn('filaRegistro')(e, new Date(2026, 8, 27, 12, 40), '048.REALminimax-H3'));
+  assert.equal(fila.fecha, '2026-09-27 12:40');
+  assert.equal(fila.workflow, '048.REALminimax-H3');
+  assert.equal(fila.modelo, 'Singularity Ref2VA v1.3');
+  assert.equal(fila.total, '7:21');
+  assert.equal(fila.lora, 'TaoMate-H3 3 pasos ×1 (TaoMate-H3-3step-ComfyUI.safetensors)');
+  assert.equal(fila.progresivo, 'sí');
+  // el servidor escribe las mismas columnas, en este orden
+  const py = fs.readFileSync(path.join(__dirname, '../nodes.py'), 'utf8');
+  const tupla = py.match(/REGISTRO_COLUMNAS = \(([^)]*)\)/)[1];
+  const servidor = [...tupla.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(servidor, ['fecha', 'workflow', ...plano(fn('COLUMNAS')).slice(1)]);
+  assert.deepEqual(Object.keys(fila).sort(), [...servidor].sort());
 });
 
 test('la corrida guarda LoRA, progresivo, refinado y semilla', () => {
@@ -181,7 +243,7 @@ test('la corrida guarda LoRA, progresivo, refinado y semilla', () => {
   assert.equal(d.resolucion, '704×1184');
   assert.equal(d.semilla, 833);                  // la del nodo del otro lado del cable
   const e = fn('entradaHistorial')({estado: 'listo', total: 441000}, [], new Date(2026, 8, 27, 12, 40), d);
-  assert.equal(fn('textoHistorial')(e), '27/09 12:40 · Singularity v1.3 · 3p · TAO v1 ×1 · progresivo · 704×1184 · 7:21');
+  assert.equal(fn('textoHistorial')(e), '27/09 12:40 · Singularity Ref2VA v1.3 · 3p · TAO v1 ×1 · progresivo · 704×1184 · 7:21');
   assert.deepEqual(plano(fn('partesHistorial')(e)).total, '7:21');
   assert.equal(fn('lineaDetalle')(d),
     'res_multistep/simple · LoRA TAO v1 ×1 · progresivo 1/3 · refina ×1.27 4p · semilla 833 · Selector: Singularity v1.3 · 20 · final');
@@ -222,11 +284,11 @@ test('otros modelos: UNET, LoRA de ComfyUI y KSampler', () => {
       w('steps', 6), w('cfg', 1), w('sampler_name', 'euler'), w('scheduler', 'simple')]},
   ]};
   const d = plano(fn('detalleCorrida')(g));
-  assert.equal(d.modelo, 'wan2.2 i2v high noise 14B +1');
+  assert.equal(d.modelo, 'Wan2.2 I2V A14B');   // las dos mitades son un modelo
   assert.equal(d.archivo, 'wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors + wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors');
-  assert.deepEqual(d.loras.map((l) => [l.nombre, l.fuerza]), [['wan2.2 i2v lightx2v…', 1]]);
+  assert.deepEqual(d.loras.map((l) => [l.nombre, l.fuerza]), [['Wan2.2 I2V Lightx2v 4 pasos v1', 1]]);
   assert.deepEqual([d.pasos, d.sampler, d.scheduler, d.resolucion, d.semilla], [6, 'euler', 'simple', '480×832', 42]);
   assert.equal(d.refinado, undefined);
   const e = fn('entradaHistorial')({estado: 'listo', total: 300000}, [], new Date(2026, 8, 28, 10, 0), d);
-  assert.equal(fn('textoHistorial')(e), '28/09 10:00 · wan2.2 i2v high noise 14B +1 · 6p · wan2.2 i2v lightx2v… ×1 · 480×832 · 5:00');
+  assert.equal(fn('textoHistorial')(e), '28/09 10:00 · Wan2.2 I2V A14B · 6p · Wan2.2 I2V Lightx2v 4 pasos v1 ×1 · 480×832 · 5:00');
 });

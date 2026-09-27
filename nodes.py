@@ -2351,6 +2351,84 @@ def preview_h3(body):
             "base": {k: base[k] for k in ("refine", "refine_scale", "attention_chunks", "ffn_chunks")}}
 
 
+# ---------------------------------------------------------------------------
+# Registro del Cronometro
+#
+# El historial del nodo vive dentro del workflow y guarda solo las ultimas 20
+# corridas. El registro es la lista completa: cada corrida que termina con un
+# Cronometro en el lienzo suma una fila a un CSV en la carpeta de usuario de
+# ComfyUI (user/default/cineconia/registro_cronometro.csv). No se borra con
+# "Borrar historial" ni al cambiar de workflow o actualizar el paquete.
+# Va separado por ";" y con BOM para que Excel en espanol lo abra con doble clic.
+# ---------------------------------------------------------------------------
+
+REGISTRO_COLUMNAS = ("fecha", "workflow", "estado", "total", "modelo", "pasos", "sampler",
+                     "scheduler", "resolucion", "segundos", "lora", "progresivo", "refinado",
+                     "semilla", "rama", "archivo", "nodos")
+_REGISTRO_MAX_CAMPO = 2000
+_REGISTRO = {"vistos": [], "candado": None}
+_NUMERO = _rx(r"-?\d+(?:[.,]\d+)?")
+
+
+def _candado_registro():
+    if _REGISTRO["candado"] is None:
+        import threading
+        _REGISTRO["candado"] = threading.Lock()
+    return _REGISTRO["candado"]
+
+
+def ruta_registro(base=None):
+    """Donde vive el registro. base = la carpeta user de ComfyUI."""
+    import os
+    if base is None:
+        import folder_paths
+        base = folder_paths.get_user_directory()
+    return os.path.join(base, "default", "cineconia", "registro_cronometro.csv")
+
+
+def _celda_registro(valor):
+    """Una celda en una sola linea, con tope y sin formulas.
+
+    El workflow puede venir de otra persona: un titulo de nodo que empiece por
+    "=" no debe convertirse en una formula al abrir el registro en Excel.
+    """
+    texto = " ".join(str("" if valor is None else valor).split())[:_REGISTRO_MAX_CAMPO]
+    if texto[:1] in ("=", "+", "-", "@") and not _NUMERO.fullmatch(texto):
+        texto = "'" + texto
+    return texto
+
+
+def anotar_registro(fila, id_corrida=None, ruta=None):
+    """Suma una corrida al registro y devuelve True.
+
+    fila: {columna: valor}; lo que no sea una columna conocida se ignora.
+    Devuelve False si esa corrida ya estaba anotada: con dos pestanas
+    abiertas, cada una avisa del mismo final.
+    """
+    import csv
+    import io
+    import os
+    if not isinstance(fila, dict):
+        raise ValueError("Se esperaba la fila de la corrida")
+    ruta = ruta or ruta_registro()
+    ident = str(id_corrida)[:100] if id_corrida else None
+    with _candado_registro():
+        if ident and ident in _REGISTRO["vistos"]:
+            return False
+        os.makedirs(os.path.dirname(ruta), exist_ok=True)
+        nuevo = not os.path.isfile(ruta) or os.path.getsize(ruta) == 0
+        texto = io.StringIO()
+        escritor = csv.writer(texto, delimiter=";", lineterminator="\r\n")
+        if nuevo:
+            escritor.writerow(REGISTRO_COLUMNAS)
+        escritor.writerow([_celda_registro(fila.get(c)) for c in REGISTRO_COLUMNAS])
+        with open(ruta, "a", encoding="utf-8", newline="") as f:
+            f.write(("\ufeff" if nuevo else "") + texto.getvalue())
+        if ident:
+            _REGISTRO["vistos"] = (_REGISTRO["vistos"] + [ident])[-500:]
+    return True
+
+
 def _registrar_rutas():
     """Engancha las rutas al servidor de ComfyUI.
 
@@ -2401,6 +2479,30 @@ def _registrar_rutas():
                                       "description": descripcion})
         except (ValueError, TypeError) as exc:
             return web.json_response({"error": str(exc)}, status=400)
+
+    @rutas.post("/cineconia/cronometro/registro")
+    async def _registro_anotar(peticion):
+        try:
+            cuerpo = await peticion.json()
+            if not isinstance(cuerpo, dict):
+                raise ValueError("peticion invalida")
+            import asyncio
+            nuevo = await asyncio.to_thread(anotar_registro, cuerpo.get("fila"), cuerpo.get("id"))
+            return web.json_response({"ok": True, "nuevo": nuevo})
+        except (ValueError, TypeError) as exc:
+            return web.json_response({"error": str(exc)}, status=400)
+        except OSError as exc:
+            return web.json_response({"error": str(exc)}, status=500)
+
+    @rutas.get("/cineconia/cronometro/registro")
+    async def _registro_descargar(peticion):
+        import os
+        ruta = ruta_registro()
+        if not os.path.isfile(ruta):
+            return web.json_response({"error": "todavia no hay corridas en el registro"}, status=404)
+        return web.FileResponse(ruta, headers={
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": 'attachment; filename="registro_cronometro.csv"'})
 
     @rutas.post("/cineconia/catalogo")
     async def _catalogo(peticion):

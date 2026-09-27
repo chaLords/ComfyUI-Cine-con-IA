@@ -5,7 +5,7 @@ import { pintarCabecera, COLOR_BASE, anchoFijoAlNodo, esLienzoPrincipal } from "
 /**
  * Cine con IA · Cronómetro
  *
- * Nodo solo de interfaz (no va al servidor ni cambia el render). Mide cada
+ * Nodo solo de interfaz: no se envía con el prompt ni cambia el render. Mide cada
  * ejecución: reloj en vivo, el paso del muestreo, cuánto tardó cada nodo y un
  * historial de las últimas corridas para comparar, por ejemplo, el render normal
  * contra el progresivo. El historial se guarda con el workflow.
@@ -19,6 +19,12 @@ import { pintarCabecera, COLOR_BASE, anchoFijoAlNodo, esLienzoPrincipal } from "
  * resolución final, duración, rama del Interruptor o del Selector) y
  * su desglose por nodo: un clic en la corrida lo vuelve a mostrar. "Copiar
  * tabla" deja todo el historial listo para pegar en una planilla.
+ *
+ * Los modelos y LoRA conocidos se anotan con su nombre oficial (MiniMax H3
+ * Ref2VA, Singularity Ref2VA v1.3, TaoMate-H3...). Y cada corrida que termina
+ * con un Cronómetro en el lienzo se suma a un registro permanente que guarda
+ * el servidor (user/default/cineconia/registro_cronometro.csv): no se borra
+ * con "Borrar historial" ni al cambiar de workflow.
  */
 
 export const TIPO = "CineCronometro";
@@ -179,9 +185,10 @@ export function partesHistorial(e) {
   const d = e.detalle;
   if (d) {
     const partes = [e.cuando];
-    if (d.modelo) partes.push(d.modelo);
+    const modelo = modeloDe(d);
+    if (modelo) partes.push(modelo);
     if (d.pasos) partes.push(`${d.pasos}p`);
-    const loras = textoLoras(d.loras);
+    const loras = textoLoras(lorasDe(d));
     if (loras) partes.push(loras);
     if (d.progresivo === "sí") partes.push("progresivo");
     else if (d.progresivo) partes.push(`progresivo ${d.progresivo}`);
@@ -207,7 +214,7 @@ export function lineaDetalle(d) {
   if (!d) return "";
   const partes = [];
   if (d.sampler) partes.push(d.scheduler ? `${d.sampler}/${d.scheduler}` : String(d.sampler));
-  if (Array.isArray(d.loras)) partes.push(d.loras.length ? "LoRA " + textoLoras(d.loras) : "sin LoRA");
+  if (Array.isArray(d.loras)) partes.push(d.loras.length ? "LoRA " + textoLoras(lorasDe(d)) : "sin LoRA");
   if (d.progresivo === "sí") partes.push("progresivo" + (d.progresivo_paso ? " " + d.progresivo_paso : ""));
   else if (d.progresivo) partes.push(`progresivo ${d.progresivo}`);
   if (d.refinado) partes.push(d.refinado === "no" ? "sin refinado" : `refina ${d.refinado}`);
@@ -237,20 +244,125 @@ export function nombreCorto(archivo, max = 28, quitar = []) {
   return (s.length > max - 1 ? s.slice(0, max - 1) : s) + "…";
 }
 
-/** "minimax\\Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors" -> "Singularity v1.3". */
-export function nombreModelo(archivo) {
-  const base = String(archivo || "").split(/[\\/]/).pop().replace(/\.(safetensors|gguf|ckpt|pt|pth|bin|sft)$/i, "");
-  if (!base) return "";
-  if (/singularity/i.test(base)) {
-    const v = base.match(/v(\d+(?:\.\d+)*)/i);
-    return "Singularity" + (v ? " v" + v[1] : "");
-  }
-  if (/minimax_h3_ref2va/i.test(base)) return "H3 oficial";
-  return nombreCorto(base);
+/** El nombre del archivo sin carpeta ni extensión. */
+function baseDe(archivo) {
+  return String(archivo || "").split(/[\\/]/).pop().replace(/\.(safetensors|gguf|ckpt|pt|pth|bin|sft)$/i, "");
 }
 
-/** "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors" -> "turbo 4step v0.1". */
-export const nombreLora = (archivo) => nombreCorto(archivo, 24, ["minimax", "h3", "lora", "ref2v", "ref2va"]);
+/** "..._v1.3_int8" -> "1.3"; "" si el archivo no trae versión. */
+const versionDe = (base) => base.match(/[_\-\s]v(\d+(?:\.\d+)*)/i)?.[1] || "";
+
+/**
+ * Lo que cambia la calidad dentro de un mismo modelo y conviene ver: pesos
+ * w4a8 o nvfp4, o la cuantización de un GGUF (Q4_K_M -> Q4KM).
+ */
+function varianteDe(base, gguf) {
+  const out = [];
+  const w = base.match(/(?:^|[_\-.])(w4a8|nvfp4)(?=$|[_\-.])/i);
+  if (w) out.push(w[1].toLowerCase());
+  const q = gguf ? base.match(/(?:^|[_\-.])(Q\d(?:_K)?(?:_[SML0-9])?)(?=$|[_\-.])/) : null;
+  if (q) out.push(q[1].replace("_K", "K").replace(/K_([SML])/, "K$1"));
+  return out.join(" ");
+}
+
+/**
+ * Nombres oficiales, como los publica cada autor, para que el historial y el
+ * registro distingan de verdad un modelo de otro. Cada regla: el patrón del
+ * archivo y cómo armar el nombre.
+ */
+const MODELOS_OFICIALES = [
+  // Singularity (WarmBloodAban): un ajuste fino de MiniMax H3
+  [/singularity/i, (b) => "Singularity" + (/ref2va/i.test(b) ? " Ref2VA" : /fl2va/i.test(b) ? " FL2VA" : "")
+    + (versionDe(b) ? " v" + versionDe(b) : "")],
+  // MiniMax H3: las dos variantes que publica MiniMax
+  [/minimax[_\-]?h3[_\-]?ref2va/i, () => "MiniMax H3 Ref2VA"],
+  [/minimax[_\-]?h3[_\-]?fl2va/i, () => "MiniMax H3 FL2VA"],
+  // Wan 2.2 (Wan-AI): Wan2.2-I2V-A14B, Wan2.2-T2V-A14B, Wan2.2-TI2V-5B, Wan2.2-Animate-14B...
+  // Las dos mitades (high y low noise) son un solo modelo.
+  [/wan2\.?2[_\-](i2v|t2v|ti2v|s2v|animate)(?=$|[_\-.])/i, (b, m) => {
+    const modo = /^animate$/i.test(m[1]) ? "Animate" : m[1].toUpperCase();
+    const t = b.match(/[_\-](\d+)B(?=$|[_\-.])/i)?.[1];
+    const tam = !t ? "" : /^[it]2v$/i.test(m[1]) && t === "14" ? " A14B" : ` ${t}B`;
+    return `Wan2.2 ${modo}${tam}`;
+  }],
+  // LTX-2.5 (Lightricks): el destilado o el dev
+  [/ltx[_\-]?2\.5[_\-](?:(\d+)b[_\-])?(distilled|dev)/i, (b, m) =>
+    `LTX-2.5${m[1] ? ` ${m[1]}B` : ""} ${m[2][0].toUpperCase()}${m[2].slice(1).toLowerCase()}`],
+  // HunyuanVideo 1.5 (Tencent): resolución, tarea y si viene destilado
+  [/hunyuanvideo[_\-]?1\.5[_\-](\d+p)[_\-](i2v|t2v|sr)(?:[_\-](cfg|step))?(?:[_\-](distilled))?/i, (b, m) =>
+    `HunyuanVideo 1.5 ${m[1].toLowerCase()} ${m[2].toUpperCase()}`
+    + (m[4] ? ` ${m[3] ? m[3].toLowerCase() + "-" : ""}distilled` : "")],
+];
+
+/** Las LoRA de velocidad conocidas, con el nombre de quien las publica. */
+const LORAS_OFICIALES = [
+  // TaoMate-H3 (TaoLive AIGC, Alibaba): la "TAO" de 3 pasos
+  [/taomate[_\-]?h3[_\-]?(\d+)[_\-]?step/i, (b, m) => `TaoMate-H3 ${m[1]} pasos`],
+  // turbo de MiniMax: minimax_h3_ref2v_turbo_4step_v0.1, minimax_h3_fl2v_turbo_4step_v1.0_768p
+  [/minimax[_\-]?h3[_\-](ref2v|fl2v)a?[_\-]turbo[_\-](\d+)[_\-]?steps?/i, (b, m) => {
+    const res = b.match(/[_\-](\d+p)(?=$|[_\-.])/i)?.[1];
+    return `H3 ${/^ref/i.test(m[1]) ? "Ref2V" : "FL2V"} Turbo ${m[2]} pasos`
+      + (versionDe(b) ? " v" + versionDe(b) : "") + (res ? " " + res.toLowerCase() : "");
+  }],
+  // lightx2v de Wan 2.2: una para la mitad high noise y otra para la low
+  [/wan2\.?2[_\-](i2v|t2v)[_\-]lightx2v[_\-](\d+)[_\-]?steps?/i, (b, m) =>
+    `Wan2.2 ${m[1].toUpperCase()} Lightx2v ${m[2]} pasos` + (versionDe(b) ? " v" + versionDe(b) : "")
+    + (/high[_\-]noise/i.test(b) ? " high" : /low[_\-]noise/i.test(b) ? " low" : "")],
+  [/hunyuanvideo[_\-]?1\.5[_\-](i2v|t2v)[_\-](\d+p)[_\-]lightx2v[_\-](\d+)[_\-]?steps?/i, (b, m) =>
+    `HunyuanVideo 1.5 ${m[1].toUpperCase()} ${m[2].toLowerCase()} Lightx2v ${m[3]} pasos`],
+  [/ltx[_\-]?2\.5[_\-](\d+)b[_\-]distilled[_\-]lora(?:[_\-](\d+))?/i, (b, m) =>
+    `LTX-2.5 ${m[1]}B Distilled LoRA${m[2] ? " " + m[2] : ""}`],
+];
+
+function nombreSegun(reglas, base) {
+  for (const [rx, nombre] of reglas) {
+    const m = base.match(rx);
+    if (m) return nombre(base, m);
+  }
+  return "";
+}
+
+/**
+ * El nombre oficial del modelo de un archivo:
+ * "minimax\\Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors" -> "Singularity Ref2VA v1.3",
+ * "minimax_h3_ref2va_pruned_int8_convrot.safetensors" -> "MiniMax H3 Ref2VA".
+ * Si no es uno conocido, un nombre corto sacado del archivo.
+ */
+export function nombreModelo(archivo) {
+  const base = baseDe(archivo);
+  if (!base) return "";
+  const oficial = nombreSegun(MODELOS_OFICIALES, base);
+  if (!oficial) return nombreCorto(base);
+  const v = varianteDe(base, /\.gguf$/i.test(String(archivo)));
+  return v ? `${oficial} ${v}` : oficial;
+}
+
+/**
+ * El nombre oficial de una LoRA: "TaoMate-H3-3step-ComfyUI.safetensors" -> "TaoMate-H3 3 pasos",
+ * "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors" -> "H3 Ref2V Turbo 4 pasos v0.1".
+ */
+export function nombreLora(archivo) {
+  return nombreSegun(LORAS_OFICIALES, baseDe(archivo))
+    || nombreCorto(archivo, 24, ["minimax", "h3", "lora", "ref2v", "ref2va"]);
+}
+
+/**
+ * El modelo de una corrida, sacado otra vez de sus archivos: así las corridas
+ * guardadas antes también salen con el nombre oficial. Los archivos que son un
+ * mismo modelo (las dos mitades de Wan) cuentan una vez.
+ */
+export function modeloDe(d) {
+  if (!d) return "";
+  if (!d.archivo) return d.modelo || "";
+  const nombres = [...new Set(String(d.archivo).split(" + ").map(nombreModelo).filter(Boolean))];
+  if (!nombres.length) return d.modelo || "";
+  return nombres[0] + (nombres.length > 1 ? ` +${nombres.length - 1}` : "");
+}
+
+/** Las LoRA de una corrida, con el nombre oficial si se sabe el archivo. */
+export function lorasDe(d) {
+  return (d?.loras || []).map((l) => (l.archivo ? { ...l, nombre: nombreLora(l.archivo) } : l));
+}
 
 /** El redondeo de MinimaxH3LatentUpscaler3D (align 32, VAE 16). */
 export function ladoEscalado(px, escala) {
@@ -324,8 +436,8 @@ export function detalleCorrida(graph, config = null) {
   const d = {};
   const modelos = modelosDelGrafo(nodos);
   if (modelos.length) {
-    d.modelo = nombreModelo(modelos[0]) + (modelos.length > 1 ? ` +${modelos.length - 1}` : "");
     d.archivo = modelos.map((m) => m.split(/[\\/]/).pop()).join(" + ");
+    d.modelo = modeloDe(d);
   }
   d.loras = lorasDelGrafo(nodos);
   const c = config || deClase("CineH3Optimizer")?.__h3Preview?.config;
@@ -381,20 +493,41 @@ export function detalleCorrida(graph, config = null) {
 const COLUMNAS = ["fecha", "estado", "total", "modelo", "pasos", "sampler", "scheduler",
   "resolucion", "segundos", "lora", "progresivo", "refinado", "semilla", "rama", "archivo", "nodos"];
 
+/** Las celdas de una corrida, en el orden de COLUMNAS. */
+function celdas(e) {
+  const d = e.detalle || {};
+  const nodos = (e.tramos || []).map((x) => `${x.titulo} ${formatoCorto(x.ms)}`).join(" | ");
+  const loras = lorasDe(d).map((l) => `${l.nombre} ×${l.fuerza}${l.archivo ? ` (${l.archivo})` : ""}`).join(" + ");
+  const progresivo = d.progresivo === "sí" ? `sí${d.progresivo_paso ? " " + d.progresivo_paso : ""}` : d.progresivo || "";
+  return [e.cuando, e.estado || "", formatoCorto(e.total), modeloDe(d), d.pasos ?? "",
+    d.sampler || "", d.scheduler || "", d.resolucion || "", d.segundos ?? "", loras, progresivo,
+    d.refinado || "", d.semilla ?? "", d.rama || "", d.archivo || "", nodos];
+}
+
 /** El historial como tabla (separada por tabuladores) para pegar en una planilla. */
 export function tablaHistorial(historial) {
   const filas = [COLUMNAS.join("\t")];
-  for (const e of historial || []) {
-    const d = e.detalle || {};
-    const nodos = (e.tramos || []).map((x) => `${x.titulo} ${formatoCorto(x.ms)}`).join(" | ");
-    const loras = (d.loras || []).map((l) => `${l.nombre} ×${l.fuerza}${l.archivo ? ` (${l.archivo})` : ""}`).join(" + ");
-    const progresivo = d.progresivo === "sí" ? `sí${d.progresivo_paso ? " " + d.progresivo_paso : ""}` : d.progresivo || "";
-    filas.push([e.cuando, e.estado || "", formatoCorto(e.total), d.modelo || "", d.pasos ?? "",
-      d.sampler || "", d.scheduler || "", d.resolucion || "", d.segundos ?? "", loras, progresivo,
-      d.refinado || "", d.semilla ?? "", d.rama || "", d.archivo || "", nodos]
-      .map((v) => String(v).replace(/[\t\n]/g, " ")).join("\t"));
-  }
+  for (const e of historial || []) filas.push(celdas(e).map((v) => String(v).replace(/[\t\n]/g, " ")).join("\t"));
   return filas.join("\n");
+}
+
+/** 27 sep 2026, 12:40 -> "2026-09-27 12:40": con año, y ordena bien en cualquier planilla. */
+export function fechaRegistro(fecha = new Date()) {
+  const p = (x) => String(x).padStart(2, "0");
+  return `${fecha.getFullYear()}-${p(fecha.getMonth() + 1)}-${p(fecha.getDate())} ${p(fecha.getHours())}:${p(fecha.getMinutes())}`;
+}
+
+/**
+ * Una corrida para el registro permanente que escribe el servidor
+ * (user/default/cineconia/registro_cronometro.csv): las columnas de Copiar
+ * tabla, con la fecha completa y el nombre del workflow.
+ */
+export function filaRegistro(e, fecha = new Date(), workflow = "") {
+  const fila = {};
+  celdas(e).forEach((v, i) => { fila[COLUMNAS[i]] = String(v ?? ""); });
+  fila.fecha = fechaRegistro(fecha);
+  fila.workflow = String(workflow || "");
+  return fila;
 }
 
 /** Lo que el Render optimizado midió de su propio muestreo (cineconia_faders.js). */
@@ -566,12 +699,37 @@ function latir(on) {
 // config real del Optimizador si el servidor la manda.
 let corrida = { detalle: null };
 
+/** El nombre del workflow abierto, para el registro. */
+function nombreWorkflow() {
+  try {
+    const w = app.extensionManager?.workflow?.activeWorkflow || app.workflowManager?.activeWorkflow;
+    return String(w?.filename || w?.name || w?.path || "").split(/[\\/]/).pop().replace(/\.json$/i, "");
+  } catch { return ""; }
+}
+
+/**
+ * Suma la corrida al registro permanente. El servidor la anota una sola vez
+ * aunque haya dos pestañas abiertas; sin servidor (o con una versión vieja del
+ * paquete) el historial del nodo sigue igual.
+ */
+function guardarEnRegistro(entrada, fecha) {
+  const cuerpo = { id: corrida.id, fila: filaRegistro(entrada, fecha, corrida.workflow) };
+  try {
+    api.fetchApi("/cineconia/cronometro/registro", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo),
+    }).catch(() => {});
+  } catch { /* sin api */ }
+}
+
 function alTerminar(resumen) {
   if (!resumen) return;
   // lo que midió cada Render optimizado en esta misma corrida
   const renders = rendersDelGrafo(app.graph);
-  const entrada = entradaHistorial(resumen, renders, new Date(), corrida.detalle);
-  for (const n of cronometros()) {
+  const fecha = new Date();
+  const entrada = entradaHistorial(resumen, renders, fecha, corrida.detalle);
+  const nodos = cronometros();
+  if (nodos.length) guardarEnRegistro(entrada, fecha);
+  for (const n of nodos) {
     n.properties = n.properties || {};
     n.properties.historial = [entrada, ...(n.properties.historial || [])].slice(0, MAX_HISTORIAL);
     n.__cronoElegida = null;
@@ -584,7 +742,8 @@ function escuchar() {
   const ahora = () => performance.now();
   api.addEventListener("execution_start", (e) => {
     medidor.empezar(ahora(), e.detail || {});
-    try { corrida = { detalle: detalleCorrida(app.graph) }; } catch { corrida = { detalle: null }; }
+    const inicio = { id: e.detail?.prompt_id || null, workflow: nombreWorkflow() };
+    try { corrida = { ...inicio, detalle: detalleCorrida(app.graph) }; } catch { corrida = { ...inicio, detalle: null }; }
     // marca qué resúmenes del Render optimizado son de esta corrida
     for (const n of app.graph?._nodes || []) if (n?.comfyClass === "CineH3OptimizedSampler") n.__cronoCorrida = null;
     latir(true);
@@ -676,6 +835,22 @@ function crearClase() {
       }, { serialize: false });
       copiar.label = "Copiar tabla";
       copiar.serialize = false;
+      const bajar = this.addWidget("button", "__registro", null, async () => {
+        const aviso = (texto) => { bajar.label = texto; nodo.setDirtyCanvas(true, true);
+          setTimeout(() => { bajar.label = "Descargar registro"; nodo.setDirtyCanvas(true, true); }, 2500); };
+        try {
+          const r = await api.fetchApi("/cineconia/cronometro/registro");
+          if (!r.ok) { aviso(r.status === 404 ? "El registro está vacío" : "No se pudo leer el registro"); return; }
+          const url = URL.createObjectURL(await r.blob());
+          const a = document.createElement("a");
+          a.href = url; a.download = "registro_cronometro.csv";
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          aviso("Registro descargado");
+        } catch { aviso("No se pudo leer el registro"); }
+      }, { serialize: false });
+      bajar.label = "Descargar registro";
+      bajar.serialize = false;
       const boton = this.addWidget("button", "__borrar", null, () => {
         nodo.properties.historial = [];
         nodo.__cronoElegida = null;
