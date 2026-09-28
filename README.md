@@ -9,14 +9,16 @@
 <h1 align="center">ComfyUI · Cine con IA</h1>
 
 <p align="center">
-  <strong>Nine stable nodes plus four experimental H3 modules for shooting AI video locally.</strong><br>
-  Ratio &amp; Size • Duration • Prompt • Load Model • Scene • Render • Upscale &amp; Refine • Output • Models
+  <strong>Nine stable nodes, three interface tools and four experimental H3 modules for shooting AI video locally.</strong><br>
+  Ratio &amp; Size • Duration • Prompt • Load Model • Scene • Render • Upscale &amp; Refine • Output • Models<br>
+  Cronómetro • Interruptor • Selector
 </p>
 
 <p align="center">
+  <a href="https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/chaLords/ComfyUI-Cine-con-IA?style=flat-square&label=release&color=e08a3c"></a>
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"></a>
   <img alt="ComfyUI 0.34.2 or newer" src="https://img.shields.io/badge/ComfyUI-%E2%89%A5%200.34.2-6b46c1?style=flat-square">
-  <img alt="Nine stable nodes and four experimental nodes" src="https://img.shields.io/badge/nodes-9%20%2B%204%20H3-e08a3c?style=flat-square">
+  <img alt="Nine stable nodes, three tools and four experimental nodes" src="https://img.shields.io/badge/nodes-9%20%2B%203%20%2B%204%20H3-e08a3c?style=flat-square">
   <img alt="Spanish interface" src="https://img.shields.io/badge/interface-Spanish-2ea043?style=flat-square">
   <a href="https://www.youtube.com/@cineconia.oficial"><img alt="YouTube channel" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
   <a href="https://discord.gg/hXKJ78cEua"><img alt="Discord community" src="https://img.shields.io/badge/discord-Cine%20con%20IA-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
@@ -54,7 +56,7 @@ The interface is in Spanish and adds visual controls, memory warnings, render pr
 | **Cine con IA · Proporción y Tamaño** | Calculates width and height from cinema, social-media, or photography aspect ratios. Supports megapixels or a fixed longest side and aligns the result to the multiple required by the model. |
 | **Cine con IA · Duración** | Converts seconds and FPS into a valid frame count. Includes the MiniMax H3 frame grid and advanced settings for other models. |
 | **Cine con IA · Prompt** | Builds and parses model-specific prompts for MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1, or any model through Free mode. |
-| **Cine con IA · Cargar modelo** | Loads the model, text encoder, and video/audio VAEs. Chains up to four LoRAs and applies VRAM optimizations, sigma shift, and live preview when available. |
+| **Cine con IA · Cargar modelo** | Loads the model, text encoder, and video/audio VAEs, as safetensors or GGUF. Chains up to four LoRAs and applies VRAM optimizations, sigma shift, and live preview when available. |
 | **Cine con IA · Escena** | Creates H3 conditioning and the audiovisual latent. Accepts up to three reference images and a guide image anchored to a selected frame. A prompt line that starts with `<Picture N>` is left out when that image is not connected. |
 | **Cine con IA · Render** | Runs the first sampling pass with direct controls for steps, sampler, scheduler, seed, and denoise. |
 | **Cine con IA · Escalar y Refinar** | Upscales the video latent with a 3D upscaler and performs a second refinement pass. Includes 3-, 4-, and 5-step profiles and clear out-of-VRAM messages. |
@@ -96,28 +98,14 @@ Some internal identifiers still end in `H3`, such as `CineCargarH3`, `CineEscena
 - The models and VAEs required by the MiniMax H3 workflow.
 - [ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes), recommended for attention/FFN chunking and live preview. The loader continues without these optimizations when KJNodes is unavailable.
 - [Comfyui Minimax H3 Latent Upscaler](https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler), required only by **Escalar y Refinar**.
+- A GGUF loader that supports H3, such as [ComfyUI-GGUF-Loader](https://github.com/ChrisColeTech/ComfyUI-GGUF-Loader), only if you use `.gguf` models (workflow 049).
 - A compatible frame-interpolation model when interpolation is enabled in **Salida**.
 
 The nodes only use Python dependencies already supplied by ComfyUI; this package installs no additional Python libraries.
 
 ## Installation
 
-### ComfyUI-Manager
-
-After the first version is published to the Comfy Registry:
-
-1. Open **Manager** in ComfyUI.
-2. Open **Custom Nodes Manager**.
-3. Search for **Cine con IA**.
-4. Select **Install**, then restart ComfyUI.
-
-It will also be installable through Comfy CLI:
-
-```bash
-comfy node install cine-con-ia
-```
-
-### Git
+### Git (recommended)
 
 Open a terminal in `ComfyUI/custom_nodes` and run:
 
@@ -125,12 +113,32 @@ Open a terminal in `ComfyUI/custom_nodes` and run:
 git clone https://github.com/chaLords/ComfyUI-Cine-con-IA.git
 ```
 
+Restart ComfyUI and look for the **Cine con IA** category.
+
 ### Manual installation
 
-1. Download the repository as a ZIP archive.
+1. Download the ZIP of the [latest release](https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest) (under *Assets*, **Source code (zip)**).
 2. Extract it inside `ComfyUI/custom_nodes`.
-3. Confirm that the final path is `ComfyUI/custom_nodes/ComfyUI-Cine-con-IA/__init__.py`.
+3. Confirm that `__init__.py` sits directly inside that folder, for example `ComfyUI/custom_nodes/ComfyUI-Cine-con-IA/__init__.py`.
 4. Restart ComfyUI and look for the **Cine con IA** category.
+
+### Updating
+
+If you installed with Git, open a terminal in `ComfyUI/custom_nodes/ComfyUI-Cine-con-IA` and run:
+
+```bash
+git pull
+```
+
+If you installed from the ZIP, delete the folder and extract the new release. Either way, restart ComfyUI. What changed in each version is listed in [Releases](https://github.com/chaLords/ComfyUI-Cine-con-IA/releases) and in the [changelog](CHANGELOG.md).
+
+### ComfyUI-Manager and Comfy Registry
+
+The package is registered in the Comfy Registry as `cine-con-ia`, but its versions are still pending review, so the Manager may not list it when you search for **Cine con IA**. Until then, install it with Git or from the ZIP. Once the registry approves it, it will also install with:
+
+```bash
+comfy node install cine-con-ia
+```
 
 ## Recommended workflow
 
@@ -186,6 +194,14 @@ Only an image explicitly used as the first frame fixes the composition at `0.00 
 ### LTX-2.5
 
 Produces a single continuous paragraph and adapts camera terminology to LTX vocabulary. The audio field is appended to the same prompt.
+
+### Workflow 049: MiniMax H3 with GGUF Q4
+
+The [049](examples/049.REALminimax-H3-CineconIA-Selector-GGUF-Q4-v1.json) keeps the 048 and adds **GGUF Q4** to the Selector, next to the official model and Singularity. It starts at 8 draft steps and keeps the references, the refine pass, the output with audio and the Cronómetro.
+
+Save `minimax_h3_ref2va_pruned-Q4_K.gguf` in `models/diffusion_models/minimax/`. **Cargar modelo** detects `.gguf` and hands it to the registered GGUF nodes, also for a GGUF text encoder if you pick one. The 049 keeps the text encoder and VAEs of the 048. H3 needs a compatible loader such as [ComfyUI-GGUF-Loader](https://github.com/ChrisColeTech/ComfyUI-GGUF-Loader); the city96 version that was checked does not recognize its architecture. Install only one implementation of the `UnetLoaderGGUF` and `CLIPLoaderGGUF` nodes to avoid clashes, and restart ComfyUI after installing it.
+
+GGUF Q4 makes the model smaller but does not guarantee a faster render: that depends on the dequantization cost and on how many RAM-to-GPU transfers it saves. Compare with the same scene, seed and steps; there are no measured times for this example yet.
 
 ### Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, and Mochi 1
 

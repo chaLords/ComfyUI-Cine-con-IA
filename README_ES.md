@@ -9,14 +9,16 @@
 <h1 align="center">ComfyUI · Cine con IA</h1>
 
 <p align="center">
-  <strong>Nueve nodos estables y cuatro módulos H3 experimentales para rodar vídeo con IA en local.</strong><br>
-  Proporción y Tamaño • Duración • Prompt • Cargar modelo • Escena • Render • Escalar y Refinar • Salida • Modelos
+  <strong>Nueve nodos estables, tres herramientas de interfaz y cuatro módulos H3 experimentales para rodar vídeo con IA en local.</strong><br>
+  Proporción y Tamaño • Duración • Prompt • Cargar modelo • Escena • Render • Escalar y Refinar • Salida • Modelos<br>
+  Cronómetro • Interruptor • Selector
 </p>
 
 <p align="center">
+  <a href="https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest"><img alt="Última versión" src="https://img.shields.io/github/v/release/chaLords/ComfyUI-Cine-con-IA?style=flat-square&label=versi%C3%B3n&color=e08a3c"></a>
   <a href="LICENSE"><img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-blue?style=flat-square"></a>
   <img alt="ComfyUI 0.34.2 o superior" src="https://img.shields.io/badge/ComfyUI-%E2%89%A5%200.34.2-6b46c1?style=flat-square">
-  <img alt="Nueve nodos estables y cuatro experimentales" src="https://img.shields.io/badge/nodos-9%20%2B%204%20H3-e08a3c?style=flat-square">
+  <img alt="Nueve nodos estables, tres herramientas y cuatro experimentales" src="https://img.shields.io/badge/nodos-9%20%2B%203%20%2B%204%20H3-e08a3c?style=flat-square">
   <img alt="Interfaz en español" src="https://img.shields.io/badge/interfaz-espa%C3%B1ol-2ea043?style=flat-square">
   <a href="https://www.youtube.com/@cineconia.oficial"><img alt="Canal de YouTube" src="https://img.shields.io/badge/youtube-Cine%20con%20IA-red?style=flat-square&logo=youtube&logoColor=white"></a>
   <a href="https://discord.gg/hXKJ78cEua"><img alt="Comunidad en Discord" src="https://img.shields.io/badge/discord-Cine%20con%20IA-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
@@ -54,7 +56,7 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 | **Cine con IA · Proporción y Tamaño** | Calcula ancho y alto desde proporciones de cine, redes sociales o fotografía. Permite trabajar por megapíxeles o lado principal y ajusta el resultado al múltiplo requerido por el modelo. |
 | **Cine con IA · Duración** | Convierte segundos y FPS en una cantidad válida de fotogramas. Incluye la rejilla de MiniMax H3 y ajustes avanzados para otros modelos. |
 | **Cine con IA · Prompt** | Construye y separa prompts específicos para MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5, Mochi 1 o cualquier modelo mediante el modo Libre. |
-| **Cine con IA · Cargar modelo** | Carga el modelo, codificador de texto y VAEs de video/audio. Encadena hasta cuatro LoRAs y aplica optimizaciones de VRAM, sigma shift y vista previa cuando están disponibles. |
+| **Cine con IA · Cargar modelo** | Carga el modelo, codificador de texto y VAEs de video/audio, en safetensors o GGUF. Encadena hasta cuatro LoRAs y aplica optimizaciones de VRAM, sigma shift y vista previa cuando están disponibles. |
 | **Cine con IA · Escena** | Crea el condicionamiento y el latente audiovisual de H3. Acepta hasta tres imágenes de referencia y una imagen guía anclada a un fotograma. Una línea del prompt que empieza por `<Picture N>` se deja fuera si esa imagen no está conectada. |
 | **Cine con IA · Render** | Ejecuta el primer pase de muestreo con controles directos de pasos, sampler, scheduler, semilla y denoise. |
 | **Cine con IA · Escalar y Refinar** | Escala el latente de video con un upscaler 3D y realiza un segundo pase de refinado. Incluye perfiles de 3, 4 y 5 pasos y mensajes claros ante falta de VRAM. |
@@ -98,28 +100,14 @@ Algunos identificadores internos todavía terminan en `H3`, como `CineCargarH3`,
 - Los modelos y VAEs correspondientes al workflow de MiniMax H3.
 - [ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes), recomendado para el troceado de atención/FFN y la vista previa en vivo. Si no está instalado, el nodo continúa sin esas optimizaciones.
 - [Comfyui Minimax H3 Latent Upscaler](https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler), necesario únicamente para **Escalar y Refinar**.
+- Un cargador GGUF compatible con H3, como [ComfyUI-GGUF-Loader](https://github.com/ChrisColeTech/ComfyUI-GGUF-Loader), solo si usas modelos `.gguf` (workflow 049).
 - Un modelo compatible de interpolación de fotogramas si se activa la interpolación en **Salida**.
 
 Las dependencias Python de los nodos son las que ya proporciona ComfyUI; este paquete no instala bibliotecas adicionales.
 
 ## Instalación
 
-### ComfyUI-Manager
-
-Una vez publicada la primera versión en Comfy Registry:
-
-1. Abre **Manager** en ComfyUI.
-2. Entra en **Custom Nodes Manager**.
-3. Busca **Cine con IA**.
-4. Pulsa **Install** y reinicia ComfyUI.
-
-También se podrá instalar con Comfy CLI:
-
-```bash
-comfy node install cine-con-ia
-```
-
-### Con Git
+### Con Git (recomendado)
 
 Abre una terminal en `ComfyUI/custom_nodes` y ejecuta:
 
@@ -127,12 +115,32 @@ Abre una terminal en `ComfyUI/custom_nodes` y ejecuta:
 git clone https://github.com/chaLords/ComfyUI-Cine-con-IA.git
 ```
 
+Reinicia ComfyUI y busca la categoría **Cine con IA**.
+
 ### Instalación manual
 
-1. Descarga el repositorio como archivo ZIP.
+1. Descarga el ZIP de la [última versión](https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest) (en *Assets*, **Source code (zip)**).
 2. Descomprime la carpeta dentro de `ComfyUI/custom_nodes`.
-3. Comprueba que la ruta final sea `ComfyUI/custom_nodes/ComfyUI-Cine-con-IA/__init__.py`.
+3. Comprueba que el archivo `__init__.py` quede directamente dentro de esa carpeta, por ejemplo `ComfyUI/custom_nodes/ComfyUI-Cine-con-IA/__init__.py`.
 4. Reinicia ComfyUI y busca la categoría **Cine con IA**.
+
+### Actualizar
+
+Si lo instalaste con Git, abre una terminal en `ComfyUI/custom_nodes/ComfyUI-Cine-con-IA` y ejecuta:
+
+```bash
+git pull
+```
+
+Si lo instalaste con el ZIP, borra la carpeta y descomprime la versión nueva. En los dos casos reinicia ComfyUI. Las novedades de cada versión están en [Releases](https://github.com/chaLords/ComfyUI-Cine-con-IA/releases) y en el [historial de cambios](CHANGELOG_ES.md).
+
+### ComfyUI-Manager y Comfy Registry
+
+El paquete está registrado en Comfy Registry con el id `cine-con-ia`, pero sus versiones siguen pendientes de revisión, así que puede que el Manager no lo muestre al buscar **Cine con IA**. Mientras tanto, instálalo con Git o con el ZIP. Cuando el registro lo apruebe también se podrá instalar con:
+
+```bash
+comfy node install cine-con-ia
+```
 
 ## Flujo recomendado
 
@@ -282,6 +290,6 @@ Publicado bajo la [licencia MIT](LICENSE). Puedes usar, modificar y redistribuir
 
 Las catorce recetas de cámara para MiniMax H3 reproducen palabra por palabra las frases publicadas por Loop Forge. Ese trabajo tiene licencia MIT, Copyright (c) 2026 Loop Forge, y su aviso y el texto de la licencia se conservan en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), junto con las guías de MiniMax que sigue el formato de prompt de este nodo.
 
-## Laboratorio H3 modular (rama de desarrollo)
+## Laboratorio H3 modular
 
-Prompt simple de una caja, director visual de cámara y optimizador de VRAM: [cambios y uso](docs/H3_MODULAR_V2_ES.md). Workflow de prueba: [039 H3 Modular v2](examples/039.REALminimax-H3-Modular-v2.json). Los perfiles requieren calibración con renders; esta rama no es un release del Registry.
+Prompt simple de una caja, director visual de cámara y optimizador de VRAM: [cambios y uso](docs/H3_MODULAR_V2_ES.md). Workflow de prueba: [039 H3 Modular v2](examples/039.REALminimax-H3-Modular-v2.json). Los perfiles requieren calibración con renders.

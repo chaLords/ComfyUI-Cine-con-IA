@@ -10,11 +10,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 
 ## [Sin publicar]
 
+## [1.6.0] - 2026-09-27
+
 ### Añadido
 
 - **Cargar modelo** admite modelos y codificadores GGUF mediante los cargadores GGUF registrados. Mantiene la carga nativa de safetensors y los parches, LoRA y VAE existentes. Los fallos del cargador GGUF conservan su causa.
 - Workflow **049**: conserva el 048 y añade MiniMax H3 Ref2VA GGUF Q4 como tercera opción del Selector. Usa el codificador de texto existente y arranca en 8 pasos de borrador.
-
 - **Interruptor**, un nodo del navegador: lista los grupos cuyo título empieza por un prefijo ("RAMA" por defecto) y deja encendido solo uno. Los demás pasan a bypass (violeta) y no se ejecutan. Reemplaza al Fast Groups Bypasser de rgthree-comfy en los workflows del paquete.
 - Workflow de ejemplo 046: el 045 con el Interruptor propio, sin rgthree-comfy. El 045 queda como estaba.
 - Workflow de ejemplo 047: el modelo ref2va oficial contra Singularity v1.3 con la misma semilla, a 0.50 MP (704×1184 al final) y en plano medio corto para dar más definición a la cara. Cada rama carga solo su modelo.
@@ -28,6 +29,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 - **Cronómetro**: cada corrida guarda también las LoRA y su fuerza, si el modo progresivo se aplicó de verdad, el refinado (escala y pasos) y la semilla, y reconoce el modelo de cualquier cargador (UNET, GGUF o checkpoint: Wan, LTX, Hunyuan y otros), no solo del Cargar modelo H3. La lista muestra modelo, pasos, LoRA, progresivo y resolución, con el total siempre visible a la derecha; la línea bajo el reloj muestra el resto (sampler, refinado, semilla, Selector). *Copiar tabla* suma las columnas lora, progresivo, refinado y semilla.
 - **Cronómetro**: guarda las últimas 20 corridas con el modelo, los pasos, el sampler, la resolución final, la duración y lo que marcaban el Interruptor o el Selector. Un clic en una corrida muestra su desglose por nodo, y *Copiar tabla* copia el historial para pegarlo en una hoja de cálculo. La cápsula de la cabecera ya no se queda en "EN CURSO" cuando la corrida terminó.
 - **Escena**: si el prompt trae una línea que empieza por `<Picture N>` y esa imagen no está conectada, esa línea no se envía. Así un workflow puede traer escrita la línea de una referencia opcional y basta con encenderla o apagarla.
+- **README**: la instalación recomendada pasa a ser Git o el ZIP de la última Release, con una sección para actualizar (`git pull`). El Manager queda como opción para cuando Comfy Registry apruebe el paquete. Una insignia muestra la versión publicada.
 
 ### Corregido
 

@@ -10,8 +10,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-09-27
+
 ### Added
 
+- **Cargar modelo** accepts GGUF models and text encoders through the registered GGUF loaders. Native safetensors loading and the existing patches, LoRAs and VAEs stay as they were. GGUF loader failures keep their cause.
+- Workflow **049**: keeps the 048 and adds MiniMax H3 Ref2VA GGUF Q4 as a third Selector option. It uses the existing text encoder and starts at 8 draft steps.
 - **Interruptor**, a browser-only node: it lists the groups whose title starts with a prefix ("RAMA" by default) and keeps only one of them on. The others go to bypass (purple) and do not run. It replaces rgthree-comfy's Fast Groups Bypasser in the pack's workflows.
 - Example workflow 046: the 045 with the pack's own Interruptor, without rgthree-comfy. The 045 stays as it was.
 - Example workflow 047: the official ref2va model against Singularity v1.3 with the same seed, at 0.50 MP (704×1184 at the end) and in a close medium shot to give the face more definition. Each branch loads only its own model.
@@ -25,9 +29,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **Cronómetro**: each run also records the LoRAs and their strength, whether the progressive mode was really applied, the refine pass (scale and steps) and the seed, and it recognises the model of any loader (UNET, GGUF or checkpoint, for Wan, LTX, Hunyuan and others), not only Load Model H3. The list shows model, steps, LoRA, progressive and resolution, with the total always visible on the right; the line under the clock shows the rest (sampler, refine, seed, Selector). *Copiar tabla* adds the lora, progresivo, refinado and semilla columns.
 - **Cronómetro**: keeps the last 20 runs with the model, steps, sampler, final resolution, duration and what the Interruptor or the Selector were set to. Clicking a run shows its per-node breakdown, and *Copiar tabla* copies the history to paste into a spreadsheet. The header capsule no longer stays on "EN CURSO" after the run has finished.
 - **Escena**: when the prompt has a line that starts with `<Picture N>` and that image is not connected, the line is not sent. A workflow can carry the line of an optional reference already written, and turning the image on or off is enough.
+- **README**: the recommended install is now Git or the ZIP of the latest Release, with a section on updating (`git pull`). The Manager stays as an option for when the Comfy Registry approves the package. A badge shows the published version.
 
 ### Fixed
 
+- **Cronómetro**: no longer logs a refine pass or raises the recorded resolution when **Escalar y Refinar** is bypassed, switched off or missing, even if the Optimizer has refining enabled. The fix applies to new runs.
 - **Escalar y Refinar** no longer passes the latent through silently when the H3 latent upscaler (the Comfyui Minimax H3 Latent Upscaler pack) is missing. The video used to come out at first-pass size and the node seemed to do nothing; now it stops and says what to install. If the upscaler fails, it shows the real error (for example, running out of VRAM or a model it cannot find).
 - The node's info panel warns before running when that upscaler is not installed.
 - With the side parameters panel open, the Cronómetro, the Interruptor and the Selector are no longer drawn squeezed into half of the node, and their clicks no longer land on the wrong button.
