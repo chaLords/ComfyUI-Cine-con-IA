@@ -189,6 +189,14 @@ Solo una imagen indicada expresamente como primer fotograma fija la composición
 
 Produce un único párrafo continuo y adapta la terminología de cámara al vocabulario de LTX. El campo de audio se añade al final del mismo prompt.
 
+### Workflow 049: MiniMax H3 con GGUF Q4
+
+El [049](examples/049.REALminimax-H3-CineconIA-Selector-GGUF-Q4-v1.json) conserva el 048 y suma **GGUF Q4** al Selector, junto al modelo oficial y Singularity. Arranca en 8 pasos de borrador; mantiene las referencias, el refinado, la salida con audio y el Cronómetro.
+
+Guarda `minimax_h3_ref2va_pruned-Q4_K.gguf` en `models/diffusion_models/minimax/`. **Cargar modelo** detecta `.gguf` y delega en los nodos GGUF registrados, también para un codificador de texto GGUF si se elige uno. El 049 conserva el codificador y los VAE del 048. Para H3 hace falta un cargador compatible, como [ComfyUI-GGUF-Loader](https://github.com/ChrisColeTech/ComfyUI-GGUF-Loader); la versión de city96 revisada no reconoce su arquitectura. Usa una sola implementación de los nodos `UnetLoaderGGUF` y `CLIPLoaderGGUF` para evitar colisiones, y reinicia ComfyUI tras instalarla.
+
+GGUF Q4 reduce el peso del modelo, pero no garantiza menor tiempo de render: depende del coste de descompresión y de cuántas transferencias entre RAM y GPU evite. Compara con la misma escena, semilla y pasos; no hay tiempos medidos para este ejemplo.
+
 ### Wan 2.2, HunyuanVideo 1.5, CogVideoX 1.5 y Mochi 1
 
 Cada modelo tiene su propia pestaña y una guía distinta para conversar con una IA. El flujo previsto es:

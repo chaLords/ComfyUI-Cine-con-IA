@@ -114,15 +114,19 @@ function grafo(config, extra = {}) {
 }
 const CONFIG = {steps: 20, sampler: 'res_multistep', scheduler: 'simple', width: 544, height: 928,
   frames: 124, refine: true, refine_scale: 1.27};
+// Refinado conectado al Optimizador, como en los workflows 047/048/049.
+const refinador = (mode = 0) => ({type: 'CineEscalarRefinar', mode,
+  inputs: [{name: 'activar', link: 49}, {name: 'escala', link: 50}, {name: 'pasos', link: 51}]});
 
 test('cada corrida sabe con qué se hizo', () => {
   const {fn} = setup();
-  const d = plano(fn('detalleCorrida')(grafo(CONFIG)));
+  const g = grafo(CONFIG, {nodos: [refinador()]});
+  const d = plano(fn('detalleCorrida')(g));
   assert.deepEqual(d, {modelo: 'Singularity Ref2VA v1.3', archivo: 'Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors',
     pasos: 20, sampler: 'res_multistep', scheduler: 'simple', resolucion: '704×1184', segundos: 5.2,
     loras: [], refinado: '×1.27', rama: 'Singularity v1.3 · 20 · final'});
   // la config que manda el servidor manda sobre la vista previa
-  const d2 = plano(fn('detalleCorrida')(grafo(CONFIG), {...CONFIG, steps: 8, sampler: 'er_sde', refine: false}));
+  const d2 = plano(fn('detalleCorrida')(g, {...CONFIG, steps: 8, sampler: 'er_sde', refine: false}));
   assert.equal(d2.pasos, 8);
   assert.equal(d2.resolucion, '544×928');
   assert.equal(d2.refinado, 'no');
@@ -133,7 +137,7 @@ test('el historial guarda el detalle y el desglose por nodo, y se copia como tab
   const M = fn('Medidor'); const m = new M(id => ({1: '06 · Render', 2: '07 · Escalar'})[id]);
   m.empezar(0); m.ejecutando(0, '1'); m.ejecutando(654000, '2');
   const r = m.terminar(866000, 'listo');
-  const d = fn('detalleCorrida')(grafo(CONFIG));
+  const d = fn('detalleCorrida')(grafo(CONFIG, {nodos: [refinador()]}));
   const e = fn('entradaHistorial')(r, [], new Date(2026, 8, 26, 13, 57), d);
   assert.equal(fn('textoHistorial')(e), '26/09 13:57 · Singularity Ref2VA v1.3 · 20p · 704×1184 · 14:26');
   assert.deepEqual(plano(e.tramos), [{titulo: '06 · Render', ms: 654000}, {titulo: '07 · Escalar', ms: 212000}]);
@@ -262,6 +266,28 @@ test('el progresivo que no se aplicó y el refinado apagado quedan dichos', () =
   const e = fn('entradaHistorial')({estado: 'listo', total: 1000}, [], new Date(2026, 8, 27, 9, 5), d);
   assert.ok(fn('textoHistorial')(e).includes(' · 20p · progresivo no aplicó · 544×928 · '));
   assert.ok(fn('lineaDetalle')(d).includes('sin LoRA · progresivo no aplicó · sin refinado'));
+});
+
+test('un refinador omitido, desactivado o ausente no aumenta la resolución del registro', () => {
+  const {fn} = setup();
+  const config = {...CONFIG, steps: 4, sampler: 'euler', refine_steps: '3 pasos',
+    progressive: {requested: true, enabled: true, transition_step: 3, steps: 4}};
+  for (const nodos of [[refinador(4)], [refinador(2)], []]) {
+    // Tanto la vista previa como la respuesta del servidor pueden pedir
+    // refinado aunque el nodo real no se ejecute.
+    const g = grafo(config, {nodos});
+    for (const c of [null, config]) {
+      const d = plano(fn('detalleCorrida')(g, c));
+      assert.equal(d.refinado, 'no');
+      assert.equal(d.resolucion, '544×928');
+      assert.equal(d.pasos, 4);
+      assert.equal(d.progresivo_paso, '3/4');
+      const e = fn('entradaHistorial')({estado: 'listo', total: 619000}, [], new Date(2026, 8, 27, 16, 18), d);
+      const fila = plano(fn('filaRegistro')(e));
+      assert.equal(fila.refinado, 'no');
+      assert.equal(fila.resolucion, '544×928');
+    }
+  }
 });
 
 test('una semilla que cambia sola no se anota como si fuera la usada', () => {

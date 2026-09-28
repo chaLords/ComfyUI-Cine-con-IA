@@ -443,10 +443,11 @@ export function detalleCorrida(graph, config = null) {
   const c = config || deClase("CineH3Optimizer")?.__h3Preview?.config;
   const render = deClase("CineRenderH3");
   const refinar = deClase("CineEscalarRefinar");
-  // Manda el Escalar y refinar si está en el grafo; lo que le llega por cable
-  // sale del Optimizador, y entonces vale lo que dice su config.
+  // Solo cuenta un Escalar y refinar activo. La config del Optimizador puede
+  // pedir refinado aunque el nodo esté omitido o apagado en el grafo.
+  // Cuando le llega por cable, el valor sale de esa config.
   const deRefinar = (name, clave) => (c && entradaCon(refinar, name) ? c[clave] : valorWidget(refinar, name));
-  const refina = refinar ? deRefinar("activar", "refine") !== false : Boolean(c?.refine);
+  const refina = Boolean(refinar) && deRefinar("activar", "refine") !== false;
   const escala = Number(refinar ? deRefinar("escala", "refine_scale") : c?.refine_scale) || 1;
   if (c) {
     d.pasos = c.steps; d.sampler = c.sampler; d.scheduler = c.scheduler;

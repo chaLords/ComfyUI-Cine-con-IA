@@ -1014,9 +1014,27 @@ FALTA_ESCALADOR = (
 def _lista(carpeta):
     try:
         import folder_paths
-        return folder_paths.get_filename_list(carpeta)
+        archivos = folder_paths.get_filename_list(carpeta)
+        gguf = {"diffusion_models": "unet_gguf", "text_encoders": "clip_gguf"}.get(carpeta)
+        if gguf and gguf in folder_paths.folder_names_and_paths:
+            archivos = sorted(set(archivos) | set(folder_paths.get_filename_list(gguf)))
+        return archivos
     except Exception:
         return []
+
+
+def _cargar_gguf(node_id, **kwargs):
+    """Delega la cuantizacion y el offload al cargador GGUF registrado."""
+    import nodes as comfy_nodes
+    cls = comfy_nodes.NODE_CLASS_MAPPINGS.get(node_id)
+    if cls is None:
+        raise RuntimeError(
+            "Falta el cargador GGUF. Para MiniMax H3 instala "
+            "https://github.com/ChrisColeTech/ComfyUI-GGUF-Loader "
+            "y reinicia ComfyUI.")
+    # A diferencia de los parches opcionales, un fallo al cargar debe detenerse
+    # y conservar su causa (archivo incompatible, falta de memoria, etc.).
+    return _desenvolver(getattr(cls(), cls.FUNCTION)(**kwargs))
 
 
 # ---------------------------------------------------------------------------
@@ -1237,7 +1255,7 @@ class CineCargarH3:
     RETURN_NAMES = ("model", "clip", "vae_video", "vae_audio", "info")
     FUNCTION = "cargar"
     CATEGORY = CATEGORY
-    DESCRIPTION = "Modelo + codificador + VAE de video y audio, con el troceo de FFN y atencion ya aplicado."
+    DESCRIPTION = "Modelo (safetensors o GGUF) + codificador + VAE de video y audio, con el troceo de FFN y atencion ya aplicado. GGUF requiere un cargador compatible con la familia elegida."
 
     @classmethod
     def VALIDATE_INPUTS(cls, lora_fuerza=None, lora_fuerza_2=None,
@@ -1273,8 +1291,12 @@ class CineCargarH3:
             notas.append("perfil {}".format(nombre_perfil))
 
         # --- modelo
-        ruta = folder_paths.get_full_path_or_raise("diffusion_models", modelo)
-        model = comfy.sd.load_diffusion_model(ruta, model_options={})
+        if modelo.lower().endswith(".gguf"):
+            model = _cargar_gguf("UnetLoaderGGUF", unet_name=modelo)
+            notas.append("modelo GGUF")
+        else:
+            ruta = folder_paths.get_full_path_or_raise("diffusion_models", modelo)
+            model = comfy.sd.load_diffusion_model(ruta, model_options={})
 
         # --- LoRAs opcionales, en cadena y por orden, antes de los parches
         # para que estos envuelvan el modelo ya modificado. El orden importa:
@@ -1302,13 +1324,18 @@ class CineCargarH3:
             notas.append("LoRA: " + " -> ".join(cadena))
 
         # --- codificador de texto, en el modo que pida la familia
-        ruta_clip = folder_paths.get_full_path_or_raise("text_encoders", codificador_texto)
-        clip = comfy.sd.load_clip(
-            ckpt_paths=[ruta_clip],
-            embedding_directory=folder_paths.get_folder_paths("embeddings"),
-            clip_type=_tipo_clip(p["clip"]),
-            model_options={},
-        )
+        if codificador_texto.lower().endswith(".gguf"):
+            clip = _cargar_gguf("CLIPLoaderGGUF", clip_name=codificador_texto,
+                                type=p["clip"].lower())
+            notas.append("codificador GGUF")
+        else:
+            ruta_clip = folder_paths.get_full_path_or_raise("text_encoders", codificador_texto)
+            clip = comfy.sd.load_clip(
+                ckpt_paths=[ruta_clip],
+                embedding_directory=folder_paths.get_folder_paths("embeddings"),
+                clip_type=_tipo_clip(p["clip"]),
+                model_options={},
+            )
 
         # --- VAE. El de audio solo lo abre H3: cargar un segundo VAE que
         # nadie va a usar cuesta RAM para nada. En las familias sin audio la
