@@ -873,7 +873,8 @@ function montarDirector(node) {
   addTarjetas(node, "angulo", "02 · ángulo · desde dónde miras", ANGULOS_VISUALES, "angles");
   addTarjetas(node, "movimiento", "03 · movimientos frecuentes", CAMINOS, false);
   const labels = {movimiento: "Movimiento · lista completa", angulo: "Ángulo · lista completa", intensidad: "Intensidad / velocidad",
-    lente: "Lente", profundidad_campo: "Fondo / profundidad", instruccion_camara: "Receta o instrucciones de cámara", reglas_continuidad: "Mantener continuidad"};
+    lente: "Lente", profundidad_campo: "Fondo / profundidad", instruccion_camara: "Receta o instrucciones de cámara", reglas_continuidad: "Mantener continuidad",
+    perfil_modelo: "Perfil interno · no carga pesos"};
   for (const w of node.widgets) if (labels[w.name]) w.label = labels[w.name];
   const recipe = node.addWidget("combo", "Recetas H3 · elegir", "libre", () => {},
     {values: TOMAS_H3.map(r => r[1]), serialize: false});

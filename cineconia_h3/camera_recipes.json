@@ -1,0 +1,306 @@
+{
+  "schema": "cineconia.camera-recipes/v1",
+  "updated": "2026-10-01",
+  "default_recipe": "minimax_h3",
+  "recipes": {
+    "minimax_h3": {
+      "display_name": "MiniMax H3",
+      "version": "2026.10.01",
+      "evidence": "probada por Cine con IA",
+      "status": "probada",
+      "source": "https://github.com/MiniMax-AI/MiniMax-H3",
+      "aliases": ["MiniMax H3", "H3", "MiniMax H3 Ref2VA"],
+      "prompt6": {
+        "shots": [
+          ["sin especificar", ""],
+          ["primerisimo primer plano", "an extreme close-up"],
+          ["primer plano", "a close-up"],
+          ["plano medio corto", "a close shot"],
+          ["plano medio", "a medium shot"],
+          ["plano americano", "a medium-wide shot"],
+          ["plano general", "a wide shot"],
+          ["gran plano general", "an extreme wide shot"]
+        ],
+        "angles": [
+          ["sin especificar", ""],
+          ["altura de los ojos", "the camera at the subject's eye level"],
+          ["contrapicado", "the camera below the subject, looking up at them"],
+          ["picado", "the camera above the subject, looking down at them"],
+          ["cenital", "the camera directly overhead, looking straight down"],
+          ["tres cuartos", "the camera about forty-five degrees off the subject's front"],
+          ["sobre el hombro", "the camera just behind and beside the subject's shoulder, looking past it"]
+        ],
+        "movements": [
+          ["sin especificar", ""],
+          ["fijo", "holds a static shot for the entire shot"],
+          ["acercarse", "pushes in toward the subject"],
+          ["alejarse", "pulls out away from the subject"],
+          ["zoom in", "zooms in on the subject"],
+          ["zoom out", "zooms out from the subject"],
+          ["panoramica izquierda", "pans left"],
+          ["panoramica derecha", "pans right"],
+          ["inclinar arriba", "tilts up"],
+          ["inclinar abajo", "tilts down"],
+          ["lateral izquierda", "trucks left"],
+          ["lateral derecha", "trucks right"],
+          ["grua arriba", "pedestals up"],
+          ["grua abajo", "pedestals down"],
+          ["orbita", "arcs around the subject; the subject's body keeps facing its original direction while the background slides behind them with visible parallax"],
+          ["seguimiento", "follows the subject in a tracking shot"],
+          ["camara en mano", "shakes slightly, handheld"],
+          ["punto de vista", "takes the point of view of the subject"],
+          ["giro de horizonte", "rolls clockwise"],
+          ["giro antihorario", "rolls counterclockwise"],
+          ["camara en mano fuerte", "shakes strongly, handheld"]
+        ],
+        "intensities": [
+          ["normal", ""],
+          ["suave", "with small amplitude at slow speed"],
+          ["amplia y lenta", "with large amplitude at slow speed"],
+          ["marcada", "with large amplitude at fast speed"]
+        ],
+        "inline_shots": {
+          "sin especificar": "",
+          "primerisimo primer plano": "extreme close-up",
+          "primer plano": "close-up",
+          "plano medio corto": "close shot",
+          "plano medio": "medium shot",
+          "plano americano": "medium-wide shot",
+          "plano general": "wide shot",
+          "gran plano general": "extreme wide shot"
+        },
+        "templates": {
+          "shot_angle": "The shot is framed as {shot}, with {angle}.",
+          "shot": "The shot is framed as {shot}.",
+          "angle": "The shot is filmed with {angle}."
+        }
+      },
+      "director": {
+        "shots": {
+          "sin especificar": "",
+          "primerisimo primer plano": "an extreme close-up",
+          "primer plano": "a close-up",
+          "plano medio corto": "a close shot",
+          "plano medio": "a medium shot",
+          "plano americano": "a medium-wide shot",
+          "plano general": "a wide shot",
+          "gran plano general": "an extreme wide shot"
+        },
+        "angles": {
+          "sin especificar": "",
+          "frontal": "directly in front of the subject, looking straight at them",
+          "perfil": "at the subject's side, about ninety degrees off their front, showing a side profile",
+          "altura de los ojos": "at the subject's eye level",
+          "contrapicado": "below the subject, looking up",
+          "picado": "above the subject, looking down",
+          "cenital": "directly overhead, looking straight down",
+          "tres cuartos": "about forty-five degrees to one side of the subject's front, showing a three-quarter view of their face and body",
+          "sobre el hombro": "just behind the subject's shoulder"
+        },
+        "movements": {
+          "sin especificar": "",
+          "fijo": "holds a static shot for the entire shot",
+          "acercarse": "pushes in toward the subject",
+          "alejarse": "pulls out away from the subject",
+          "zoom in": "zooms in on the subject",
+          "zoom out": "zooms out from the subject",
+          "panoramica izquierda": "pans left",
+          "panoramica derecha": "pans right",
+          "inclinar arriba": "tilts up",
+          "inclinar abajo": "tilts down",
+          "lateral izquierda": "trucks left",
+          "lateral derecha": "trucks right",
+          "grua arriba": "pedestals up",
+          "grua abajo": "pedestals down",
+          "orbita": "arcs around the subject; the subject's body keeps facing its original direction while the background slides behind them with visible parallax",
+          "seguimiento": "follows the subject in a tracking shot",
+          "punto de vista": "takes the point of view of the subject",
+          "giro de horizonte": "rolls clockwise",
+          "giro antihorario": "rolls counterclockwise",
+          "camara en mano fuerte": "shakes strongly, handheld",
+          "camara en mano": "moves with a slight handheld shake"
+        },
+        "intensities": {
+          "normal": "",
+          "suave": "with small amplitude at slow speed",
+          "amplia y lenta": "with large amplitude at slow speed",
+          "marcada": "with large amplitude at fast speed"
+        },
+        "lenses": ["sin especificar", "14 mm", "24 mm", "35 mm", "50 mm", "85 mm", "135 mm", "200 mm"],
+        "depth": {
+          "sin especificar": "",
+          "profunda": "deep depth of field",
+          "natural": "natural depth of field",
+          "reducida": "shallow depth of field",
+          "muy reducida": "very shallow depth of field"
+        },
+        "templates": {
+          "shot_angle": "The shot is framed as {shot}, with the camera {angle}.",
+          "shot": "The shot is framed as {shot}.",
+          "angle": "The camera is {angle}.",
+          "movement": "The camera {movement}{intensity}.",
+          "lens": "The image uses a {lens} lens.",
+          "depth": "The shot has {depth}."
+        }
+      }
+    },
+    "ltx_2_5": {
+      "display_name": "LTX-2.5",
+      "version": "2026.10.01",
+      "evidence": "documentación oficial; sin prueba GPU de Cine con IA",
+      "status": "sin probar",
+      "source": "https://docs.ltx.io/open-source-model/usage-guides/prompting-guide",
+      "aliases": ["LTX-2.5", "LTX 2.5", "LTX Video 2.5"],
+      "prompt6": {
+        "shots": {
+          "sin especificar": "",
+          "primerisimo primer plano": "an extreme close-up",
+          "primer plano": "a close-up",
+          "plano medio corto": "a tight cinematic close-up",
+          "plano medio": "a medium shot",
+          "plano americano": "a medium wide shot",
+          "plano general": "a wide shot",
+          "gran plano general": "a wide establishing shot"
+        },
+        "angles": {
+          "sin especificar": "",
+          "altura de los ojos": "at the subject's eye level",
+          "contrapicado": "looking up at the subject from below",
+          "picado": "looking down at the subject from above",
+          "cenital": "an overhead view looking straight down",
+          "tres cuartos": "at a three-quarter angle to the subject",
+          "sobre el hombro": "an over-the-shoulder shot"
+        },
+        "movements": {
+          "sin especificar": "",
+          "fijo": "holds a static frame",
+          "acercarse": "pushes in toward the subject",
+          "alejarse": "pulls back from the subject",
+          "zoom in": "zooms in on the subject",
+          "zoom out": "zooms out from the subject",
+          "panoramica izquierda": "pans left",
+          "panoramica derecha": "pans right",
+          "inclinar arriba": "tilts up",
+          "inclinar abajo": "tilts down",
+          "lateral izquierda": "dollies left",
+          "lateral derecha": "dollies right",
+          "grua arriba": "cranes up",
+          "grua abajo": "cranes down",
+          "orbita": "circles around the subject, keeping them in frame while the background sweeps past",
+          "seguimiento": "tracks the subject in handheld style",
+          "camara en mano": "moves with a handheld feel",
+          "punto de vista": "takes the subject's point of view",
+          "giro de horizonte": "rolls slowly around the lens axis"
+        },
+        "inline_shots": {
+          "sin especificar": "",
+          "primerisimo primer plano": "extreme close-up",
+          "primer plano": "close-up",
+          "plano medio corto": "tight cinematic close-up",
+          "plano medio": "medium shot",
+          "plano americano": "medium wide shot",
+          "plano general": "wide shot",
+          "gran plano general": "wide establishing shot"
+        },
+        "templates": {
+          "shot_angle": "The shot opens on {shot} {angle}.",
+          "shot": "The shot opens on {shot}.",
+          "angle": "The shot is filmed {angle}.",
+          "movement": "The camera {movement}."
+        }
+      },
+      "director": {
+        "shots_from": "prompt6.shots",
+        "angles": {
+          "sin especificar": "",
+          "frontal": "directly in front of the subject, looking straight at them",
+          "perfil": "at the subject's side, showing a side profile",
+          "altura de los ojos": "at the subject's eye level",
+          "contrapicado": "looking up at the subject from below",
+          "picado": "looking down at the subject from above",
+          "cenital": "an overhead view looking straight down",
+          "tres cuartos": "at a three-quarter angle to the subject",
+          "sobre el hombro": "an over-the-shoulder shot"
+        },
+        "movements": {
+          "sin especificar": "",
+          "fijo": "holds a static frame",
+          "acercarse": "dollies in toward the subject",
+          "alejarse": "dollies out away from the subject",
+          "zoom in": "zooms in on the subject",
+          "zoom out": "zooms out from the subject",
+          "panoramica izquierda": "pans left",
+          "panoramica derecha": "pans right",
+          "inclinar arriba": "tilts up",
+          "inclinar abajo": "tilts down",
+          "lateral izquierda": "dollies left",
+          "lateral derecha": "dollies right",
+          "grua arriba": "cranes up",
+          "grua abajo": "cranes down",
+          "orbita": "circles around the subject, keeping them in frame while the background sweeps past",
+          "seguimiento": "tracks the subject in handheld style",
+          "punto de vista": "takes the subject's point of view",
+          "giro de horizonte": "rolls clockwise around the lens axis",
+          "giro antihorario": "rolls counterclockwise around the lens axis",
+          "camara en mano fuerte": "moves with strong handheld shake",
+          "camara en mano": "moves with a handheld feel"
+        },
+        "intensities_from": "minimax_h3.director.intensities",
+        "lenses_from": "minimax_h3.director.lenses",
+        "depth_from": "minimax_h3.director.depth",
+        "templates": {
+          "shot_angle": "The shot opens on {shot} {angle}.",
+          "shot": "The shot opens on {shot}.",
+          "angle": "The shot is filmed {angle}.",
+          "movement": "The camera {movement}{intensity}.",
+          "lens": "The image uses a {lens} lens.",
+          "depth": "The shot has {depth}."
+        }
+      }
+    },
+    "wan_2_2": {
+      "display_name": "Wan 2.2",
+      "version": "2026.10.01",
+      "evidence": "SUPUESTO: el repositorio oficial no publica una tabla de vocabulario de cámara",
+      "status": "experimental",
+      "source": "https://github.com/Wan-Video/Wan2.2",
+      "aliases": ["Wan 2.2", "Wan2.2", "Wan"],
+      "inherits": "minimax_h3",
+      "warning": "Wan 2.2 usa por ahora la receta genérica en inglés; combinación sin probar"
+    },
+    "hunyuan_1_5": {
+      "display_name": "Hunyuan 1.5",
+      "version": "2026.10.01",
+      "evidence": "documentación oficial; sin prueba GPU de Cine con IA",
+      "status": "sin probar",
+      "source": "https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/blob/main/assets/HunyuanVideo_1_5_Prompt_Handbook_EN.md",
+      "aliases": ["Hunyuan 1.5", "HunyuanVideo 1.5", "HunyuanVideo-1.5"],
+      "inherits": "minimax_h3",
+      "director_overrides": {
+        "movements": {
+          "sin especificar": "",
+          "fijo": "remains static",
+          "acercarse": "moves forward toward the subject",
+          "alejarse": "moves back away from the subject",
+          "zoom in": "zooms in on the subject",
+          "zoom out": "zooms out from the subject",
+          "panoramica izquierda": "pans to the left",
+          "panoramica derecha": "pans to the right",
+          "inclinar arriba": "tilts up",
+          "inclinar abajo": "tilts down",
+          "lateral izquierda": "moves to the left",
+          "lateral derecha": "moves to the right",
+          "grua arriba": "moves upward",
+          "grua abajo": "moves downward",
+          "orbita": "circles around the subject",
+          "seguimiento": "follows the subject",
+          "punto de vista": "takes the subject's point of view",
+          "giro de horizonte": "rotates clockwise",
+          "giro antihorario": "rotates counterclockwise",
+          "camara en mano fuerte": "moves with strong handheld shake",
+          "camara en mano": "moves with a handheld feel"
+        }
+      }
+    }
+  }
+}

@@ -243,12 +243,94 @@ class ModelProfileTests(unittest.TestCase):
                                           "qwen3vl.safetensors", "a", "b")
         self.assertEqual(resolved, "LTX-2.5")
 
-    def test_the_profile_widget_is_the_last_one_saved(self):
-        # Los valores se guardan por posicion: si 'perfil' deja de ser el
-        # ultimo, cualquier workflow guardado antes se lee descolocado.
+    def test_new_loader_fields_are_appended_after_the_historical_ones(self):
+        # Los valores se guardan por posición. El prefijo histórico termina
+        # en perfil; acelerador y archivos solo pueden añadirse después.
         spec = NODES.CineCargarH3.INPUT_TYPES()
-        self.assertEqual(list(spec["optional"])[-1], "perfil")
+        self.assertEqual(list(spec["optional"]), [
+            "lora_2", "lora_fuerza_2", "lora_3", "lora_fuerza_3",
+            "lora_4", "lora_fuerza_4", "perfil",
+            "acelerador", "acc_lora", "vdn_lora",
+        ])
         self.assertNotIn("perfil", spec["required"])
+
+    def test_accelerator_off_is_an_exact_noop(self):
+        model = object()
+        result, note = NODES._aplicar_acelerador(
+            model, "Sin acelerador", "ninguno", "ninguno",
+            "minimax_h3_ref2va.safetensors", 6, 3)
+        self.assertIs(result, model)
+        self.assertEqual(note, "sin acelerador")
+
+    def test_acc_pdd_uses_the_real_deno_loader(self):
+        calls = []
+
+        class Deno:
+            FUNCTION = "apply"
+            def apply(self, **kwargs):
+                calls.append(kwargs)
+                return ("acc-model",)
+
+        comfy = SimpleNamespace(NODE_CLASS_MAPPINGS={"DenoMiniMaxH3AccLoader": Deno})
+        with patch.dict(sys.modules, {"nodes": comfy}):
+            result, note = NODES._aplicar_acelerador(
+                "base", "Alibaba MiniMax-H3 Acc/PDD 8 pasos",
+                "h3_acc_lora.safetensors", "ninguno",
+                "minimax_h3_ref2va.safetensors", 12, 3)
+        self.assertEqual(result, "acc-model")
+        self.assertEqual(calls, [{"model": "base", "acc_lora": "h3_acc_lora.safetensors"}])
+        self.assertIn("Acc/PDD", note)
+
+    def test_vdn_uses_lora_loader_at_strength_one(self):
+        calls = []
+
+        class Lora:
+            FUNCTION = "load"
+            def load(self, **kwargs):
+                calls.append(kwargs)
+                return ("vdn-model",)
+
+        comfy = SimpleNamespace(NODE_CLASS_MAPPINGS={"LoraLoaderModelOnly": Lora})
+        with patch.dict(sys.modules, {"nodes": comfy}):
+            result, note = NODES._aplicar_acelerador(
+                "base", "VDN-H3 DMD Turbo 8 pasos", "ninguno",
+                "minimax_h3_dmd_ref2va_8step_turbo.safetensors",
+                "minimax_h3_ref2va.safetensors", 12, 3)
+        self.assertEqual(result, "vdn-model")
+        self.assertEqual(calls[0]["strength_model"], 1.0)
+        self.assertIn("VDN/DMD", note)
+
+    def test_accelerator_never_falls_back_silently(self):
+        with patch.dict(sys.modules, {"nodes": SimpleNamespace(NODE_CLASS_MAPPINGS={})}):
+            with self.assertRaisesRegex(RuntimeError, "DenoMiniMaxH3AccLoader"):
+                NODES._aplicar_acelerador(
+                    "base", "Alibaba MiniMax-H3 Acc/PDD 8 pasos",
+                    "h3_acc_lora.safetensors", "ninguno",
+                    "minimax_h3_ref2va.safetensors", 12, 3)
+
+    def test_incompatible_accelerator_recipes_are_rejected(self):
+        cases = [
+            ("VDN-H3 DMD Turbo 8 pasos", "ninguno",
+             "minimax_h3_dmd_ref2va_8step_turbo.safetensors",
+             "minimax_h3_ref2va.safetensors", 6, 3, "shift 12/3"),
+            ("VDN-H3 DMD Turbo 8 pasos", "ninguno",
+             "minimax_h3_dmd_fl2va_8step_turbo.safetensors",
+             "minimax_h3_ref2va.safetensors", 12, 3, "Ref2VA"),
+            ("VDN-H3 DMD Turbo 8 pasos", "ninguno",
+             "minimax_h3_dmd_ref2va_8step_turbo_pruned.safetensors",
+             "minimax_h3_ref2va.safetensors", 12, 3, "ambos pruned"),
+        ]
+        for accelerator, acc, vdn, model, sv, sa, message in cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    NODES._aplicar_acelerador(
+                        "base", accelerator, acc, vdn, model, sv, sa)
+        with self.assertRaisesRegex(ValueError, "único acelerador"):
+            NODES._aplicar_acelerador(
+                "base", "VDN-H3 DMD Turbo 8 pasos", "ninguno",
+                "minimax_h3_dmd_ref2va_8step_turbo.safetensors",
+                "minimax_h3_ref2va.safetensors", 12, 3,
+                ("otro_turbo.safetensors",))
 
     def test_the_shift_falls_back_when_the_node_is_missing(self):
         # Sin ningun nodo de shift instalado, el modelo sale igual que entro:
@@ -637,6 +719,12 @@ class PromptPreviewRouteTests(unittest.TestCase):
             status, result = self.request(body)
             self.assertEqual(status, 400)
             self.assertIn("error", result)
+
+    def test_camera_registry_route_serves_the_python_source_of_truth(self):
+        status, result = asyncio.run(
+            self.handlers["/cineconia/camera_recipes"](SimpleNamespace()))
+        self.assertEqual(status, 200)
+        self.assertEqual(result, NODES.public_registry())
 
 
 class CameraReaderOrderTests(unittest.TestCase):

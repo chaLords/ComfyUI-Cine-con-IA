@@ -256,6 +256,35 @@ test('la corrida guarda LoRA, progresivo, refinado y semilla', () => {
   assert.ok(tabla[1].includes('\tTAO v1 ×1 (TAO_h3_v1.safetensors)\tsí 1/3\t×1.27 4p\t833\t'));
 });
 
+test('la receta probada guarda tarea, acelerador, referencias, shift y perfil de cámara', () => {
+  const {fn} = setup();
+  const w = (name, value) => ({name, value});
+  const g = grafo({...CONFIG, steps: 8, sampler: 'euler', scheduler: 'simple'}, {nodos: [
+    {type: 'CineEscenaH3', mode: 0, inputs: [
+      {name: 'referencia_1', link: 71}, {name: 'referencia_2', link: null},
+      {name: 'referencia_3', link: null}, {name: 'imagen_guia', link: 72},
+    ]},
+    {type: 'CineCameraDirectorH3', mode: 0, widgets: [w('perfil_modelo', 'MiniMax H3')]},
+  ]});
+  g._nodes[0].widgets.push(
+    w('acelerador', 'VDN-H3 DMD Turbo 8 pasos'),
+    w('vdn_lora', 'minimax_h3_dmd_ref2va_8step_turbo_pruned.safetensors'),
+    w('acc_lora', 'ninguno'), w('shift_video', 12), w('shift_audio', 3),
+  );
+  const d = plano(fn('detalleCorrida')(g));
+  assert.equal(d.tarea, 'reference-to-video');
+  assert.equal(d.referencias, '1 referencia + guía');
+  assert.ok(d.acelerador.includes('VDN-H3'));
+  assert.ok(d.acelerador.includes('minimax_h3_dmd_ref2va'));
+  assert.equal(d.shift, '12/3');
+  assert.equal(d.perfil_camara, 'MiniMax H3');
+  const e = {cuando: '01/10 12:00', estado: 'listo', total: 1000, detalle: d, tramos: []};
+  const fila = plano(fn('filaRegistro')(e));
+  assert.ok(fila.nodos.includes('receta: reference-to-video'));
+  assert.ok(fila.nodos.includes('shift 12/3'));
+  assert.ok(fn('lineaDetalle')(d).includes('acelerador VDN-H3'));
+});
+
 test('el progresivo que no se aplicó y el refinado apagado quedan dichos', () => {
   const {fn} = setup();
   const refinar = {type: 'CineEscalarRefinar', mode: 0, widgets: [{name: 'activar', value: false}, {name: 'escala', value: 1.25}]};

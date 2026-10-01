@@ -214,6 +214,8 @@ export function lineaDetalle(d) {
   if (!d) return "";
   const partes = [];
   if (d.sampler) partes.push(d.scheduler ? `${d.sampler}/${d.scheduler}` : String(d.sampler));
+  if (d.acelerador) partes.push(`acelerador ${d.acelerador}`);
+  if (d.tarea) partes.push(`${d.tarea}${d.referencias ? ` · ${d.referencias}` : ""}`);
   if (Array.isArray(d.loras)) partes.push(d.loras.length ? "LoRA " + textoLoras(lorasDe(d)) : "sin LoRA");
   if (d.progresivo === "sí") partes.push("progresivo" + (d.progresivo_paso ? " " + d.progresivo_paso : ""));
   else if (d.progresivo) partes.push(`progresivo ${d.progresivo}`);
@@ -440,6 +442,29 @@ export function detalleCorrida(graph, config = null) {
     d.modelo = modeloDe(d);
   }
   d.loras = lorasDelGrafo(nodos);
+  const cargadorCine = deClase("CineCargarH3");
+  if (cargadorCine && tieneWidget(cargadorCine, "acelerador")) {
+    const tipo = String(valorWidget(cargadorCine, "acelerador") || "Sin acelerador");
+    const archivoAcc = tipo.includes("Acc/PDD")
+      ? valorWidget(cargadorCine, "acc_lora")
+      : tipo.includes("VDN-H3") ? valorWidget(cargadorCine, "vdn_lora") : "";
+    const sv = valorWidget(cargadorCine, "shift_video");
+    const sa = valorWidget(cargadorCine, "shift_audio");
+    d.acelerador = tipo === "Sin acelerador" ? "ninguno" :
+      `${tipo}${archivoAcc && archivoAcc !== "ninguno" ? ` (${String(archivoAcc).split(/[\\/]/).pop()})` : ""}`;
+    if (sv != null && sa != null) d.shift = `${sv}/${sa}`;
+  }
+  const escenaCine = deClase("CineEscenaH3");
+  if (escenaCine) {
+    const refs = [1, 2, 3].filter((i) => entradaCon(escenaCine, `referencia_${i}`)).length;
+    const guia = Boolean(entradaCon(escenaCine, "imagen_guia"));
+    d.tarea = refs || guia ? "reference-to-video" : "text-to-video";
+    d.referencias = `${refs} referencia${refs === 1 ? "" : "s"}${guia ? " + guía" : ""}`;
+  }
+  const director = deClase("CineCameraDirectorH3");
+  if (director && tieneWidget(director, "perfil_modelo")) {
+    d.perfil_camara = String(valorWidget(director, "perfil_modelo") || "MiniMax H3");
+  }
   const c = config || deClase("CineH3Optimizer")?.__h3Preview?.config;
   const render = deClase("CineRenderH3");
   const refinar = deClase("CineEscalarRefinar");
@@ -497,7 +522,11 @@ const COLUMNAS = ["fecha", "estado", "total", "modelo", "pasos", "sampler", "sch
 /** Las celdas de una corrida, en el orden de COLUMNAS. */
 function celdas(e) {
   const d = e.detalle || {};
-  const nodos = (e.tramos || []).map((x) => `${x.titulo} ${formatoCorto(x.ms)}`).join(" | ");
+  const receta = [d.tarea, d.referencias, d.acelerador ? `acelerador ${d.acelerador}` : "",
+    d.shift ? `shift ${d.shift}` : "", d.perfil_camara ? `cámara ${d.perfil_camara}` : ""]
+    .filter(Boolean).join(" · ");
+  const tiempos = (e.tramos || []).map((x) => `${x.titulo} ${formatoCorto(x.ms)}`).join(" | ");
+  const nodos = [receta ? `receta: ${receta}` : "", tiempos].filter(Boolean).join(" | ");
   const loras = lorasDe(d).map((l) => `${l.nombre} ×${l.fuerza}${l.archivo ? ` (${l.archivo})` : ""}`).join(" + ");
   const progresivo = d.progresivo === "sí" ? `sí${d.progresivo_paso ? " " + d.progresivo_paso : ""}` : d.progresivo || "";
   return [e.cuando, e.estado || "", formatoCorto(e.total), modeloDe(d), d.pasos ?? "",

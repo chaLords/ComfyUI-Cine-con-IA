@@ -16,6 +16,7 @@ try:
         CineScenePromptH3,
         CineSimplePromptH3,
     )
+    from .cineconia_h3.camera_recipes import prompt_recipe, public_registry
 except ImportError:
     # Los tests cargan nodes.py directamente, fuera del paquete de ComfyUI.
     from cineconia_h3 import (
@@ -25,6 +26,7 @@ except ImportError:
         CineScenePromptH3,
         CineSimplePromptH3,
     )
+    from cineconia_h3.camera_recipes import prompt_recipe, public_registry
 
 CATEGORY = "Cine con IA"
 
@@ -240,61 +242,12 @@ The faces keep the exact proportions of the reference pictures from the first fr
 # geometria ("mirando hacia arriba desde el suelo") y no como jerga de cine.
 # ---------------------------------------------------------------------------
 
-PLANOS = [
-    ("sin especificar", ""),
-    ("primerisimo primer plano", "an extreme close-up"),
-    ("primer plano", "a close-up"),
-    ("plano medio corto", "a close shot"),
-    ("plano medio", "a medium shot"),
-    ("plano americano", "a medium-wide shot"),
-    ("plano general", "a wide shot"),
-    ("gran plano general", "an extreme wide shot"),
-]
-
-ANGULOS = [
-    ("sin especificar", ""),
-    ("altura de los ojos", "the camera at the subject's eye level"),
-    ("contrapicado", "the camera below the subject, looking up at them"),
-    ("picado", "the camera above the subject, looking down at them"),
-    ("cenital", "the camera directly overhead, looking straight down"),
-    ("tres cuartos", "the camera about forty-five degrees off the subject's front"),
-    ("sobre el hombro", "the camera just behind and beside the subject's shoulder, looking past it"),
-]
-
-MOVIMIENTOS = [
-    ("sin especificar", ""),
-    ("fijo", "holds a static shot for the entire shot"),
-    ("acercarse", "pushes in toward the subject"),
-    ("alejarse", "pulls out away from the subject"),
-    ("zoom in", "zooms in on the subject"),
-    ("zoom out", "zooms out from the subject"),
-    ("panoramica izquierda", "pans left"),
-    ("panoramica derecha", "pans right"),
-    ("inclinar arriba", "tilts up"),
-    ("inclinar abajo", "tilts down"),
-    ("lateral izquierda", "trucks left"),
-    ("lateral derecha", "trucks right"),
-    ("grua arriba", "pedestals up"),
-    ("grua abajo", "pedestals down"),
-    # el arc shot tiende a girar al personaje en vez de a la camara: se le
-    # dice explicitamente que el cuerpo no gira y que lo que corre es el fondo
-    ("orbita", "arcs around the subject; the subject's body keeps facing its "
-               "original direction while the background slides behind them with "
-               "visible parallax"),
-    ("seguimiento", "follows the subject in a tracking shot"),
-    ("camara en mano", "shakes slightly, handheld"),
-    ("punto de vista", "takes the point of view of the subject"),
-    ("giro de horizonte", "rolls clockwise"),
-    ("giro antihorario", "rolls counterclockwise"),
-    ("camara en mano fuerte", "shakes strongly, handheld"),
-]
-
-INTENSIDADES = [
-    ("normal", ""),
-    ("suave", "with small amplitude at slow speed"),
-    ("amplia y lenta", "with large amplitude at slow speed"),
-    ("marcada", "with large amplitude at fast speed"),
-]
+_RECETA_H3_PROMPT = prompt_recipe("minimax_h3")
+PLANOS = [tuple(row) for row in _RECETA_H3_PROMPT["shots"]]
+ANGULOS = [tuple(row) for row in _RECETA_H3_PROMPT["angles"]]
+MOVIMIENTOS = [tuple(row) for row in _RECETA_H3_PROMPT["movements"]]
+INTENSIDADES = [tuple(row) for row in _RECETA_H3_PROMPT["intensities"]]
+_PLANTILLAS_H3 = _RECETA_H3_PROMPT["templates"]
 
 
 # ---------------------------------------------------------------------------
@@ -305,48 +258,11 @@ INTENSIDADES = [
 # parrafo continuo, sin secciones y sin prompt negativo.
 # ---------------------------------------------------------------------------
 
-LTX_PLANOS = {
-    "sin especificar": "",
-    "primerisimo primer plano": "an extreme close-up",
-    "primer plano": "a close-up",
-    "plano medio corto": "a tight cinematic close-up",
-    "plano medio": "a medium shot",
-    "plano americano": "a medium wide shot",
-    "plano general": "a wide shot",
-    "gran plano general": "a wide establishing shot",
-}
-
-LTX_ANGULOS = {
-    "sin especificar": "",
-    "altura de los ojos": "at the subject's eye level",
-    "contrapicado": "looking up at the subject from below",
-    "picado": "looking down at the subject from above",
-    "cenital": "an overhead view looking straight down",
-    "tres cuartos": "at a three-quarter angle to the subject",
-    "sobre el hombro": "an over-the-shoulder shot",
-}
-
-LTX_MOVIMIENTOS = {
-    "sin especificar": "",
-    "fijo": "holds a static frame",
-    "acercarse": "pushes in toward the subject",
-    "alejarse": "pulls back from the subject",
-    "zoom in": "zooms in on the subject",
-    "zoom out": "zooms out from the subject",
-    "panoramica izquierda": "pans left",
-    "panoramica derecha": "pans right",
-    "inclinar arriba": "tilts up",
-    "inclinar abajo": "tilts down",
-    "lateral izquierda": "dollies left",
-    "lateral derecha": "dollies right",
-    "grua arriba": "cranes up",
-    "grua abajo": "cranes down",
-    "orbita": "circles around the subject, keeping them in frame while the background sweeps past",
-    "seguimiento": "tracks the subject in handheld style",
-    "camara en mano": "moves with a handheld feel",
-    "punto de vista": "takes the subject's point of view",
-    "giro de horizonte": "rolls slowly around the lens axis",
-}
+_RECETA_LTX_PROMPT = prompt_recipe("ltx_2_5")
+LTX_PLANOS = _RECETA_LTX_PROMPT["shots"]
+LTX_ANGULOS = _RECETA_LTX_PROMPT["angles"]
+LTX_MOVIMIENTOS = _RECETA_LTX_PROMPT["movements"]
+_PLANTILLAS_LTX = _RECETA_LTX_PROMPT["templates"]
 
 
 def _frase_camara_ltx(plano, angulo, movimiento):
@@ -356,13 +272,13 @@ def _frase_camara_ltx(plano, angulo, movimiento):
     m = LTX_MOVIMIENTOS.get(movimiento, "")
     fr = []
     if p and a:
-        fr.append("The shot opens on {} {}.".format(p, a))
+        fr.append(_PLANTILLAS_LTX["shot_angle"].format(shot=p, angle=a))
     elif p:
-        fr.append("The shot opens on {}.".format(p))
+        fr.append(_PLANTILLAS_LTX["shot"].format(shot=p))
     elif a:
-        fr.append("The shot is filmed {}.".format(a))
+        fr.append(_PLANTILLAS_LTX["angle"].format(angle=a))
     if m:
-        fr.append("The camera {}.".format(m))
+        fr.append(_PLANTILLAS_LTX["movement"].format(movement=m))
     return " ".join(fr)
 
 
@@ -395,11 +311,11 @@ def _frase_camara(plano, angulo, movimiento, intensidad):
 
     frases = []
     if p and a:
-        frases.append("The shot is framed as {}, with {}.".format(p, a))
+        frases.append(_PLANTILLAS_H3["shot_angle"].format(shot=p, angle=a))
     elif p:
-        frases.append("The shot is framed as {}.".format(p))
+        frases.append(_PLANTILLAS_H3["shot"].format(shot=p))
     elif a:
-        frases.append("The shot is filmed with {}.".format(a))
+        frases.append(_PLANTILLAS_H3["angle"].format(angle=a))
 
     if m:
         fm = _movimiento_camara(m, i)
@@ -544,18 +460,8 @@ _LIMPIEZA = [
 
 
 # Como se escribe cada plano DENTRO de la prosa, sin articulo.
-_PLANO_TXT = {
-    "sin especificar": "", "primerisimo primer plano": "extreme close-up",
-    "primer plano": "close-up", "plano medio corto": "close shot",
-    "plano medio": "medium shot", "plano americano": "medium-wide shot",
-    "plano general": "wide shot", "gran plano general": "extreme wide shot",
-}
-_PLANO_TXT_LTX = {
-    "sin especificar": "", "primerisimo primer plano": "extreme close-up",
-    "primer plano": "close-up", "plano medio corto": "tight cinematic close-up",
-    "plano medio": "medium shot", "plano americano": "medium wide shot",
-    "plano general": "wide shot", "gran plano general": "wide establishing shot",
-}
+_PLANO_TXT = _RECETA_H3_PROMPT["inline_shots"]
+_PLANO_TXT_LTX = _RECETA_LTX_PROMPT["inline_shots"]
 
 
 def _como_estaba(viejo, nuevo):
@@ -1023,6 +929,155 @@ def _lista(carpeta):
         return []
 
 
+# Aceleradores H3. Se integran en el cargador existente para conservar la
+# interfaz de un solo nodo y, sobre todo, para que una corrida diga con
+# claridad si lleva el modelo normal, Acc/PDD o VDN. No se intenta imitar un
+# cargador externo: si falta su implementación, la ejecución se detiene.
+ACELERADORES_H3 = (
+    "Sin acelerador",
+    "Alibaba MiniMax-H3 Acc/PDD 8 pasos",
+    "VDN-H3 DMD Turbo 8 pasos",
+)
+ACELERADOR_POR_DEFECTO = ACELERADORES_H3[0]
+
+
+def _opciones_nodo(node_id, entrada):
+    """Lee una lista de opciones de un nodo externo, si está instalado."""
+    try:
+        import nodes as comfy_nodes
+        cls = comfy_nodes.NODE_CLASS_MAPPINGS.get(node_id)
+        if cls is None:
+            return []
+        spec = cls.INPUT_TYPES()
+        definicion = (spec.get("required", {}).get(entrada) or
+                      spec.get("optional", {}).get(entrada))
+        if not definicion:
+            return []
+        valores = definicion[0]
+        if callable(valores):
+            valores = valores()
+        if isinstance(valores, (list, tuple)):
+            return [str(v) for v in valores]
+    except Exception:
+        pass
+    return []
+
+
+def _archivos_acc_pdd():
+    externos = _opciones_nodo("DenoMiniMaxH3AccLoader", "acc_lora")
+    # Si el paquete aún no está cargado, conservar en el desplegable los
+    # candidatos guardados en models/loras para que el error útil ocurra en
+    # Python y no como una entrada inválida opaca de ComfyUI.
+    candidatos = [n for n in _lista("loras")
+                  if any(t in n.casefold() for t in ("acc", "pdd", "deno"))]
+    return sorted(set(externos) | set(candidatos))
+
+
+def _archivos_vdn():
+    return sorted(n for n in _lista("loras")
+                  if ("vdn" in n.casefold() or
+                      ("dmd" in n.casefold() and
+                       any(t in n.casefold() for t in ("minimax", "h3")))))
+
+
+def _variante_h3(nombre):
+    texto = str(nombre or "").casefold().replace("-", "").replace("_", "")
+    if "ref2va" in texto:
+        return "Ref2VA"
+    if "fl2va" in texto:
+        return "FL2VA"
+    return ""
+
+
+def _es_lora_aceleradora(nombre):
+    texto = str(nombre or "").casefold()
+    return any(t in texto for t in
+               ("vdn", "dmd", "pdd", "acc_lora", "acc-lora", "turbo"))
+
+
+def _validar_compatibilidad_acelerador(acelerador, archivo, modelo,
+                                       shift_video, shift_audio):
+    if not archivo or archivo == "ninguno":
+        raise ValueError("El acelerador está activo pero no se eligió su archivo")
+    try:
+        sv, sa = float(shift_video), float(shift_audio)
+    except (TypeError, ValueError):
+        raise ValueError("El acelerador H3 necesita shift de video 12 y audio 3")
+    if abs(sv - 12.0) > 1e-6 or abs(sa - 3.0) > 1e-6:
+        raise ValueError(
+            "La primera comparación de aceleradores H3 exige shift 12/3; "
+            "recibió {:g}/{:g}. Cámbialos explícitamente para que la corrida "
+            "sea comparable.".format(sv, sa))
+    variante_modelo = _variante_h3(modelo)
+    variante_archivo = _variante_h3(archivo)
+    if variante_modelo and variante_archivo and variante_modelo != variante_archivo:
+        raise ValueError(
+            "Acelerador {} incompatible: el modelo es {} y el archivo es {}"
+            .format(acelerador, variante_modelo, variante_archivo))
+    if acelerador == "VDN-H3 DMD Turbo 8 pasos":
+        modelo_pruned = "pruned" in str(modelo).casefold()
+        lora_pruned = "pruned" in str(archivo).casefold()
+        if modelo_pruned != lora_pruned:
+            raise ValueError(
+                "VDN incompatible: modelo y LoRA deben ser ambos pruned o ambos completos")
+
+
+def _llamar_nodo_requerido(node_id, **kwargs):
+    """Ejecuta una dependencia obligatoria sin ocultar su excepción."""
+    try:
+        import nodes as comfy_nodes
+        cls = comfy_nodes.NODE_CLASS_MAPPINGS.get(node_id)
+    except Exception:
+        cls = None
+    if cls is None:
+        raise RuntimeError(
+            "Falta el nodo externo {}. Instala la dependencia correspondiente "
+            "y reinicia ComfyUI; Cine con IA no lo sustituye silenciosamente."
+            .format(node_id))
+    ejecutar = getattr(cls, "execute", None)
+    if ejecutar is not None:
+        return _desenvolver(ejecutar(**kwargs))
+    instancia = cls()
+    nombre = getattr(cls, "FUNCTION", None)
+    funcion = getattr(instancia, nombre, None) if nombre else None
+    if funcion is None:
+        raise RuntimeError("El nodo externo {} no expone una función ejecutable".format(node_id))
+    return _desenvolver(funcion(**kwargs))
+
+
+def _aplicar_acelerador(model, acelerador, acc_lora, vdn_lora, modelo,
+                        shift_video, shift_audio, loras_normales=()):
+    """Aplica exactamente una ruta de aceleración y devuelve (modelo, nota)."""
+    if not acelerador or acelerador == ACELERADOR_POR_DEFECTO:
+        return model, "sin acelerador"
+    if acelerador not in ACELERADORES_H3:
+        raise ValueError("Acelerador desconocido: {}".format(acelerador))
+    solapadas = [n for n in loras_normales if n and n != "ninguno" and
+                 _es_lora_aceleradora(n)]
+    if solapadas:
+        raise ValueError(
+            "Hay otro LoRA de aceleración en las ranuras normales ({}). "
+            "Deja un único acelerador activo para que la prueba sea interpretable."
+            .format(", ".join(solapadas)))
+    if acelerador == "Alibaba MiniMax-H3 Acc/PDD 8 pasos":
+        archivo = acc_lora
+        nodo = "DenoMiniMaxH3AccLoader"
+        argumentos = {"model": model, "acc_lora": archivo}
+        etiqueta = "Acc/PDD"
+    else:
+        archivo = vdn_lora
+        nodo = "LoraLoaderModelOnly"
+        argumentos = {"model": model, "lora_name": archivo, "strength_model": 1.0}
+        etiqueta = "VDN/DMD"
+    _validar_compatibilidad_acelerador(
+        acelerador, archivo, modelo, shift_video, shift_audio)
+    aplicado = _llamar_nodo_requerido(nodo, **argumentos)
+    if aplicado is None:
+        raise RuntimeError("{} no devolvió un modelo".format(nodo))
+    corto = str(archivo).replace("\\", "/").split("/")[-1]
+    return aplicado, "acelerador {} · {} · 8 pasos Simple/Euler".format(etiqueta, corto)
+
+
 def _cargar_gguf(node_id, **kwargs):
     """Delega la cuantizacion y el offload al cargador GGUF registrado."""
     import nodes as comfy_nodes
@@ -1243,11 +1298,17 @@ class CineCargarH3:
                 "lora_4": (["ninguno"] + _lista("loras"), {"default": "ninguno"}),
                 "lora_fuerza_4": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 3.0, "step": 0.05}),
                 # El perfil se ve arriba del todo, pero el control de verdad va
-                # aqui, el ultimo, por la misma razon de siempre: los valores
-                # se guardan por posicion. Lo que se ve arriba son las
-                # pestanas, que no se guardan y solo escriben en este campo.
+                # aquí, después de las ranuras históricas, para conservar sus
+                # posiciones. Las pestañas visuales no se guardan. Los campos
+                # nuevos de aceleración se añaden únicamente después de él.
                 "perfil": (PERFILES, {"default": PERFIL_POR_DEFECTO,
                            "tooltip": "Que familia de modelos se esta cargando. Cambia el modo del codificador de texto, el nodo de sigma shift y que parches de VRAM tienen sentido. Personalizado no rellena nada y deduce la familia por el nombre de los archivos."}),
+                "acelerador": (list(ACELERADORES_H3), {"default": ACELERADOR_POR_DEFECTO,
+                                "tooltip": "Comparación controlada H3. VDN y Acc/PDD se prueban por separado; ambos exigen shift 12/3 y una receta inicial de 8 pasos, scheduler Simple y sampler Euler."}),
+                "acc_lora": (["ninguno"] + _archivos_acc_pdd(), {"default": "ninguno",
+                             "tooltip": "Archivo Acc/PDD expuesto por DenoMiniMaxH3AccLoader. Solo se usa al elegir Alibaba Acc/PDD."}),
+                "vdn_lora": (["ninguno"] + _archivos_vdn(), {"default": "ninguno",
+                             "tooltip": "LoRA VDN/DMD compatible con la variante H3 elegida. Se aplica a fuerza 1.0."}),
             },
         }
 
@@ -1273,7 +1334,9 @@ class CineCargarH3:
                lora_2="ninguno", lora_fuerza_2=0.0,
                lora_3="ninguno", lora_fuerza_3=0.0,
                lora_4="ninguno", lora_fuerza_4=0.0,
-               perfil=PERFIL_POR_DEFECTO):
+               perfil=PERFIL_POR_DEFECTO,
+               acelerador=ACELERADOR_POR_DEFECTO,
+               acc_lora="ninguno", vdn_lora="ninguno"):
         import logging
         import folder_paths
         import comfy.sd
@@ -1289,6 +1352,10 @@ class CineCargarH3:
             notas.append("perfil {} (deducido)".format(nombre_perfil))
         else:
             notas.append("perfil {}".format(nombre_perfil))
+        if acelerador != ACELERADOR_POR_DEFECTO and nombre_perfil != "MiniMax H3":
+            raise ValueError(
+                "{} solo es compatible con el perfil MiniMax H3, no con {}"
+                .format(acelerador, nombre_perfil))
 
         # --- modelo
         if modelo.lower().endswith(".gguf"):
@@ -1322,6 +1389,16 @@ class CineCargarH3:
                 cadena.append("{} (FALLO)".format(corto))
         if cadena:
             notas.append("LoRA: " + " -> ".join(cadena))
+
+        # --- aceleración. Va después de las LoRA estéticas y antes de los
+        # parches/shift. Cada ruta conserva la implementación real de su
+        # proveedor: Acc/PDD usa el cargador Deno; VDN usa LoRA a fuerza 1.
+        model, nota_acelerador = _aplicar_acelerador(
+            model, acelerador, acc_lora, vdn_lora, modelo,
+            shift_video, shift_audio,
+            (lora, lora_2, lora_3, lora_4),
+        )
+        notas.append(nota_acelerador)
 
         # --- codificador de texto, en el modo que pida la familia
         if codificador_texto.lower().endswith(".gguf"):
@@ -2473,6 +2550,12 @@ def _registrar_rutas():
     rutas = getattr(getattr(PromptServer, "instance", None), "routes", None)
     if rutas is None:
         return
+
+    @rutas.get("/cineconia/camera_recipes")
+    async def _camera_recipes(peticion):
+        # La interfaz y cualquier diagnóstico leen el mismo registro que usa
+        # Python para compilar prompts; no existe una segunda tabla oculta.
+        return web.json_response(public_registry())
 
     @rutas.post("/cineconia/h3/preview")
     async def _h3_preview(peticion):

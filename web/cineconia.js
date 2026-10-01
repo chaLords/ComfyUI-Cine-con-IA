@@ -130,6 +130,9 @@ const ETIQUETAS = {
   libre_separador: "Separador", libre_instruccion: "Tu instrucción para la IA",
   vista_previa: "Vista previa en vivo",
   perfil: "Perfil de modelo",
+  acelerador: "Acelerador H3",
+  acc_lora: "Archivo Acc/PDD",
+  vdn_lora: "Archivo VDN/DMD",
 };
 
 const ESCALAS = [["1.5x", 1.5], ["1.65x", 1.65], ["1.8x", 1.8], ["2x", 2.0], ["2.5x", 2.5]];
@@ -3855,10 +3858,10 @@ app.registerExtension({
         const nodo = this;
 
         // --- perfil de modelo -------------------------------------------
-        // El control de verdad es el ultimo widget del nodo, porque los
-        // valores se guardan por posicion y meterlo arriba dejaria ilegible
-        // cualquier workflow ya guardado. Asi que se esconde y lo que se ve
-        // arriba son estas pestanas, que no se guardan y solo escriben en el.
+        // El control de verdad conserva su posición histórica después de las
+        // LoRA; los campos nuevos se añaden detrás. Moverlo arriba dejaría
+        // ilegibles workflows guardados. Se esconde y lo visible son estas
+        // pestañas, que no se guardan y solo escriben en él.
         const perfil = findWidget(this, "perfil");
         if (perfil) {
           if (!PERFILES_UI.includes(String(perfil.value))) {
@@ -3915,6 +3918,13 @@ app.registerExtension({
                 const w = findWidget(nodo, campo);
                 if (w) w.value = p.valores[campo];
               }
+              const acc = String(findWidget(nodo, "acelerador")?.value || "Sin acelerador");
+              if (nombre === "MiniMax H3" && acc !== "Sin acelerador") {
+                const sv = findWidget(nodo, "shift_video");
+                const sa = findWidget(nodo, "shift_audio");
+                if (sv) sv.value = 12;
+                if (sa) sa.value = 3;
+              }
             }
             reajustar(nodo);
             nodo.setDirtyCanvas(true, true);
@@ -3937,6 +3947,52 @@ app.registerExtension({
 
         addChips(this, "trocear_atencion", [1, 4, 8, 16, 32].map((v) => [String(v), v]), "attention");
         addChips(this, "trocear_ffn", [1, 4, 8, 16, 32].map((v) => [String(v), v]), "ffn");
+
+        // --- acelerador H3: una sola ruta visible a la vez ---------------
+        const acelerador = findWidget(this, "acelerador");
+        if (acelerador) {
+          addTitulo(this, "acelerador", "aceleración H3  ·  comparación controlada",
+                    "VDN y Acc/PDD se prueban por separado.");
+          addInfo(this, (nd) => {
+            const elegido = String(findWidget(nd, "acelerador")?.value || "Sin acelerador");
+            if (elegido === "Sin acelerador") {
+              return ["sin acelerador", "comportamiento histórico", ""];
+            }
+            const perfilActual = String(findWidget(nd, "perfil")?.value || PERFIL_POR_DEFECTO_UI);
+            return [
+              elegido.includes("Acc/PDD") ? "Acc/PDD  ·  cargador Deno" : "VDN/DMD  ·  LoRA x1.0",
+              "receta inicial: 8 pasos  ·  Simple  ·  Euler  ·  shift 12/3",
+              ["MiniMax H3", "Personalizado"].includes(perfilActual)
+                ? "" : "⚠ solo es compatible con MiniMax H3",
+            ];
+          });
+          const verAcelerador = () => {
+            const elegido = String(acelerador.value || "Sin acelerador");
+            verWidget(findWidget(nodo, "acc_lora"), elegido.includes("Acc/PDD"));
+            verWidget(findWidget(nodo, "vdn_lora"), elegido.includes("VDN-H3"));
+            reajustar(nodo);
+            nodo.setDirtyCanvas(true, true);
+          };
+          const antesAcelerador = acelerador.callback;
+          acelerador.callback = function () {
+            const r = antesAcelerador?.apply(this, arguments);
+            if (String(this.value || "Sin acelerador") !== "Sin acelerador") {
+              const sv = findWidget(nodo, "shift_video");
+              const sa = findWidget(nodo, "shift_audio");
+              if (sv) sv.value = 12;
+              if (sa) sa.value = 3;
+            }
+            verAcelerador();
+            return r;
+          };
+          const confAcelerador = this.onConfigure;
+          this.onConfigure = function () {
+            const r = confAcelerador?.apply(this, arguments);
+            setTimeout(verAcelerador, 0);
+            return r;
+          };
+          verAcelerador();
+        }
 
         // --- cadena de LoRA: solo se ven las ranuras usadas, mas una vacia
         // OJO: aqui NO se reordenan los widgets de verdad. Los valores se

@@ -1,60 +1,16 @@
-"""Camera Director H3: como se filma una escena ya definida."""
+"""Camera Director adaptable: una intención, vocabulario por modelo."""
 
 import re
 
+from .camera_recipes import MODEL_NAMES, resolve_recipe
 
-SHOTS = {
-    "sin especificar": "",
-    "primerisimo primer plano": "an extreme close-up",
-    "primer plano": "a close-up",
-    "plano medio corto": "a close shot",
-    "plano medio": "a medium shot",
-    "plano americano": "a medium-wide shot",
-    "plano general": "a wide shot",
-    "gran plano general": "an extreme wide shot",
-}
-ANGLES = {
-    "sin especificar": "",
-    "frontal": "directly in front of the subject, looking straight at them",
-    "perfil": "at the subject's side, about ninety degrees off their front, showing a side profile",
-    "altura de los ojos": "at the subject's eye level",
-    "contrapicado": "below the subject, looking up",
-    "picado": "above the subject, looking down",
-    "cenital": "directly overhead, looking straight down",
-    "tres cuartos": "about forty-five degrees to one side of the subject's front, showing a three-quarter view of their face and body",
-    "sobre el hombro": "just behind the subject's shoulder",
-}
-MOVEMENTS = {
-    "sin especificar": "",
-    "fijo": "holds a static shot for the entire shot",
-    "acercarse": "pushes in toward the subject",
-    "alejarse": "pulls out away from the subject",
-    "zoom in": "zooms in on the subject",
-    "zoom out": "zooms out from the subject",
-    "panoramica izquierda": "pans left",
-    "panoramica derecha": "pans right",
-    "inclinar arriba": "tilts up",
-    "inclinar abajo": "tilts down",
-    "lateral izquierda": "trucks left",
-    "lateral derecha": "trucks right",
-    "grua arriba": "pedestals up",
-    "grua abajo": "pedestals down",
-    "orbita": "arcs around the subject; the subject's body keeps facing its original direction while the background slides behind them with visible parallax",
-    "seguimiento": "follows the subject in a tracking shot",
-    "punto de vista": "takes the point of view of the subject",
-    "giro de horizonte": "rolls clockwise",
-    "giro antihorario": "rolls counterclockwise",
-    "camara en mano fuerte": "shakes strongly, handheld",
-    "camara en mano": "moves with a slight handheld shake",
-}
-INTENSITIES = {
-    "normal": "",
-    "suave": "with small amplitude at slow speed",
-    "amplia y lenta": "with large amplitude at slow speed",
-    "marcada": "with large amplitude at fast speed",
-}
-LENSES = ("sin especificar", "14 mm", "24 mm", "35 mm", "50 mm", "85 mm", "135 mm", "200 mm")
-DEPTH = ("sin especificar", "profunda", "natural", "reducida", "muy reducida")
+_H3 = resolve_recipe()[1]["director"]
+SHOTS = _H3["shots"]
+ANGLES = _H3["angles"]
+MOVEMENTS = _H3["movements"]
+INTENSITIES = _H3["intensities"]
+LENSES = tuple(_H3["lenses"])
+DEPTH = tuple(_H3["depth"])
 
 CONTINUITY_RULES = (
     "Identity, anatomy, clothing and object contact remain consistent. "
@@ -63,41 +19,48 @@ CONTINUITY_RULES = (
 )
 
 
-def structured_camera(plano, angulo, movimiento, intensidad, lente, profundidad):
+def _compile_camera(recipe, plano, angulo, movimiento, intensidad, lente, profundidad):
+    director = recipe["director"]
+    templates = director["templates"]
     phrases = []
-    shot = SHOTS.get(plano, "")
-    angle = ANGLES.get(angulo, "")
+    shot = director["shots"].get(plano, "")
+    angle = director["angles"].get(angulo, "")
     if shot and angle:
-        phrases.append("The shot is framed as {}, with the camera {}.".format(shot, angle))
+        phrases.append(templates["shot_angle"].format(shot=shot, angle=angle))
     elif shot:
-        phrases.append("The shot is framed as {}.".format(shot))
+        phrases.append(templates["shot"].format(shot=shot))
     elif angle:
-        phrases.append("The camera is {}.".format(angle))
-    movement = MOVEMENTS.get(movimiento, "")
+        phrases.append(templates["angle"].format(angle=angle))
+    movement = director["movements"].get(movimiento, "")
     if movement:
-        intensity = INTENSITIES.get(intensidad, "")
-        phrases.append("The camera {}{}.".format(
-            movement, " " + intensity if intensity else ""))
+        intensity = director["intensities"].get(intensidad, "")
+        phrases.append(templates["movement"].format(
+            movement=movement, intensity=" " + intensity if intensity else ""))
     if lente != "sin especificar":
-        phrases.append("The image uses a {} lens.".format(lente))
-    depth_map = {
-        "profunda": "deep depth of field",
-        "natural": "natural depth of field",
-        "reducida": "shallow depth of field",
-        "muy reducida": "very shallow depth of field",
-    }
-    if profundidad in depth_map:
-        phrases.append("The shot has {}.".format(depth_map[profundidad]))
+        phrases.append(templates["lens"].format(lens=lente))
+    depth = director["depth"].get(profundidad, "")
+    if depth:
+        phrases.append(templates["depth"].format(depth=depth))
     return " ".join(phrases)
 
 
+def structured_camera(plano, angulo, movimiento, intensidad, lente, profundidad,
+                      perfil_modelo=None):
+    """Traduce los controles con la receta seleccionada; sin perfil usa H3."""
+    return _compile_camera(
+        resolve_recipe(perfil_modelo)[1], plano, angulo, movimiento,
+        intensidad, lente, profundidad)
+
+
 def build_prompt(scene, plano, angulo, movimiento, intensidad, lente,
-                 profundidad_campo, instruccion_camara, reglas_continuidad):
+                 profundidad_campo, instruccion_camara, reglas_continuidad,
+                 perfil_modelo=None):
     if not isinstance(scene, dict) or scene.get("schema") != "cineconia.h3.scene/v1":
         raise ValueError("Camera Director necesita la salida scene de CineConIA Scene / Prompt H3")
     camera = str(instruccion_camara or "").strip()
     generated = structured_camera(
-        plano, angulo, movimiento, intensidad, lente, profundidad_campo)
+        plano, angulo, movimiento, intensidad, lente, profundidad_campo,
+        perfil_modelo)
     # Una receta completa se conserva como su propio parrafo. Los controles
     # estructurados van despues, igual que en CinePrompt6, para no reescribir
     # trayectorias verificadas como Pantalla dividida u Orbita 360.
@@ -150,7 +113,7 @@ def build_prompt(scene, plano, angulo, movimiento, intensidad, lente,
 
 
 class CineCameraDirectorH3:
-    """Compila la escena y la direccion de camara al formato H3."""
+    """Compila escena y cámara con una receta local por familia."""
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -165,20 +128,32 @@ class CineCameraDirectorH3:
             "instruccion_camara": ("STRING", {"multiline": True, "default": "",
                 "tooltip": "Trayectoria o receta H3 completa. Se conserva y los controles estructurados se anaden despues."}),
             "reglas_continuidad": ("BOOLEAN", {"default": True}),
+        }, "optional": {
+            # Siempre al final: los ocho widgets históricos conservan posición.
+            "perfil_modelo": (list(MODEL_NAMES), {"default": "MiniMax H3",
+                "tooltip": "Receta interna de cámara. No carga pesos. Sin elegir conserva MiniMax H3."}),
         }}
 
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("prompt", "info")
     FUNCTION = "dirigir"
     CATEGORY = "Cine con IA/H3"
-    DESCRIPTION = "Direccion de camara H3 separada de la escena: encuadre, angulo, movimiento, lente y profundidad."
+    DESCRIPTION = "Dirección de cámara adaptable: mismos controles, vocabulario local según el modelo."
 
     def dirigir(self, scene, plano, angulo, movimiento, intensidad, lente,
-                profundidad_campo, instruccion_camara, reglas_continuidad):
+                profundidad_campo, instruccion_camara, reglas_continuidad,
+                perfil_modelo=None):
+        key, recipe, warning = resolve_recipe(perfil_modelo)
         prompt, camera = build_prompt(
             scene, plano, angulo, movimiento, intensidad, lente,
             profundidad_campo, instruccion_camara, reglas_continuidad,
+            perfil_modelo,
         )
-        info = "Camera Director H3: {}".format(
-            camera if camera else "sin instruccion de camara")
+        info = "Camera Director · {} · receta {} · {}: {}".format(
+            recipe["display_name"], recipe["version"], recipe["status"],
+            camera if camera else "sin instrucción de cámara")
+        if warning:
+            info += " · AVISO: " + warning
+        if key != "minimax_h3" and str(instruccion_camara or "").strip():
+            info += " · el texto manual se conservó literalmente; no se traduce"
         return prompt, info
