@@ -197,6 +197,10 @@ def _video_hw(latent):
 
 def run_selflift(model, positive, latent, sigmas, seed, plan, call_node, mapping=None):
     """Ejecuta SelfLift con la politica del plan. Devuelve (latent, detalle)."""
+    from .acc_pdd import MARKER
+    if MARKER in getattr(model, "model_options", {}).get("transformer_options", {}):
+        raise ValueError("Acc/PDD propio: el progresivo todavía no está validado. "
+                         "Usa muestreo Normal, 8 pasos Euler/Simple y sin refinado.")
     if mapping is None:
         try:
             import nodes as comfy_nodes

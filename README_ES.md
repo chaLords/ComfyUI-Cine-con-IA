@@ -46,6 +46,12 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 > [!IMPORTANT]
 > Este repositorio contiene los nodos y su interfaz. No incluye ComfyUI, modelos, LoRAs, VAEs ni pesos de interpolación o escalado. El nodo **Modelos** te los descarga a su carpeta con un botón.
 
+### Rama experimental: cargador Acc/PDD propio
+
+El nodo **Cargar modelo** aplica la LoRA Acc/PDD original de Alibaba sin instalar Deno. Se implementaron las rutas completo y pruned/INT8; la segunda usa dos grillas auxiliares AdaLN de ~11 MB incluidas en el paquete ([procedencia](cineconia_h3/assets/NOTICE.md)). Estas grillas son la excepción al aviso anterior: el modelo y la LoRA se descargan por separado.
+
+Para empezar, abre el [workflow 050](examples/050.REALminimax-H3-CineconIA-Acc-PDD-propio-8pasos.json), elige una referencia y conserva 8 pasos, Euler/Simple, CFG 1 y shift 12/3, sin refinado ni progresivo. Pasaron las comprobaciones CPU con el archivo Ref2VA oficial; el render completo, la calidad, velocidad y VRAM siguen **sin probar**. [Uso, evidencia y límites](docs/ANALISIS_ACC_PDD.md).
+
 > [!CAUTION]
 > Los cuatro nodos H3 (Scene/Prompt H3, Camera Director H3, H3 Optimizer y H3 Optimized Sampler) son experimentales. Su semáforo de VRAM está calibrado con renders reales en una RTX 4060 Ti de 16 GB; las tarjetas de 8, 12, 24 y 32 GB todavía no tienen benchmark. Consulta [H3 Optimizer v1](docs/H3_OPTIMIZER_V1_ES.md).
 

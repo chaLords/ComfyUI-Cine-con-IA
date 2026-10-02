@@ -1,6 +1,6 @@
 """
 Cine con IA - nodos propios para workflows de video (MiniMax H3 y similares).
-Sin dependencias externas: solo Python estandar.
+Usa las dependencias de ComfyUI al ejecutar los nodos.
 """
 
 import math
@@ -17,6 +17,7 @@ try:
         CineSimplePromptH3,
     )
     from .cineconia_h3.camera_recipes import prompt_recipe, public_registry
+    from .cineconia_h3.acc_pdd import apply_acc_pdd
 except ImportError:
     # Los tests cargan nodes.py directamente, fuera del paquete de ComfyUI.
     from cineconia_h3 import (
@@ -27,6 +28,7 @@ except ImportError:
         CineSimplePromptH3,
     )
     from cineconia_h3.camera_recipes import prompt_recipe, public_registry
+    from cineconia_h3.acc_pdd import apply_acc_pdd
 
 CATEGORY = "Cine con IA"
 
@@ -931,8 +933,7 @@ def _lista(carpeta):
 
 # Aceleradores H3. Se integran en el cargador existente para conservar la
 # interfaz de un solo nodo y, sobre todo, para que una corrida diga con
-# claridad si lleva el modelo normal, Acc/PDD o VDN. No se intenta imitar un
-# cargador externo: si falta su implementación, la ejecución se detiene.
+# claridad si lleva el modelo normal, Acc/PDD o VDN.
 ACELERADORES_H3 = (
     "Sin acelerador",
     "Alibaba MiniMax-H3 Acc/PDD 8 pasos",
@@ -941,36 +942,9 @@ ACELERADORES_H3 = (
 ACELERADOR_POR_DEFECTO = ACELERADORES_H3[0]
 
 
-def _opciones_nodo(node_id, entrada):
-    """Lee una lista de opciones de un nodo externo, si está instalado."""
-    try:
-        import nodes as comfy_nodes
-        cls = comfy_nodes.NODE_CLASS_MAPPINGS.get(node_id)
-        if cls is None:
-            return []
-        spec = cls.INPUT_TYPES()
-        definicion = (spec.get("required", {}).get(entrada) or
-                      spec.get("optional", {}).get(entrada))
-        if not definicion:
-            return []
-        valores = definicion[0]
-        if callable(valores):
-            valores = valores()
-        if isinstance(valores, (list, tuple)):
-            return [str(v) for v in valores]
-    except Exception:
-        pass
-    return []
-
-
 def _archivos_acc_pdd():
-    externos = _opciones_nodo("DenoMiniMaxH3AccLoader", "acc_lora")
-    # Si el paquete aún no está cargado, conservar en el desplegable los
-    # candidatos guardados en models/loras para que el error útil ocurra en
-    # Python y no como una entrada inválida opaca de ComfyUI.
-    candidatos = [n for n in _lista("loras")
-                  if any(t in n.casefold() for t in ("acc", "pdd", "deno"))]
-    return sorted(set(externos) | set(candidatos))
+    return sorted(n for n in _lista("loras") if n.casefold().endswith(".safetensors")
+                  and any(t in n.casefold() for t in ("acc", "pdd")))
 
 
 def _archivos_vdn():
@@ -992,7 +966,7 @@ def _variante_h3(nombre):
 def _es_lora_aceleradora(nombre):
     texto = str(nombre or "").casefold()
     return any(t in texto for t in
-               ("vdn", "dmd", "pdd", "acc_lora", "acc-lora", "turbo"))
+               ("vdn", "dmd", "pdd", "acc_lora", "acc-lora", "acc-8step", "acc_8step", "turbo"))
 
 
 def _validar_compatibilidad_acelerador(acelerador, archivo, modelo,
@@ -1060,15 +1034,18 @@ def _aplicar_acelerador(model, acelerador, acc_lora, vdn_lora, modelo,
             "Deja un único acelerador activo para que la prueba sea interpretable."
             .format(", ".join(solapadas)))
     if acelerador == "Alibaba MiniMax-H3 Acc/PDD 8 pasos":
-        archivo = acc_lora
-        nodo = "DenoMiniMaxH3AccLoader"
-        argumentos = {"model": model, "acc_lora": archivo}
-        etiqueta = "Acc/PDD"
-    else:
-        archivo = vdn_lora
-        nodo = "LoraLoaderModelOnly"
-        argumentos = {"model": model, "lora_name": archivo, "strength_model": 1.0}
-        etiqueta = "VDN/DMD"
+        _validar_compatibilidad_acelerador(
+            acelerador, acc_lora, modelo, shift_video, shift_audio)
+        import folder_paths
+        ruta = folder_paths.get_full_path_or_raise("loras", acc_lora)
+        if str(modelo).lower().endswith(".gguf"):
+            raise ValueError("Acc/PDD propio admite H3 safetensors full o pruned/INT8; GGUF sin validar")
+        aplicado, detalle = apply_acc_pdd(model, ruta, modelo, shift_video, shift_audio)
+        return aplicado, detalle + " · " + str(acc_lora).replace("\\", "/").split("/")[-1]
+    archivo = vdn_lora
+    nodo = "LoraLoaderModelOnly"
+    argumentos = {"model": model, "lora_name": archivo, "strength_model": 1.0}
+    etiqueta = "VDN/DMD"
     _validar_compatibilidad_acelerador(
         acelerador, archivo, modelo, shift_video, shift_audio)
     aplicado = _llamar_nodo_requerido(nodo, **argumentos)
@@ -1306,7 +1283,7 @@ class CineCargarH3:
                 "acelerador": (list(ACELERADORES_H3), {"default": ACELERADOR_POR_DEFECTO,
                                 "tooltip": "Comparación controlada H3. VDN y Acc/PDD se prueban por separado; ambos exigen shift 12/3 y una receta inicial de 8 pasos, scheduler Simple y sampler Euler."}),
                 "acc_lora": (["ninguno"] + _archivos_acc_pdd(), {"default": "ninguno",
-                             "tooltip": "Archivo Acc/PDD expuesto por DenoMiniMaxH3AccLoader. Solo se usa al elegir Alibaba Acc/PDD."}),
+                             "tooltip": "Acc original de Alibaba en models/loras, Ref2VA o FL2VA según el modelo. Cargador CineConIA experimental para full y pruned/INT8. Usa 8 pasos, Simple/Euler, CFG 1 y shift 12/3."}),
                 "vdn_lora": (["ninguno"] + _archivos_vdn(), {"default": "ninguno",
                              "tooltip": "LoRA VDN/DMD compatible con la variante H3 elegida. Se aplica a fuerza 1.0."}),
             },
@@ -1391,8 +1368,8 @@ class CineCargarH3:
             notas.append("LoRA: " + " -> ".join(cadena))
 
         # --- aceleración. Va después de las LoRA estéticas y antes de los
-        # parches/shift. Cada ruta conserva la implementación real de su
-        # proveedor: Acc/PDD usa el cargador Deno; VDN usa LoRA a fuerza 1.
+        # parches/shift. Acc/PDD aplica el tronco y las cabezas oficiales con
+        # el cargador interno de CineConIA; VDN usa LoRA a fuerza 1.
         model, nota_acelerador = _aplicar_acelerador(
             model, acelerador, acc_lora, vdn_lora, modelo,
             shift_video, shift_audio,

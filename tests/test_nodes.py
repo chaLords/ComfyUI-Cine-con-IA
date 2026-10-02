@@ -262,23 +262,17 @@ class ModelProfileTests(unittest.TestCase):
         self.assertIs(result, model)
         self.assertEqual(note, "sin acelerador")
 
-    def test_acc_pdd_uses_the_real_deno_loader(self):
-        calls = []
-
-        class Deno:
-            FUNCTION = "apply"
-            def apply(self, **kwargs):
-                calls.append(kwargs)
-                return ("acc-model",)
-
-        comfy = SimpleNamespace(NODE_CLASS_MAPPINGS={"DenoMiniMaxH3AccLoader": Deno})
-        with patch.dict(sys.modules, {"nodes": comfy}):
+    def test_acc_pdd_uses_our_loader_without_external_nodes(self):
+        paths = SimpleNamespace(get_full_path_or_raise=lambda folder, name: "local/" + name)
+        with patch.dict(sys.modules, {"folder_paths": paths}), patch.object(
+                NODES, "apply_acc_pdd", return_value=("acc-model", "Acc/PDD propio")) as loader:
             result, note = NODES._aplicar_acelerador(
                 "base", "Alibaba MiniMax-H3 Acc/PDD 8 pasos",
-                "h3_acc_lora.safetensors", "ninguno",
+                "MiniMax-H3-Ref2VA-Acc-8Step.safetensors", "ninguno",
                 "minimax_h3_ref2va.safetensors", 12, 3)
         self.assertEqual(result, "acc-model")
-        self.assertEqual(calls, [{"model": "base", "acc_lora": "h3_acc_lora.safetensors"}])
+        loader.assert_called_once_with("base", "local/MiniMax-H3-Ref2VA-Acc-8Step.safetensors",
+                                       "minimax_h3_ref2va.safetensors", 12, 3)
         self.assertIn("Acc/PDD", note)
 
     def test_vdn_uses_lora_loader_at_strength_one(self):
@@ -301,12 +295,27 @@ class ModelProfileTests(unittest.TestCase):
         self.assertIn("VDN/DMD", note)
 
     def test_accelerator_never_falls_back_silently(self):
-        with patch.dict(sys.modules, {"nodes": SimpleNamespace(NODE_CLASS_MAPPINGS={})}):
-            with self.assertRaisesRegex(RuntimeError, "DenoMiniMaxH3AccLoader"):
+        paths = SimpleNamespace(get_full_path_or_raise=lambda folder, name: name)
+        with patch.dict(sys.modules, {"folder_paths": paths}), patch.object(
+                NODES, "apply_acc_pdd", side_effect=ValueError("base AdaLN incompatible")):
+            with self.assertRaisesRegex(ValueError, "base AdaLN incompatible"):
                 NODES._aplicar_acelerador(
                     "base", "Alibaba MiniMax-H3 Acc/PDD 8 pasos",
                     "h3_acc_lora.safetensors", "ninguno",
                     "minimax_h3_ref2va.safetensors", 12, 3)
+
+    def test_acc_catalog_does_not_need_deno(self):
+        with patch.object(NODES, "_lista", return_value=["style.safetensors", "Ref2VA-Acc.safetensors",
+                          "pdd.safetensors", "acc.pt"]):
+            self.assertEqual(NODES._archivos_acc_pdd(), ["Ref2VA-Acc.safetensors", "pdd.safetensors"])
+
+    def test_acc_gguf_is_rejected_before_applying_patches(self):
+        paths = SimpleNamespace(get_full_path_or_raise=lambda folder, name: name)
+        with patch.dict(sys.modules, {"folder_paths": paths}), patch.object(NODES, "apply_acc_pdd") as loader:
+            with self.assertRaisesRegex(ValueError, "GGUF"):
+                NODES._aplicar_acelerador("base", "Alibaba MiniMax-H3 Acc/PDD 8 pasos",
+                    "MiniMax-H3-Ref2VA-Acc-8Step.safetensors", "ninguno", "h3_ref2va.gguf", 12, 3)
+            loader.assert_not_called()
 
     def test_incompatible_accelerator_recipes_are_rejected(self):
         cases = [
@@ -325,12 +334,13 @@ class ModelProfileTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     NODES._aplicar_acelerador(
                         "base", accelerator, acc, vdn, model, sv, sa)
-        with self.assertRaisesRegex(ValueError, "único acelerador"):
-            NODES._aplicar_acelerador(
-                "base", "VDN-H3 DMD Turbo 8 pasos", "ninguno",
-                "minimax_h3_dmd_ref2va_8step_turbo.safetensors",
-                "minimax_h3_ref2va.safetensors", 12, 3,
-                ("otro_turbo.safetensors",))
+        for ordinary_slot in ("otro_turbo.safetensors", "MiniMax-H3-Ref2VA-Acc-8Step.safetensors"):
+            with self.assertRaisesRegex(ValueError, "único acelerador"):
+                NODES._aplicar_acelerador(
+                    "base", "VDN-H3 DMD Turbo 8 pasos", "ninguno",
+                    "minimax_h3_dmd_ref2va_8step_turbo.safetensors",
+                    "minimax_h3_ref2va.safetensors", 12, 3,
+                    (ordinary_slot,))
 
     def test_the_shift_falls_back_when_the_node_is_missing(self):
         # Sin ningun nodo de shift instalado, el modelo sale igual que entro:

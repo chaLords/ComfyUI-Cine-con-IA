@@ -194,6 +194,15 @@ class RenderProgresivoTests(unittest.TestCase):
     def setUp(self):
         FakeSelfLift.llamadas = []
 
+    def test_acc_pdd_no_delega_progresivo_sin_validar(self):
+        from cineconia_h3.acc_pdd import MARKER
+        model = SimpleNamespace(model_options={"transformer_options": {MARKER: {}}})
+        fake, _ = fake_nodes()
+        with patch.dict(sys.modules, {"nodes": fake}):
+            with self.assertRaisesRegex(ValueError, "muestreo Normal"):
+                CineH3OptimizedSampler().render(model, "positivo", LATENTE, config()[0], 833)
+        self.assertEqual(FakeSelfLift.llamadas, [])
+
     def test_llama_a_selflift_con_la_politica_del_optimizador(self):
         c, _ = config(refine=False)
         fake, llamadas = fake_nodes()

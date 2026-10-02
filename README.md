@@ -46,6 +46,12 @@ The interface is in Spanish and adds visual controls, memory warnings, render pr
 > [!IMPORTANT]
 > This repository contains the nodes and their interface. It does not include ComfyUI, models, LoRAs, VAEs or interpolation and upscaling weights. The **Models** node downloads them into the right folder with one button.
 
+### Experimental branch: native Acc/PDD loader
+
+The existing **Load Model** node can apply the original Alibaba H3 Acc/PDD checkpoint without Deno. Full and pruned/INT8 layouts are implemented; pruned uses two bundled ~11 MB AdaLN reference grids ([provenance](cineconia_h3/assets/NOTICE.md)). These auxiliary grids are the exception to the weights exclusion above; the model and Acc LoRA remain separate downloads.
+
+Start with [workflow 050](examples/050.REALminimax-H3-CineconIA-Acc-PDD-propio-8pasos.json): select a reference image, keep 8 steps / Euler / Simple / CFG 1 / shift 12/3, and disable refinement and progressive sampling. CPU checks with the official Ref2VA checkpoint passed; complete GPU renders, quality, speed and VRAM are **not yet validated**. See [usage, evidence and limitations](docs/ANALISIS_ACC_PDD.md).
+
 > [!CAUTION]
 > The four H3 nodes (Scene/Prompt H3, Camera Director H3, H3 Optimizer and H3 Optimized Sampler) are experimental. Their VRAM traffic light is calibrated with real renders on a 16 GB RTX 4060 Ti; 8, 12, 24 and 32 GB cards have no benchmark yet. See the [H3 Optimizer v1 notes](docs/H3_OPTIMIZER_V1_ES.md) (Spanish).
 

@@ -7,6 +7,18 @@ que figuran abajo.
 
 ---
 
+## ComfyUI-MiniMax-H3-PDD · AdaLN reference grids
+
+The experimental Acc/PDD loader's adapter mapping and curve rebase were informed by
+the MIT project [ComfyUI-MiniMax-H3-PDD](https://github.com/lukas-9936/ComfyUI-MiniMax-H3-PDD).
+Two small AdaLN grids are redistributed from commit
+`c5f103aeafca90551f833b3a8a941776455d79e7`.
+The full MIT notice and provenance are included in
+[cineconia_h3/assets/NOTICE.md](cineconia_h3/assets/NOTICE.md).
+The model and LoRA retain their own terms; no Deno GPL code is included.
+
+---
+
 ## Loop Forge · minimaxh3-shots-skills
 
 The fourteen MiniMax H3 camera recipes in `web/cineconia.js` (`TOMAS_H3`) and the recipe rules in
