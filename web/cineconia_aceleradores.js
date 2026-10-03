@@ -66,6 +66,13 @@ export function bloqueoAcelerador(c, acelerador, cargador) {
   return null;
 }
 
+/** Aceleradores de la lista que hoy no se pueden elegir: [[nombre corto, motivo], ...]. */
+export function noDisponibles(c, cargador) {
+  return Object.entries(c?.reglas || {})
+    .map(([nombre, reglas]) => [reglas.corto || nombre, bloqueoAcelerador(c, nombre, cargador)])
+    .filter(([, motivo]) => motivo);
+}
+
 /** Lo que el servidor rechazaría con el acelerador elegido, sin apagar nada. */
 export function avisosAcelerador(c, cargador) {
   const reglas = c?.reglas?.[cargador.acelerador];

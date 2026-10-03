@@ -206,3 +206,17 @@ test('un control nativo fijado se dibuja opaco con su valor a la vista', () => {
   fn('atenuable')(propio);
   assert.equal(propio.draw, antes);
 });
+
+test('la lista dice qué aceleradores no están disponibles y por qué', () => {
+  const {fn} = setup();
+  const fuera = (extra) => plano(fn('noDisponibles')(CONTRATO, fn('lecturaCargador')(cargador(extra))));
+  assert.deepEqual(fuera({}), []);
+  assert.deepEqual(fuera({lora: 'minimaxH3\\TaoMate-H3-3step-ComfyUI.safetensors', acelerador: 'Sin acelerador'}), [
+    ['Acc/PDD', 'quita TaoMate-H3-3step-ComfyUI.safetensors de las LoRA: ya es un acelerador'],
+    ['VDN/DMD', 'quita TaoMate-H3-3step-ComfyUI.safetensors de las LoRA: ya es un acelerador'],
+  ]);
+  // un GGUF solo deja fuera a Acc/PDD
+  assert.deepEqual(fuera({modelo: 'h3_ref2va_Q4_K_M.gguf'}), [['Acc/PDD', 'no admite modelos GGUF']]);
+  // sin contrato (Python anterior) no se marca nada
+  assert.deepEqual(plano(fn('noDisponibles')(null, fn('lecturaCargador')(cargador({})))), []);
+});
