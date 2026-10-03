@@ -423,6 +423,13 @@ export function lorasDelGrafo(nodos) {
   return out;
 }
 
+/** Huella corta de un texto (FNV-1a, 32 bits): dice si el prompt cambió entre corridas. */
+export function huella(texto) {
+  let h = 0x811c9dc5;
+  for (const ch of String(texto ?? "")) h = Math.imul(h ^ ch.codePointAt(0), 0x01000193) >>> 0;
+  return h.toString(16).padStart(8, "0");
+}
+
 /**
  * Con qué se va a hacer esta corrida, leído del grafo al empezar: el modelo
  * (del Cargar H3 o de cualquier cargador UNET/GGUF/checkpoint), las LoRA,
@@ -465,6 +472,18 @@ export function detalleCorrida(graph, config = null) {
   if (director && tieneWidget(director, "perfil_modelo")) {
     d.perfil_camara = String(valorWidget(director, "perfil_modelo") || "MiniMax H3");
   }
+  // Encuadre pedido y huella del prompt: sin ellos no se sabe, mirando solo el
+  // registro, si un defecto vino de la cámara o del texto.
+  if (director) {
+    const encuadre = ["plano", "angulo", "movimiento", "intensidad", "lente", "profundidad_campo"]
+      .map((x) => valorWidget(director, x))
+      .filter((v) => v != null && v !== "" && v !== "sin especificar" && v !== "normal");
+    if (encuadre.length) d.encuadre = encuadre.join(" / ");
+  }
+  const escrito = deClase("CineSimplePromptH3") || deClase("CineScenePromptH3");
+  const textos = (escrito?.widgets || [])
+    .filter((w) => typeof w.value === "string" && !String(w.name || "").startsWith("__"));
+  if (textos.length) d.prompt = huella(textos.map((w) => w.value).join("\n"));
   const c = config || deClase("CineH3Optimizer")?.__h3Preview?.config;
   const render = deClase("CineRenderH3");
   const refinar = deClase("CineEscalarRefinar");
@@ -523,7 +542,8 @@ const COLUMNAS = ["fecha", "estado", "total", "modelo", "pasos", "sampler", "sch
 function celdas(e) {
   const d = e.detalle || {};
   const receta = [d.tarea, d.referencias, d.acelerador ? `acelerador ${d.acelerador}` : "",
-    d.shift ? `shift ${d.shift}` : "", d.perfil_camara ? `cámara ${d.perfil_camara}` : ""]
+    d.shift ? `shift ${d.shift}` : "", d.perfil_camara ? `cámara ${d.perfil_camara}` : "",
+    d.encuadre ? `encuadre ${d.encuadre}` : "", d.prompt ? `prompt #${d.prompt}` : ""]
     .filter(Boolean).join(" · ");
   const tiempos = (e.tramos || []).map((x) => `${x.titulo} ${formatoCorto(x.ms)}`).join(" | ");
   const nodos = [receta ? `receta: ${receta}` : "", tiempos].filter(Boolean).join(" | ");

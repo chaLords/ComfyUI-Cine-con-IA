@@ -34,6 +34,14 @@ class HeaderReader:
 
 
 class CheckpointTests(unittest.TestCase):
+    @unittest.skipIf(torch is None, "torch no instalado")
+    def test_optimizer_contract_matches_the_distilled_schedule(self):
+        # La interfaz apaga lo que no cumpla este contrato; tiene que ser el mismo
+        # número de pasos que validate_schedule exige.
+        self.assertEqual(acc.OPTIMIZER_CONTRACT["pasos_advanced"], len(acc.pdd_sigmas()) - 1)
+        self.assertEqual(acc.OPTIMIZER_CONTRACT["sampler_advanced"], "euler")
+        self.assertIs(acc.OPTIMIZER_CONTRACT["refinar"], False)
+
     def test_complete_official_header(self):
         reader = HeaderReader()
         self.assertEqual(len(acc.validate_checkpoint(reader)), 362)

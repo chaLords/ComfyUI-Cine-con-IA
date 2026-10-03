@@ -6,13 +6,16 @@ const test = require('node:test');
 // Chips de muestreo, controles solo-progresivo y resumen del Render optimizado.
 const source = fs.readFileSync(path.join(__dirname, '../web/cineconia_faders.js'), 'utf8')
   .replace(/^import .*;\r?\n/gm, '').replace(/import\.meta\.url/g, '"http://localhost/x.js"');
+// Las reglas de aceleradores se cargan de verdad, como en el navegador.
+const acel = fs.readFileSync(path.join(__dirname, '../web/cineconia_aceleradores.js'), 'utf8')
+  .replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, '');
 function setup() {
   let extension;
   const context = vm.createContext({api:{fetchApi:async()=>({ok:true,json:async()=>({})})},Image:class{},URL,
     performance:{now:()=>0},app:{registerExtension(e){extension=e},graph:{setDirtyCanvas(){}}},
     setTimeout(){return 0},clearTimeout(){},TOMAS_H3:[['Libre','libre','']],conjugarTomaH3:x=>x,
     PRONOMBRES_H3:{neutro:{}},huecosH3:()=>[]});
-  vm.runInContext(source, context);
+  vm.runInContext(acel + source, context);
   return {extension, fn: n => vm.runInContext(n, context)};
 }
 function makeNode(extra = {muestreo:'Normal', transicion_advanced:10, escala_inicial_advanced:0}) {

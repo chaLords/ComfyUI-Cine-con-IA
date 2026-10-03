@@ -285,6 +285,25 @@ test('la receta probada guarda tarea, acelerador, referencias, shift y perfil de
   assert.ok(fn('lineaDetalle')(d).includes('acelerador VDN-H3'));
 });
 
+test('la receta guarda el encuadre pedido y una huella del prompt', () => {
+  const {fn} = setup();
+  const w = (name, value) => ({name, value});
+  const director = {type: 'CineCameraDirectorH3', mode: 0, widgets: [
+    w('plano', 'primerisimo primer plano'), w('angulo', 'perfil'), w('movimiento', 'acercarse'),
+    w('intensidad', 'normal'), w('lente', '85 mm'), w('profundidad_campo', 'sin especificar'),
+    w('perfil_modelo', 'MiniMax H3')]};
+  const texto = {type: 'CineSimplePromptH3', mode: 0, widgets: [w('__logo', null), w('texto', 'His feet remain in place.')]};
+  const g = grafo(CONFIG, {nodos: [director, texto]});
+  const d = plano(fn('detalleCorrida')(g));
+  assert.equal(d.encuadre, 'primerisimo primer plano / perfil / acercarse / 85 mm');
+  assert.match(d.prompt, /^[0-9a-f]{8}$/);
+  const fila = plano(fn('filaRegistro')({cuando: '03/10 11:42', estado: 'listo', total: 1, detalle: d, tramos: []}));
+  assert.ok(fila.nodos.includes(`encuadre primerisimo primer plano / perfil / acercarse / 85 mm · prompt #${d.prompt}`));
+  // otro texto, otra huella; el mismo texto, la misma
+  assert.equal(fn('huella')('His feet remain in place.'), d.prompt);
+  assert.notEqual(fn('huella')('His feet remain in place'), d.prompt);
+});
+
 test('el progresivo que no se aplicó y el refinado apagado quedan dichos', () => {
   const {fn} = setup();
   const refinar = {type: 'CineEscalarRefinar', mode: 0, widgets: [{name: 'activar', value: false}, {name: 'escala', value: 1.25}]};

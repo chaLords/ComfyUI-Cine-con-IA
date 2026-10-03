@@ -1,5 +1,6 @@
 """Camera Director adaptable: una intención, vocabulario por modelo."""
 
+import logging
 import re
 
 from .camera_recipes import MODEL_NAMES, resolve_recipe
@@ -17,6 +18,52 @@ CONTINUITY_RULES = (
     "No person or limb enters the frame unless established by the scene. "
     "The requested framing and camera path take priority while scene geometry remains coherent."
 )
+
+# Planos que dejan fuera pies y piernas. Si la escena los pide, el modelo
+# tiene que elegir entre encuadre y acción: en los renders del 050
+# (2026-10-02/03) H3 lo resolvió con una segunda figura de cuerpo entero
+# detrás del primer plano. Solo se avisa; el prompt no se reescribe.
+_PIES = r"feet|foot|shoes?|boots?|full[- ]body|full[- ]length|head[- ]to[- ]toe|whole body"
+_SIN_PIERNAS = re.compile(r"\b(" + _PIES + r"|legs?|knees?)\b", re.IGNORECASE)
+_SIN_PIES = re.compile(r"\b(" + _PIES + r")\b", re.IGNORECASE)
+_FUERA_DE_PLANO = {
+    "primerisimo primer plano": _SIN_PIERNAS, "primer plano": _SIN_PIERNAS,
+    "plano medio corto": _SIN_PIERNAS, "plano medio": _SIN_PIERNAS,
+    "plano americano": _SIN_PIES,   # corta por las rodillas
+}
+_PLANOS_SIN_PIES = tuple(_FUERA_DE_PLANO)
+_SECCIONES_ACCION = re.compile(
+    r"(?ms)^(?:summary|detailed_description):[ \t]*\n?(.*?)"
+    r"(?=^(?:subject_definitions|summary|retention_analysis|detailed_description|"
+    r"overall_soundscape|non_diegetic_music):|\Z)")
+
+
+def _texto_accion(scene):
+    """Lo que pasa en el plano; la descripción del personaje queda fuera."""
+    if "raw_prompt" in scene:
+        texto = str(scene["raw_prompt"])
+        secciones = _SECCIONES_ACCION.findall(texto)
+        return "\n".join(secciones) if secciones else texto
+    return "\n".join(str(scene.get(k, "")) for k in
+                     ("summary", "action", "setting", "visual_style"))
+
+
+def framing_warnings(scene, plano, movimiento):
+    """Contradicciones entre el encuadre pedido y la escena. No cambia nada."""
+    avisos = []
+    if plano in _FUERA_DE_PLANO and isinstance(scene, dict):
+        patron = _FUERA_DE_PLANO[plano]
+        partes = sorted({m.group(1).lower() for m in patron.finditer(_texto_accion(scene))})
+        if partes:
+            avisos.append(
+                "el {} no muestra {}, pero la escena lo pide; riesgo de que el modelo "
+                "añada una segunda figura de cuerpo entero. Abre el plano o quita esas "
+                "partes de la acción".format(plano, ", ".join(partes)))
+    if plano == "primerisimo primer plano" and movimiento in ("acercarse", "zoom in"):
+        avisos.append(
+            "{} desde un primerísimo primer plano deja poco recorrido; H3 puede "
+            "empezar más abierto (observado, sin prueba controlada)".format(movimiento))
+    return avisos
 
 
 def _compile_camera(recipe, plano, angulo, movimiento, intensidad, lente, profundidad):
@@ -156,4 +203,8 @@ class CineCameraDirectorH3:
             info += " · AVISO: " + warning
         if key != "minimax_h3" and str(instruccion_camara or "").strip():
             info += " · el texto manual se conservó literalmente; no se traduce"
-        return prompt, info
+        avisos = framing_warnings(scene, plano, movimiento)
+        if avisos:
+            info += " · AVISO: " + " | ".join(avisos)
+            logging.warning("[Cine con IA] Director de cámara: %s", " | ".join(avisos))
+        return {"ui": {"camara_avisos": avisos}, "result": (prompt, info)}

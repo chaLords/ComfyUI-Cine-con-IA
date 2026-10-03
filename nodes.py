@@ -17,7 +17,7 @@ try:
         CineSimplePromptH3,
     )
     from .cineconia_h3.camera_recipes import prompt_recipe, public_registry
-    from .cineconia_h3.acc_pdd import apply_acc_pdd
+    from .cineconia_h3.acc_pdd import OPTIMIZER_CONTRACT, apply_acc_pdd
 except ImportError:
     # Los tests cargan nodes.py directamente, fuera del paquete de ComfyUI.
     from cineconia_h3 import (
@@ -28,7 +28,7 @@ except ImportError:
         CineSimplePromptH3,
     )
     from cineconia_h3.camera_recipes import prompt_recipe, public_registry
-    from cineconia_h3.acc_pdd import apply_acc_pdd
+    from cineconia_h3.acc_pdd import OPTIMIZER_CONTRACT, apply_acc_pdd
 
 CATEGORY = "Cine con IA"
 
@@ -940,6 +940,8 @@ ACELERADORES_H3 = (
     "VDN-H3 DMD Turbo 8 pasos",
 )
 ACELERADOR_POR_DEFECTO = ACELERADORES_H3[0]
+PERFIL_ACELERADOR = "MiniMax H3"
+SHIFT_ACELERADOR = (12.0, 3.0)
 
 
 def _archivos_acc_pdd():
@@ -963,21 +965,30 @@ def _variante_h3(nombre):
     return ""
 
 
+# Las LoRA destiladas de pocos pasos (TaoMate-H3-3step, lightx2v, Lightning...)
+# también son aceleradores aunque vayan en una ranura estética: apilarlas con
+# Acc/PDD o VDN deja una corrida imposible de interpretar.
+_LORA_ACELERADORA = re.compile(
+    r"vdn|dmd|pdd|acc[_-]lora|acc[_-]8step|turbo|taomate|lightx2v|lightning|distill"
+    r"|(?<![a-z0-9])\d+[_-]?steps?(?![a-z])")
+
+
 def _es_lora_aceleradora(nombre):
-    texto = str(nombre or "").casefold()
-    return any(t in texto for t in
-               ("vdn", "dmd", "pdd", "acc_lora", "acc-lora", "acc-8step", "acc_8step", "turbo"))
+    return bool(_LORA_ACELERADORA.search(str(nombre or "").casefold()))
 
 
 def _validar_compatibilidad_acelerador(acelerador, archivo, modelo,
                                        shift_video, shift_audio):
     if not archivo or archivo == "ninguno":
-        raise ValueError("El acelerador está activo pero no se eligió su archivo")
+        campo = "Archivo Acc/PDD" if "Acc/PDD" in str(acelerador) else "Archivo VDN/DMD"
+        raise ValueError(
+            "El acelerador {} está activo pero falta su archivo: elige «{}» en "
+            "Cargar modelo, o vuelve a «Sin acelerador».".format(acelerador, campo))
     try:
         sv, sa = float(shift_video), float(shift_audio)
     except (TypeError, ValueError):
         raise ValueError("El acelerador H3 necesita shift de video 12 y audio 3")
-    if abs(sv - 12.0) > 1e-6 or abs(sa - 3.0) > 1e-6:
+    if abs(sv - SHIFT_ACELERADOR[0]) > 1e-6 or abs(sa - SHIFT_ACELERADOR[1]) > 1e-6:
         raise ValueError(
             "La primera comparación de aceleradores H3 exige shift 12/3; "
             "recibió {:g}/{:g}. Cámbialos explícitamente para que la corrida "
@@ -1017,6 +1028,24 @@ def _llamar_nodo_requerido(node_id, **kwargs):
     if funcion is None:
         raise RuntimeError("El nodo externo {} no expone una función ejecutable".format(node_id))
     return _desenvolver(funcion(**kwargs))
+
+
+def contrato_aceleradores():
+    """Lo que el cargador y Acc/PDD rechazan, para que la interfaz lo apague antes."""
+    acc, vdn = ACELERADORES_H3[1], ACELERADORES_H3[2]
+    return {
+        "sin": ACELERADOR_POR_DEFECTO,
+        "perfil": PERFIL_ACELERADOR,
+        "shift": list(SHIFT_ACELERADOR),
+        "lora_aceleradora": _LORA_ACELERADORA.pattern,
+        "reglas": {
+            acc: {"corto": "Acc/PDD", "archivo": "acc_lora", "sin_gguf": True,
+                  "exige_variante": True, "optimizador": dict(OPTIMIZER_CONTRACT)},
+            vdn: {"corto": "VDN/DMD", "archivo": "vdn_lora", "sin_gguf": False,
+                  "exige_variante": False, "mismo_pruned": True,
+                  "recomendado": "8 pasos · euler · simple"},
+        },
+    }
 
 
 def _aplicar_acelerador(model, acelerador, acc_lora, vdn_lora, modelo,
@@ -1329,7 +1358,7 @@ class CineCargarH3:
             notas.append("perfil {} (deducido)".format(nombre_perfil))
         else:
             notas.append("perfil {}".format(nombre_perfil))
-        if acelerador != ACELERADOR_POR_DEFECTO and nombre_perfil != "MiniMax H3":
+        if acelerador != ACELERADOR_POR_DEFECTO and nombre_perfil != PERFIL_ACELERADOR:
             raise ValueError(
                 "{} solo es compatible con el perfil MiniMax H3, no con {}"
                 .format(acelerador, nombre_perfil))
@@ -2527,6 +2556,10 @@ def _registrar_rutas():
     rutas = getattr(getattr(PromptServer, "instance", None), "routes", None)
     if rutas is None:
         return
+
+    @rutas.get("/cineconia/aceleradores")
+    async def _aceleradores(peticion):
+        return web.json_response(contrato_aceleradores())
 
     @rutas.get("/cineconia/camera_recipes")
     async def _camera_recipes(peticion):

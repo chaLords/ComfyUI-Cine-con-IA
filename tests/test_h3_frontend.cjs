@@ -5,6 +5,9 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const source = fs.readFileSync(path.join(__dirname, '../web/cineconia_faders.js'), 'utf8')
   .replace(/^import .*;\r?\n/gm, '').replace(/import\.meta\.url/g, '"http://localhost/extensions/cineconia/faders.js"');
+// Las reglas de aceleradores se cargan de verdad, como en el navegador.
+const acel = fs.readFileSync(path.join(__dirname, '../web/cineconia_aceleradores.js'), 'utf8')
+  .replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, '');
 function setup(api = {fetchApi: async () => ({ok:true,json:async()=>({config:{steps:20}})})}) {
   let extension;
   const timers = new Map();let counter=0;
@@ -14,7 +17,7 @@ function setup(api = {fetchApi: async () => ({ok:true,json:async()=>({config:{st
     TOMAS_H3:[['Libre','libre',''],['Orbita','Orbita','The camera arcs.']],
     conjugarTomaH3:x=>x,PRONOMBRES_H3:{neutro:{}},huecosH3:()=>[],
   });
-  vm.runInContext(source,context);
+  vm.runInContext(acel + source, context);
   return {context,extension,timers,fn:name=>vm.runInContext(name,context)};
 }
 function makeNode(type='CineH3Optimizer') {

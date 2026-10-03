@@ -25,6 +25,14 @@ GRID_HASHES = {
     "fl2va": "6e7208e7c78c8fa21a4e7c0d92dfbf4edb05239e4951aac5e4b2988056649562",
 }
 CURVE_MAX_RESIDUAL = 5e-4
+# Lo único que admite la trayectoria destilada en el Optimizador, por nombre de
+# widget. La interfaz lo lee de /cineconia/aceleradores para apagar, antes de
+# encolar, lo que validate_schedule, run_selflift o el refinado rechazarían.
+OPTIMIZER_CONTRACT = {
+    "modo": "Advanced", "pasos_advanced": 8, "sampler_advanced": "euler",
+    "scheduler_advanced": "simple", "denoise_advanced": 1.0,
+    "muestreo": "Normal", "refinar": False,
+}
 
 
 @dataclass(frozen=True)

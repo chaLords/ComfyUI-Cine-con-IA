@@ -334,13 +334,49 @@ class ModelProfileTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     NODES._aplicar_acelerador(
                         "base", accelerator, acc, vdn, model, sv, sa)
-        for ordinary_slot in ("otro_turbo.safetensors", "MiniMax-H3-Ref2VA-Acc-8Step.safetensors"):
+        for ordinary_slot in ("otro_turbo.safetensors", "MiniMax-H3-Ref2VA-Acc-8Step.safetensors",
+                              "minimaxH3\\TaoMate-H3-3step-ComfyUI.safetensors",
+                              "wan2.2_i2v_lightx2v_4steps.safetensors"):
             with self.assertRaisesRegex(ValueError, "único acelerador"):
                 NODES._aplicar_acelerador(
                     "base", "VDN-H3 DMD Turbo 8 pasos", "ninguno",
                     "minimax_h3_dmd_ref2va_8step_turbo.safetensors",
                     "minimax_h3_ref2va.safetensors", 12, 3,
                     (ordinary_slot,))
+        for aesthetic in ("film_grain_v2.safetensors", "retrato_35mm.safetensors",
+                          "footsteps_style.safetensors"):
+            self.assertFalse(NODES._es_lora_aceleradora(aesthetic), aesthetic)
+
+    def test_accelerator_contract_is_what_the_server_enforces(self):
+        # La interfaz apaga botones con este contrato: tiene que ser serializable,
+        # nombrar campos reales del Optimizador y usar el mismo patrón de LoRA.
+        import json
+        import re
+        from cineconia_h3.comfy_nodes import CineH3Optimizer
+        contrato = NODES.contrato_aceleradores()
+        self.assertEqual(json.loads(json.dumps(contrato)), contrato)
+        self.assertEqual(contrato["sin"], NODES.ACELERADOR_POR_DEFECTO)
+        self.assertEqual(set(contrato["reglas"]), set(NODES.ACELERADORES_H3[1:]))
+        spec = CineH3Optimizer.INPUT_TYPES()
+        campos = {**spec["required"], **spec["optional"]}
+        for campo, valor in contrato["reglas"][NODES.ACELERADORES_H3[1]]["optimizador"].items():
+            self.assertIn(campo, campos)
+            if isinstance(campos[campo][0], list) and campo != "sampler_advanced":
+                self.assertIn(valor, campos[campo][0], campo)
+        for nombre in ("taomate-h3-3step-comfyui.safetensors", "minimax-h3-ref2va-acc-8step.safetensors"):
+            self.assertTrue(re.search(contrato["lora_aceleradora"], nombre), nombre)
+        self.assertIsNone(re.search(contrato["lora_aceleradora"], "film_grain_v2.safetensors"))
+
+    def test_missing_accelerator_file_names_the_field_to_fill(self):
+        # Corridas 2026-10-03 11:50 y 11:51: Acc/PDD activo con el archivo en "ninguno".
+        with self.assertRaisesRegex(ValueError, "«Archivo Acc/PDD»"):
+            NODES._aplicar_acelerador(
+                "base", "Alibaba MiniMax-H3 Acc/PDD 8 pasos", "ninguno", "ninguno",
+                "minimax_h3_ref2va.safetensors", 12, 3)
+        with self.assertRaisesRegex(ValueError, "«Archivo VDN/DMD»"):
+            NODES._aplicar_acelerador(
+                "base", "VDN-H3 DMD Turbo 8 pasos", "ninguno", "ninguno",
+                "minimax_h3_ref2va.safetensors", 12, 3)
 
     def test_the_shift_falls_back_when_the_node_is_missing(self):
         # Sin ningun nodo de shift instalado, el modelo sale igual que entro:

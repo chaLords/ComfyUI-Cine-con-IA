@@ -127,5 +127,68 @@ class AdaptiveRecipeTests(unittest.TestCase):
         self.assertNotIn("CineModelProfile", NODES.NODE_CLASS_MAPPINGS)
 
 
+# Prompt de las corridas 050 del 2026-10-02/03 con personaje duplicado.
+PROMPT_050 = """subject_definitions:
+<Subject 1> is the adult man represented in <Picture 1>. The left panel defines his facial features, hairstyle and beard. The center and right panels define his clothing: a brown leather jacket, a white shirt, a brown tie, beige pleated trousers and dark brown shoes. All panels describe the same person.
+
+summary:
+[reference generation] <Subject 1> stands calmly inside a spacious photography studio, breathing naturally and gradually forming a subtle, relaxed smile.
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - preserve his facial structure, hairstyle, beard, body proportions and clothing from <Picture 1>. Use the reference sheet for the character, not for the studio environment.
+
+detailed_description:
+Naturalistic live-action photography with realistic skin texture, detailed leather and soft daylight. The studio has a wooden floor, tall windows along one wall and brick pillars at different distances. A wooden chair stands several metres behind <Subject 1>.
+[Shot 1] <Subject 1> stands comfortably with his arms resting at his sides. He maintains his body orientation and looks toward a fixed point in the room. He breathes naturally, blinks occasionally and gradually forms a subtle smile. His feet remain in place.
+
+overall_soundscape:
+Quiet studio ambience and faint clothing rustle. No speech.
+
+non_diegetic_music:
+N/A"""
+
+
+class FramingWarningTests(unittest.TestCase):
+    """El Director avisa de contradicciones de encuadre sin tocar el prompt."""
+
+    def dirigir(self, plano, movimiento, texto=PROMPT_050):
+        scene = {"schema": "cineconia.h3.scene/v1", "raw_prompt": texto}
+        return CineCameraDirectorH3().dirigir(
+            scene, plano, "perfil", movimiento, "suave", "85 mm", "profunda", "", True, "MiniMax H3")
+
+    def test_tight_shot_with_feet_in_the_action_warns(self):
+        out = self.dirigir("primerisimo primer plano", "acercarse")
+        avisos = out["ui"]["camara_avisos"]
+        self.assertEqual(len(avisos), 2)
+        self.assertIn("feet", avisos[0])
+        # los zapatos de subject_definitions describen identidad, no la acción
+        self.assertNotIn("shoes", avisos[0])
+        self.assertIn("AVISO", out["result"][1])
+
+    def test_warning_never_changes_the_prompt(self):
+        from cineconia_h3.camera_director import build_prompt
+        scene = {"schema": "cineconia.h3.scene/v1", "raw_prompt": PROMPT_050}
+        esperado, _ = build_prompt(scene, "primerisimo primer plano", "perfil", "acercarse",
+                                   "suave", "85 mm", "profunda", "", True, "MiniMax H3")
+        self.assertEqual(self.dirigir("primerisimo primer plano", "acercarse")["result"][0], esperado)
+
+    def test_coherent_framing_is_silent(self):
+        for plano in ("plano general", "gran plano general", "sin especificar"):
+            out = self.dirigir(plano, "fijo")
+            self.assertEqual(out["ui"]["camara_avisos"], [], plano)
+            self.assertNotIn("AVISO", out["result"][1])
+        sin_pies = PROMPT_050.replace(" His feet remain in place.", "")
+        self.assertEqual(self.dirigir("primer plano", "fijo", sin_pies)["ui"]["camara_avisos"], [])
+        # el plano americano corta por las rodillas: piernas sí, pies no
+        rodillas = sin_pies.replace("arms resting at his sides", "hands resting on his knees")
+        self.assertEqual(self.dirigir("plano americano", "fijo", rodillas)["ui"]["camara_avisos"], [])
+        self.assertTrue(self.dirigir("plano americano", "fijo")["ui"]["camara_avisos"])
+
+    def test_warned_shots_exist_in_the_registry(self):
+        from cineconia_h3.camera_director import _PLANOS_SIN_PIES
+        for plano in _PLANOS_SIN_PIES:
+            self.assertIn(plano, SHOTS)
+
+
 if __name__ == "__main__":
     unittest.main()

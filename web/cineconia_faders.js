@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { TOMAS_H3, conjugarTomaH3, PRONOMBRES_H3, huecosH3 } from "./cineconia.js";
+import { avisar, cargadorDe, cargarContrato, conflictos, contratoActual, igual, rechazo, textoRegla } from "./cineconia_aceleradores.js";
 
 /**
  * Interfaz de los nodos H3 nuevos: logo, chips, faders y barra de carga.
@@ -178,8 +179,9 @@ function avisoMuestreo(n) {
 /**
  * Fila de chips atada a un widget nativo.
  * items: [[etiqueta, valor], ...]   alCambiar: (node, valor) => void
+ * bloqueo(node, valor): motivo si esa opcion no se puede elegir ahora.
  */
-function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
+function addChipsSimple(node, objetivo, titulo, items, alCambiar, bloqueo = null) {
   const estado = { rects: [], filas: 1, y: 0 };
   const w = {
     type: "cineconia_chips2",
@@ -213,9 +215,17 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
         if (x + tw > width - PAD && x > PAD) { x = PAD; fila++; }
         const cy = yTop + GAP + fila * (CHIP_H + GAP);
         const on = String(target.value) === String(val) || (objetivo === "modo" && target.value === "Manual" && val === "Auto");
+        // apagada: opaca y sin clic; elegida pero incompatible: borde rojo
+        const apagado = bloqueo ? bloqueo(n, val) : null;
+        ctx.globalAlpha = apagado && !on ? 0.3 : 1;
         ctx.fillStyle = on ? ACCENT : CHIP_BG;
         roundRect(ctx, x, cy, tw, CHIP_H, 5);
         ctx.fill();
+        if (apagado && on) {
+          ctx.strokeStyle = ROJO_SEM; ctx.lineWidth = 2;
+          roundRect(ctx, x + 1, cy + 1, tw - 2, CHIP_H - 2, 5);
+          ctx.stroke();
+        }
         ctx.fillStyle = on ? CHIP_ON_FG : CHIP_FG;
         ctx.textAlign = "center";
         if (ladder) {
@@ -230,7 +240,8 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
         } else {
           ctx.fillText(etq, x + tw / 2, cy + CHIP_H / 2 + 0.5);
         }
-        estado.rects.push({ x, y: cy, w: tw, h: CHIP_H, val });
+        ctx.globalAlpha = 1;
+        estado.rects.push({ x, y: cy, w: tw, h: CHIP_H, val, apagado });
         x += tw + GAP;
       }
       estado.filas = fila + 1;
@@ -240,6 +251,7 @@ function addChipsSimple(node, objetivo, titulo, items, alCambiar) {
       if (event.type !== "pointerdown" && event.type !== "mousedown") return false;
       for (const r of estado.rects) {
         if (pos[0] >= r.x && pos[0] <= r.x + r.w && pos[1] >= r.y && pos[1] <= r.y + r.h) {
+          if (r.apagado) { avisar(r.apagado); return true; }
           const target = findWidget(n, objetivo);
           const previo = target?.value;
           if (target) {
@@ -633,6 +645,116 @@ function addBarra(node) {
   return w;
 }
 
+// --- acelerador: lo que fija el Cargar modelo que alimenta este render -----
+
+/** Acelerador elegido aguas arriba, sus reglas y lo que hoy choca con ellas. */
+function estadoAcelerador(node) {
+  const c = contratoActual();
+  const cargador = c ? cargadorDe(node.graph || app.graph, node) : null;
+  const datos = c?.reglas?.[String(findWidget(cargador, "acelerador")?.value)];
+  if (!datos) return null;
+  const reglas = datos.optimizador || null;
+  return {
+    corto: datos.corto, reglas, recomendado: datos.recomendado,
+    choques: reglas ? conflictos(reglas, (campo) => findWidget(node, campo)?.value) : [],
+  };
+}
+
+/** Bloqueo de un chip: el valor que el acelerador no admite. */
+const fijadoPor = (campo) => (n, val) => {
+  const e = estadoAcelerador(n);
+  const fijo = e?.reglas?.[campo];
+  return fijo !== undefined && !igual(val, fijo) ? `${e.corto} fija ${textoRegla(campo, fijo)}` : null;
+};
+
+/**
+ * Un widget nativo fijado se dibuja opaco pero con su valor a la vista. El
+ * frontend usa w.draw si existe (el mismo camino que ocultar()); si el widget
+ * no es una clase con drawWidget, se queda como estaba y solo actúa el guardián.
+ */
+function atenuable(w) {
+  if (typeof w?.drawWidget !== "function" || typeof w.draw === "function") return;
+  w.draw = function (ctx, n, width, y, H, bajaCalidad) {
+    ctx.save();
+    if (this.__fijoAcel) ctx.globalAlpha *= 0.4;
+    this.drawWidget(ctx, {width, showText: !bajaCalidad});
+    ctx.restore();
+  };
+}
+
+/** Antes de dibujar: qué está fijado y el último valor aceptado de cada campo. */
+function marcarFijos(node) {
+  const reglas = estadoAcelerador(node)?.reglas;
+  for (const w of node.widgets.filter(widgetSeGuarda)) {
+    w.__previoAcel = w.value;
+    w.__fijoAcel = Boolean(reglas && w.name in reglas && igual(w.value, reglas[w.name]));
+  }
+}
+
+function addAvisoAcelerador(node) {
+  const estado = {boton: null};
+  const w = {
+    type: "cineconia_acelerador",
+    name: "__acelerador",
+    value: null,
+    options: {serialize: false},
+    serialize: false,
+    computeSize(width) {
+      const e = estadoAcelerador(node);
+      return [width, e ? CAB + (e.choques.length ? 50 : 24) : 0];
+    },
+    draw(ctx, n, width, y) {
+      const e = estadoAcelerador(n);
+      estado.boton = null;
+      if (!e) return;
+      ctx.save();
+      ctx.textBaseline = "middle";
+      cabecera(ctx, `acelerador ${e.corto} · elegido en Cargar modelo`, width, y + 8);
+      ctx.font = "11px " + MONO;
+      ctx.textAlign = "left";
+      const ancho = width - PAD * 2;
+      if (!e.reglas) {
+        ctx.fillStyle = TEXTO_TENUE;
+        textoAjustado(ctx, `receta recomendada: ${e.recomendado} · no bloquea nada`, PAD, y + CAB + 9, ancho, 1);
+      } else {
+        ctx.fillStyle = INFO_FG;
+        textoAjustado(ctx, "fijo: " + Object.entries(e.reglas).map(([k, v]) => textoRegla(k, v)).join(" · "),
+          PAD, y + CAB + 9, ancho, 1);
+        if (e.choques.length) {
+          const bw = 132, bx = width - PAD - bw, by = y + CAB + 22;
+          ctx.fillStyle = ROJO_SEM;
+          textoAjustado(ctx, "⚠ ahora: " + e.choques.map(([k, actual]) => textoRegla(k, actual)).join(" · "),
+            PAD, by + CHIP_H / 2, ancho - bw - 8, 1);
+          ctx.fillStyle = ACCENT;
+          roundRect(ctx, bx, by, bw, CHIP_H, 5);
+          ctx.fill();
+          ctx.fillStyle = CHIP_ON_FG;
+          ctx.textAlign = "center";
+          ctx.fillText(`Ajustar a ${e.corto}`, bx + bw / 2, by + CHIP_H / 2 + 0.5);
+          estado.boton = {x: bx, y: by, w: bw, h: CHIP_H};
+        }
+      }
+      ctx.restore();
+    },
+    mouse(event, pos, n) {
+      if (event.type !== "pointerdown" && event.type !== "mousedown") return false;
+      const b = estado.boton;
+      if (!b || pos[0] < b.x || pos[0] > b.x + b.w || pos[1] < b.y || pos[1] > b.y + b.h) return false;
+      // un clic del usuario: pone lo que el acelerador exige, nada más
+      for (const [campo, valor] of Object.entries(estadoAcelerador(n)?.reglas || {})) {
+        const t = findWidget(n, campo);
+        if (t && !igual(t.value, valor)) { t.value = valor; t.callback?.(valor); }
+      }
+      visibilidad(n);
+      actualizarPreview(n);
+      n.setDirtyCanvas(true, true);
+      return true;
+    },
+  };
+  node.widgets.push(w);
+  return w;
+}
+
 // --- montaje del Optimizador ----------------------------------------------
 
 function montarOptimizador(node) {
@@ -640,6 +762,9 @@ function montarOptimizador(node) {
   for (const [name, label] of Object.entries({width: "Ancho", height: "Alto", frames: "Fotogramas", refinar: "Solicitar segundo pase"})) {
     const w = findWidget(node, name); if (w) w.label = label;
   }
+  cargarContrato();
+  // antes de ocultar nada: ocultar()/mostrar() guardan y devuelven este draw
+  for (const w of node.widgets.filter(widgetSeGuarda)) atenuable(w);
 
   addLogo(node);
 
@@ -649,11 +774,13 @@ function montarOptimizador(node) {
     (n) => { aplicarPreset(n); actualizarPreview(n); },
   );
 
-  addChipsSimple(node, "modo", "controles", MODOS.map(([label, v]) => [label, v]), (n) => visibilidad(n));
+  addChipsSimple(node, "modo", "controles", MODOS.map(([label, v]) => [label, v]), (n) => visibilidad(n),
+    fijadoPor("modo"));
   // Solo si el servidor ya trae el modo progresivo: con un Python viejo no hay widget.
   if (findWidget(node, "muestreo")) {
-    addChipsSimple(node, "muestreo", "muestreo", MUESTREOS, (n) => visibilidad(n));
+    addChipsSimple(node, "muestreo", "muestreo", MUESTREOS, (n) => visibilidad(n), fijadoPor("muestreo"));
   }
+  addAvisoAcelerador(node);
   for (const [name, label] of Object.entries({
     transicion_advanced: "pasos a baja resolución",
     escala_inicial_advanced: "escala del tramo inicial · 0 = auto",
@@ -696,9 +823,29 @@ function montarOptimizador(node) {
       return result;
     };
   }
+  // Lo que fija el acelerador no se mueve: el cambio que lo saque de su valor
+  // (clic, flechas, otro nodo) se deshace y se explica. Si ya estaba mal, se
+  // deja cambiar; el aviso ofrece «Ajustar».
+  for (const widget of node.widgets.filter(widgetSeGuarda)) {
+    const interior = widget.callback;
+    widget.__previoAcel = widget.value;
+    widget.callback = function () {
+      const e = estadoAcelerador(node);
+      const motivo = rechazo(e?.reglas, this.name, this.__previoAcel, this.value);
+      if (motivo) {
+        avisar(`${e.corto} fija ${motivo}`);
+        this.value = this.__previoAcel;
+        node.setDirtyCanvas(true, true);
+        return;
+      }
+      this.__previoAcel = this.value;
+      return interior?.apply(this, arguments);
+    };
+  }
   const beforeDraw = node.onDrawForeground;
   node.onDrawForeground = function () {
     beforeDraw?.apply(this, arguments);
+    marcarFijos(this);
     visibilidad(this);
     actualizarPreview(this);
   };
@@ -736,7 +883,8 @@ function mostrar(w) {
 function visibilidad(node) {
   const advanced = findWidget(node, "modo")?.value === "Advanced";
   const progresivo = findWidget(node, "muestreo")?.value === "Progresivo";
-  const vista = advanced + "|" + progresivo;
+  const acel = estadoAcelerador(node);
+  const vista = advanced + "|" + progresivo + "|" + (acel ? acel.corto + acel.choques.length : "");
   if (node.__h3Vista === vista) return;
   node.__h3Vista = vista;
   node.__h3Advanced = advanced;
@@ -899,6 +1047,17 @@ function montarDirector(node) {
   apply.serialize = false;
   apply.options = {...apply.options, serialize: false};
 
+  // Avisos de encuadre que calcula Python (plano cerrado + pies en la acción...).
+  // Llegan en cuanto el Director se ejecuta, antes del render: se pueden cancelar.
+  const antesEjecutado = node.onExecuted;
+  node.onExecuted = function (message) {
+    antesEjecutado?.apply(this, arguments);
+    for (const aviso of message?.camara_avisos || []) {
+      console.warn("[Cine con IA] Director de cámara:", aviso);
+      app?.extensionManager?.toast?.add?.({severity: "warn", summary: "Director de cámara",
+        detail: aviso, life: 15000});
+    }
+  };
 }
 
 // --- Render optimizado: que va a hacer y cuanto tardo -----------------------

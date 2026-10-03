@@ -1,11 +1,13 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
+import { avisar, avisosAcelerador, bloqueoAcelerador, cargarContrato, contratoActual, lecturaCargador, lorasAceleradoras } from "./cineconia_aceleradores.js";
 
 const ACCENT = "#e08a3c";
 const CHIP_BG = "#2b3335";
 const CHIP_FG = "#9fb0b0";
 const CHIP_ON_FG = "#12181a";
 const INFO_FG = "#8fb9b3";
+const ROJO_CHIP = "#ed6976";
 
 const SEGUNDOS = [2, 3, 4, 5, 6, 8, 10, 12, 15];
 
@@ -571,8 +573,10 @@ function roundRect(ctx, x, y, w, h, r) {
 /**
  * Fila de chips pulsables que escriben en un widget existente.
  * items: [[etiqueta, valor], ...] o funcion(node) -> ese array
+ * bloqueo(node, valor): motivo si esa opcion no se puede elegir ahora; se ve
+ * opaca y el clic solo explica por que. Si ya estaba elegida, borde rojo.
  */
-function addChips(node, targetName, items, titulo = null, activa = null, usado = null) {
+function addChips(node, targetName, items, titulo = null, activa = null, usado = null, bloqueo = null) {
   const chipH = 22;
   const gap = 5;
   const pad = 10;
@@ -640,12 +644,19 @@ function addChips(node, targetName, items, titulo = null, activa = null, usado =
         //   ya usado antes -> naranja atenuado
         //   sin usar       -> gris
         const ya = usado ? !!usado(n, value) : false;
+        const apagado = bloqueo ? bloqueo(n, value) : null;
         const alfa = ctx.globalAlpha;
 
-        ctx.globalAlpha = alfa * (!on && ya ? 0.3 : 1);
+        ctx.globalAlpha = alfa * (!on && (ya || apagado) ? 0.3 : 1);
         ctx.fillStyle = on || ya ? ACCENT : CHIP_BG;
         roundRect(ctx, x, cy, tw, chipH, 4);
         ctx.fill();
+        if (on && apagado) {
+          ctx.strokeStyle = ROJO_CHIP;
+          ctx.lineWidth = 2;
+          roundRect(ctx, x + 1, cy + 1, tw - 2, chipH - 2, 4);
+          ctx.stroke();
+        }
         // elegido Y ya rodado: un punto para que no se confunda con uno nuevo
         if (on && ya) {
           ctx.globalAlpha = alfa * 0.55;
@@ -660,7 +671,7 @@ function addChips(node, targetName, items, titulo = null, activa = null, usado =
         ctx.fillText(String(label), x + tw / 2, cy + chipH / 2 + 0.5);
         ctx.globalAlpha = alfa;
 
-        state.rects.push({ x, y: cy, w: tw, h: chipH, value });
+        state.rects.push({ x, y: cy, w: tw, h: chipH, value, apagado });
         x += tw + gap;
       }
       state.rows = Math.max(1, row + 1);
@@ -672,6 +683,7 @@ function addChips(node, targetName, items, titulo = null, activa = null, usado =
         if (pos[0] >= r.x && pos[0] <= r.x + r.w && pos[1] >= r.y && pos[1] <= r.y + r.h) {
           const target = findWidget(n, targetName);
           if (cableDe(n, targetName)) return false;   // lo decide el nodo conectado
+          if (r.apagado) { avisar(r.apagado); return true; }
           if (target) {
             target.value = r.value;
             target.callback?.(target.value);
@@ -3951,30 +3963,61 @@ app.registerExtension({
         // --- acelerador H3: una sola ruta visible a la vez ---------------
         const acelerador = findWidget(this, "acelerador");
         if (acelerador) {
+          cargarContrato();
           addTitulo(this, "acelerador", "aceleración H3  ·  comparación controlada",
-                    "VDN y Acc/PDD se prueban por separado.");
+                    "Uno a la vez. Lo que no se puede combinar se ve apagado.");
+          // Botones en vez de la lista: así se ve qué no se puede combinar. El
+          // widget de verdad sigue en su sitio, escondido (se guarda por posición).
+          const motivoAcel = (nd, valor) => {
+            const c = contratoActual();
+            return c ? bloqueoAcelerador(c, valor, lecturaCargador(nd)) : null;
+          };
+          const chipsAcel = addChips(this, "acelerador", () => (acelerador.options?.values || []).map((v) => {
+            const corto = contratoActual()?.reglas?.[v]?.corto;
+            return [corto ? corto + " · 8 pasos" : v === "Sin acelerador" ? "sin acelerador" : v, v];
+          }), null, null, null, motivoAcel);
+          this.widgets.splice(this.widgets.indexOf(chipsAcel), 1);
+          this.widgets.splice(this.widgets.indexOf(acelerador), 0, chipsAcel);
           addInfo(this, (nd) => {
             const elegido = String(findWidget(nd, "acelerador")?.value || "Sin acelerador");
+            const c = contratoActual();
+            const lectura = lecturaCargador(nd);
             if (elegido === "Sin acelerador") {
-              return ["sin acelerador", "comportamiento histórico", ""];
+              const otra = c ? lorasAceleradoras(c, lectura.loras)[0] : null;
+              return ["sin acelerador", otra
+                ? cortar(String(otra).split(/[\\/]/).pop(), 30) + " ya acelera: Acc/PDD y VDN apagados"
+                : "comportamiento histórico", ""];
             }
-            const perfilActual = String(findWidget(nd, "perfil")?.value || PERFIL_POR_DEFECTO_UI);
+            const esAcc = elegido.includes("Acc/PDD");
+            const avisos = c ? avisosAcelerador(c, lectura) : [];
             return [
-              elegido.includes("Acc/PDD") ? "Acc/PDD  ·  cargador Deno" : "VDN/DMD  ·  LoRA x1.0",
-              "receta inicial: 8 pasos  ·  Simple  ·  Euler  ·  shift 12/3",
-              ["MiniMax H3", "Personalizado"].includes(perfilActual)
-                ? "" : "⚠ solo es compatible con MiniMax H3",
+              esAcc ? "Acc/PDD  ·  cargador interno CineConIA" : "VDN/DMD  ·  LoRA x1.0",
+              esAcc ? "fija el Optimizador: 8 pasos · euler · simple · normal"
+                : "receta inicial: 8 pasos  ·  Simple  ·  Euler  ·  shift 12/3",
+              avisos.length ? "⚠ " + avisos.join(" · ") : "",
             ];
           });
           const verAcelerador = () => {
             const elegido = String(acelerador.value || "Sin acelerador");
+            verWidget(acelerador, false);
             verWidget(findWidget(nodo, "acc_lora"), elegido.includes("Acc/PDD"));
             verWidget(findWidget(nodo, "vdn_lora"), elegido.includes("VDN-H3"));
             reajustar(nodo);
             nodo.setDirtyCanvas(true, true);
           };
+          // Lo que llega sin pasar por los botones (Selector, otra extensión)
+          // también respeta el bloqueo: vuelve al valor anterior y lo explica.
+          let previoAcel = acelerador.value;
           const antesAcelerador = acelerador.callback;
           acelerador.callback = function () {
+            const motivo = motivoAcel(nodo, this.value);
+            if (motivo && this.value !== previoAcel) {
+              avisar(`${this.value}: ${motivo}`);
+              this.value = previoAcel;
+              nodo.setDirtyCanvas(true, true);
+              return;
+            }
+            previoAcel = this.value;
             const r = antesAcelerador?.apply(this, arguments);
             if (String(this.value || "Sin acelerador") !== "Sin acelerador") {
               const sv = findWidget(nodo, "shift_video");
@@ -3988,7 +4031,7 @@ app.registerExtension({
           const confAcelerador = this.onConfigure;
           this.onConfigure = function () {
             const r = confAcelerador?.apply(this, arguments);
-            setTimeout(verAcelerador, 0);
+            setTimeout(() => { previoAcel = acelerador.value; verAcelerador(); }, 0);
             return r;
           };
           verAcelerador();
