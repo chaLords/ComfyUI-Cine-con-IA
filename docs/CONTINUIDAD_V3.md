@@ -249,3 +249,13 @@ Rama `feature/director-camara-automatica`, creada desde `d461f84`. La versión q
 ### Sin probar
 
 Los refuerzos y el prompt universal en GPU. Matriz pendiente en [LEY_PROMPT_ESCENA_ES.md](LEY_PROMPT_ESCENA_ES.md#pendiente-para-declararla-probada).
+
+### Corrección: el acelerador vuelve a ser una lista
+
+Decisión de Gonzalo: los botones limitan cuando se sumen aceleradores nuevos. «Acelerador H3» vuelve a ser la lista de siempre, que se alimenta de `ACELERADORES_H3` en Python.
+
+- Lo incompatible no se apaga en la lista: elegirlo vuelve a la opción anterior con un aviso del motivo.
+- La línea de estado dice qué aceleradores no están disponibles ahora y por qué (`noDisponibles` en `cineconia_aceleradores.js`).
+- El bloqueo del Optimizador con Acc/PDD no cambia.
+
+Esto reemplaza lo dicho más arriba sobre «botones (sin acelerador · Acc/PDD · VDN/DMD)» en Cargar modelo.
