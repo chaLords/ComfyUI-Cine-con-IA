@@ -197,3 +197,187 @@ test('el clic en una fila enciende esa rama', () => {
   w.draw(lienzo, n, 440, 40);
   assert.equal(n.__cabeceraDato.texto, '20 pasos · final');
 });
+
+// --- botones personalizables ------------------------------------------------
+
+function nodoInterruptor(g, extraApp = {}) {
+  let registrado;
+  class LGraphNode {
+    constructor() { this.widgets = []; this.properties = {}; this.size = [440, 200]; }
+    addWidget(type, name, value, cb, opts) { const w = {type, name, value, callback: cb, options: opts}; this.widgets.push(w); return w; }
+    addCustomWidget(w) { this.widgets.push(w); return w; }
+    computeSize() { return [440, 200]; }
+    setSize(s) { this.size = s; }
+    setDirtyCanvas() {}
+  }
+  let extension;
+  const context = vm.createContext({
+    app: {registerExtension(e) { extension = e; }, graph: g, canvas: {graph: g, setDirty() {}, selected_nodes: {}}, ...extraApp},
+    pintarCabecera() {}, COLOR_BASE: '#283436', anchoFijoAlNodo: (w) => w, esLienzoPrincipal: () => true,
+    LGraphNode, LiteGraph: {registerNodeType(tipo, clase) { registrado = [tipo, clase]; }},
+  });
+  vm.runInContext(source, context);
+  extension.registerCustomNodes();
+  const n = new registrado[1]();
+  n.graph = g;
+  return {n, ctx: context, fn: (x) => vm.runInContext(x, context)};
+}
+const lienzo = {fill() {}, stroke() {}, beginPath() {}, roundRect() {}, arc() {}, moveTo() {}, lineTo() {},
+  fillText() {}, save() {}, restore() {}, measureText: (s) => ({width: String(s).length * 6})};
+
+test('un workflow que solo trae el prefijo se ve y funciona como antes', () => {
+  const {fn} = setup();
+  const g = grafo();
+  const viejo = plano(fn('resumen')(g, 'RAMA'));
+  const nuevo = plano(fn('resumen')(g, 'RAMA', {prefijo: 'RAMA'}));
+  assert.deepEqual(nuevo.cabecera, viejo.cabecera);
+  assert.deepEqual(nuevo.ramas.map(x => [x.titulo, x.estado, x.color]), viejo.ramas.map(x => [x.titulo, x.estado, null]));
+  // el clic con properties de siempre hace lo mismo que encender()
+  const props = {prefijo: 'RAMA'};
+  const final = fn('botonesDe')(g, props)[1].clave;
+  assert.equal(fn('pulsar')(g, props, final), 6);
+  assert.equal(g.byId(513).mode, 0);
+  assert.equal(g.byId(515).mode, 4);
+});
+
+test('un botón propio se crea con nodos sueltos, con nombre y un color libre', () => {
+  const {fn} = setup();
+  const g = grafo();
+  const props = {prefijo: 'RAMA'};
+  const clave = fn('crearBoton')(props, [g.byId(504), g.byId(900)], '  Escena + extra ');
+  const otra = fn('crearBoton')(props, [g.byId(900)], '');
+  assert.equal(clave, 'b:b1');
+  assert.deepEqual(plano(props.botones), [
+    {id: 'b1', nombre: 'Escena + extra', color: 'ambar', nodos: [504, 900]},
+    {id: 'b2', nombre: 'botón 2', color: 'verde', nodos: [900]},
+  ]);
+  // properties tiene que viajar intacto en el JSON del workflow
+  assert.deepEqual(JSON.parse(JSON.stringify(props)), plano(props));
+  const botones = fn('botonesDe')(g, props);
+  assert.deepEqual(plano(botones.map(b => [b.clave, b.titulo, b.origen, b.nodos.length])), [
+    ['g:rama · 8 pasos · borrador', '8 pasos · borrador', 'grupo', 3],
+    ['g:RAMA · 20 pasos · final', '20 pasos · final', 'grupo', 3],
+    ['b:b1', 'Escena + extra', 'propio', 2],
+    ['b:b2', 'botón 2', 'propio', 1],
+  ]);
+  // un nodo borrado del grafo desaparece del botón sin romperlo
+  g._nodes.splice(g._nodes.indexOf(g.byId(900)), 1);
+  assert.equal(fn('botonesDe')(g, props)[3].nodos.length, 0);
+});
+
+test('modo una o ninguna: pulsar la encendida la apaga', () => {
+  const {fn} = setup();
+  const g = grafo();
+  const props = {prefijo: 'RAMA', modo: 'una_o_ninguna'};
+  const borrador = fn('botonesDe')(g, props)[0].clave;
+  fn('pulsar')(g, props, borrador);
+  for (const id of [515, 516, 34003, 513, 514, 34000]) assert.equal(g.byId(id).mode, 4, id);
+  assert.equal(fn('resumen')(g, 'RAMA', props).cabecera.corto, 'NINGUNA');
+  fn('pulsar')(g, props, borrador);
+  assert.equal(g.byId(515).mode, 0);
+  assert.equal(g.byId(513).mode, 4);
+});
+
+test('modo varias: cada botón se enciende y apaga solo; lo compartido se respeta', () => {
+  const {fn} = setup();
+  const g = grafo();
+  const props = {prefijo: 'RAMA', modo: 'varias', apagar: 'silenciar'};
+  const extra = fn('crearBoton')(props, [g.byId(516), g.byId(900)], 'extra');   // 516 también es del borrador
+  const [borrador, final] = fn('botonesDe')(g, props).map(b => b.clave);
+  fn('pulsar')(g, props, final);   // enciende el final sin apagar el borrador
+  assert.equal(g.byId(513).mode, 0);
+  assert.equal(g.byId(515).mode, 0);
+  const r = fn('resumen')(g, 'RAMA', props);
+  assert.equal(r.cabecera.texto, '8 pasos · borrador + 20 pasos · final + extra');
+  fn('pulsar')(g, props, extra);    // apagar extra: 516 sigue encendido por el borrador
+  assert.equal(g.byId(900).mode, 2);   // silenciar = modo 2, no bypass
+  assert.equal(g.byId(516).mode, 0);
+  fn('pulsar')(g, props, borrador);
+  assert.equal(g.byId(515).mode, 2);
+  assert.equal(g.byId(516).mode, 2);
+  assert.equal(g.byId(513).mode, 0);
+});
+
+test('renombrar, colorear, ocultar y ordenar se guardan en properties', () => {
+  const {fn} = setup();
+  const g = grafo();
+  const props = {prefijo: 'RAMA'};
+  const [borrador, final] = fn('botonesDe')(g, props).map(b => b.clave);
+  fn('ajustar')(props, borrador, {nombre: 'Rápido', color: 'turquesa'});
+  fn('mover')(g, props, final, -1);
+  let botones = fn('botonesDe')(g, props);
+  assert.deepEqual(plano(botones.map(b => [b.titulo, b.color])), [['20 pasos · final', null], ['Rápido', 'turquesa']]);
+  // volver al nombre y color del grupo no deja restos
+  fn('ajustar')(props, borrador, {nombre: null, color: null});
+  assert.equal(props.ajustes[borrador], undefined);
+  // un botón oculto sale del interruptor: sus nodos no se tocan
+  fn('ajustar')(props, borrador, {oculto: true});
+  g.byId(515).mode = 0; g.byId(513).mode = 4;
+  fn('pulsar')(g, props, final);
+  assert.equal(g.byId(513).mode, 0);
+  assert.equal(g.byId(515).mode, 0);
+  assert.equal(plano(fn('resumen')(g, 'RAMA', props).ramas).length, 1);
+  assert.equal(fn('mover')(g, props, final, -1), false);
+});
+
+test('«+ botón» crea uno con la selección recordada del lienzo', async () => {
+  const g = grafo();
+  const pedidos = [];
+  const {n, fn} = nodoInterruptor(g, {extensionManager: {dialog: {prompt: async (o) => { pedidos.push(o); return 'Sin escena'; }}}});
+  const app = fn('app');
+  const w = n.widgets.find(x => x.name === '__interruptor');
+  w.draw(lienzo, n, 440, 40);
+  assert.equal(n.__estado.seleccion.length, 0);
+  // seleccionar dos nodos y luego pulsar el interruptor (que pasa a ser el seleccionado)
+  app.canvas.selected_nodes = {504: g.byId(504), 900: g.byId(900)};
+  w.draw(lienzo, n, 440, 40);
+  assert.equal(n.__estado.seleccion.length, 2);
+  app.canvas.selected_nodes = {1: n}; n.selected = true;
+  w.draw(lienzo, n, 440, 40);
+  assert.equal(n.__estado.seleccion.length, 2);
+  // el chip está al pie, debajo de las dos filas
+  const y = 40 + 18 + 2 * (34 + 6) + 17 + 11;
+  assert.equal(w.mouse({type: 'pointerdown'}, [30, y], n), true);
+  await new Promise(r => setImmediate(r));
+  assert.equal(pedidos[0].defaultValue, 'botón 1');
+  assert.deepEqual(plano(n.properties.botones), [{id: 'b1', nombre: 'Sin escena', color: 'ambar', nodos: [504, 900]}]);
+  // cancelar el nombre no crea nada
+  pedidos.length = 0;
+  app.extensionManager.dialog.prompt = async () => null;
+  await n.crearConSeleccion();
+  assert.equal(n.properties.botones.length, 1);
+  // al deseleccionar todo, el chip desaparece
+  app.canvas.selected_nodes = {}; n.selected = false;
+  w.draw(lienzo, n, 440, 40);
+  assert.equal(n.__estado.seleccion.length, 0);
+});
+
+test('el clic derecho ofrece modo, apagado y cada botón', () => {
+  const g = grafo();
+  const {n} = nodoInterruptor(g);
+  n.properties.botones = [{id: 'b1', nombre: 'mío', color: 'rojo', nodos: [900]}];
+  const opciones = [];
+  n.getExtraMenuOptions(null, opciones);
+  const titulos = opciones.filter(Boolean).map(o => o.content);
+  assert.deepEqual(titulos, ['Interruptor · modo', 'Interruptor · al apagar',
+    'Botón · 8 pasos · borrador', 'Botón · 20 pasos · final', 'Botón · mío']);
+  const modo = opciones.find(o => o?.content === 'Interruptor · modo').submenu.options;
+  assert.equal(modo[0].content, '✓ una siempre encendida');
+  modo[2].callback();
+  assert.equal(n.properties.modo, 'varias');
+  const mio = opciones.find(o => o?.content === 'Botón · mío').submenu.options;
+  assert.deepEqual(plano(mio.map(o => o.content)), ['Renombrar…', 'Color', 'Subir', 'Bajar',
+    'Usar los 0 nodos seleccionados', 'Borrar botón']);
+  assert.equal(mio[4].disabled, true);
+  mio.find(o => o.content === 'Color').submenu.options.find(o => o.content.includes('verde')).callback();
+  assert.equal(n.properties.botones[0].color, 'verde');
+  mio.at(-1).callback();
+  assert.deepEqual(plano(n.properties.botones), []);
+  // los de grupo se ocultan en vez de borrarse, y se pueden volver a mostrar
+  const grupo = opciones.find(o => o?.content === 'Botón · 8 pasos · borrador').submenu.options;
+  grupo.find(o => o.content.startsWith('Ocultar')).callback();
+  const otra = [];
+  n.getExtraMenuOptions(null, otra);
+  const ocultos = otra.find(o => o?.content === 'Botones ocultos').submenu.options;
+  assert.equal(ocultos[0].content, 'Mostrar 8 pasos · borrador');
+});

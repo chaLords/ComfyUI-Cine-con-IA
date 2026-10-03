@@ -243,3 +243,143 @@ test('un modelo guardado con barras de Windows cuenta como elegido en Linux', ()
   assert.equal(w.value, 'minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors');
   assert.deepEqual(plano(fn('estado')(g, filas())), [0, 1]);
 });
+
+// --- botones hechos desde la interfaz ------------------------------------------
+
+function nodoSelector(g, extraApp = {}) {
+  let registrado;
+  class LGraphNode {
+    constructor() { this.widgets = []; this.properties = {}; this.size = [460, 200]; }
+    addCustomWidget(w) { this.widgets.push(w); return w; }
+    computeSize() { return [460, this.widgets.reduce((s, w) => s + w.computeSize(460)[1], 0)]; }
+    setSize(s) { this.size = s; }
+    setDirtyCanvas() {}
+  }
+  let extension;
+  const context = vm.createContext({
+    app: {registerExtension(e) { extension = e; }, graph: g, canvas: {graph: g, setDirty() {}, selected_nodes: {}}, ...extraApp},
+    pintarCabecera() {}, COLOR_BASE: '#283436', anchoFijoAlNodo: (w) => w, esLienzoPrincipal: () => true,
+    LGraphNode, LiteGraph: {registerNodeType(tipo, clase) { registrado = [tipo, clase]; }},
+  });
+  vm.runInContext(source, context);
+  extension.registerCustomNodes();
+  const n = new registrado[1]();
+  n.graph = g;
+  return {n, fn: (x) => vm.runInContext(x, context)};
+}
+const lienzo2 = {fill() {}, stroke() {}, beginPath() {}, roundRect() {}, moveTo() {}, lineTo() {},
+  fillText() {}, save() {}, restore() {}, measureText: (s) => ({width: String(s).length * 6})};
+
+test('la clave de un botón nuevo es legible, sin tildes y sin repetirse', () => {
+  const {fn} = setup();
+  assert.equal(fn('claveNueva')('Singularity v1.3', []), 'singularity-v1-3');
+  assert.equal(fn('claveNueva')('Lámina · 3', []), 'lamina-3');
+  assert.equal(fn('claveNueva')('oficial', ['oficial', 'oficial-2']), 'oficial-3');
+  assert.equal(fn('claveNueva')('···', []), 'op');
+});
+
+test('«+» guarda lo puesto ahora y el botón queda encendido', () => {
+  const {fn} = setup();
+  const g = grafo();
+  const pasos = filas()[1];
+  assert.deepEqual(plano(fn('controlesDe')(pasos)), [
+    {nodo: 515, widget: 'modo'}, {nodo: 515, widget: 'pasos_advanced'}, {nodo: 515, widget: 'sampler_advanced'}]);
+  // a mano: Advanced, 12 pasos, euler -> la fila queda en "personalizado"
+  g.w(515, 'modo').value = 'Advanced'; g.w(515, 'pasos_advanced').value = 12; g.w(515, 'sampler_advanced').value = 'euler';
+  assert.deepEqual(plano(fn('estado')(g, [pasos])), [-1]);
+  const j = fn('guardarComoBoton')(g, pasos, '12 · euler');
+  assert.deepEqual(plano(pasos.opciones[j]), {etiqueta: '12 · euler', clave: '12-euler', valores: [
+    {nodo: 515, widget: 'modo', valor: 'Advanced'}, {nodo: 515, widget: 'pasos_advanced', valor: 12},
+    {nodo: 515, widget: 'sampler_advanced', valor: 'euler'}]});
+  assert.deepEqual(plano(fn('estado')(g, [pasos])), [2]);
+  // "20 · final" solo tocaba el modo, pero «Actualizar» guarda todo lo que controla la fila
+  fn('actualizarBoton')(g, pasos, 1);
+  assert.equal(pasos.opciones[1].valores.length, 3);
+  assert.equal(pasos.opciones[1].clave, '20p');
+});
+
+test('una fila nueva junta controles de nodos distintos, también encender/apagar', () => {
+  const {fn} = setup();
+  const g = grafo();
+  const props = {filas: filas()};
+  const i = fn('nuevaFila')(props, 'combo', []);
+  const fila = props.filas[i];
+  assert.deepEqual([fila.nombre, fila.clave], ['COMBO', 'combo']);
+  fn('anadirControl')(g, fila, {nodo: 500, widget: 'modelo'});
+  fn('guardarComoBoton')(g, fila, 'actual');
+  // añadir un control después completa los botones que ya había con su valor de ahora
+  assert.equal(fn('anadirControl')(g, fila, {nodo: 541, modo: true}), true);
+  assert.equal(fn('anadirControl')(g, fila, {nodo: 541, modo: true}), false);
+  assert.deepEqual(plano(fila.opciones[0].valores), [
+    {nodo: 500, widget: 'modelo', valor: SINGULARITY}, {nodo: 541, modo: 4}]);
+  g.byId(541).mode = 0;
+  fn('guardarComoBoton')(g, fila, 'con lámina');
+  g.byId(541).mode = 4;
+  assert.deepEqual(plano(fn('estado')(g, [fila])), [0]);
+  fn('aplicar')(g, fila.opciones[1]);
+  assert.equal(g.byId(541).mode, 0);
+  fn('quitarControl')(fila, {nodo: 541, modo: true});
+  assert.deepEqual(plano(fila.opciones.map(o => o.valores.length)), [1, 1]);
+  assert.equal(fn('moverBoton')(fila, 1, -1), true);
+  assert.equal(fila.opciones[0].etiqueta, 'con lámina');
+  assert.equal(fn('moverBoton')(fila, 0, -1), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(props)), plano(props));
+});
+
+test('el «+» de la fila pide el nombre; sin controles solo explica qué falta', async () => {
+  const g = grafo();
+  const pedidos = [], avisos = [];
+  const {n} = nodoSelector(g, {extensionManager: {
+    dialog: {prompt: async (o) => { pedidos.push(o); return 'mi receta'; }},
+    toast: {add: (t) => avisos.push(t.detail)}}});
+  n.properties.filas = [...filas(), {nombre: 'VACÍA', clave: 'vacia', controles: [], opciones: []}];
+  n.properties.salida = SALIDA;
+  const w = n.widgets.find(x => x.name === '__selector');
+  w.draw(lienzo2, n, 460, 40);
+  const fila2 = 40 + 18 + 30 + 8 + 15;
+  assert.equal(w.mouse({type: 'pointerdown'}, [460 - 10 - 10, fila2], n), true);
+  await new Promise(r => setImmediate(r));
+  assert.equal(pedidos.length, 1);
+  assert.equal(n.properties.filas[1].opciones.at(-1).etiqueta, 'mi receta');
+  // el botón nuevo coincide con lo puesto: el nombre del video se arma con su clave
+  assert.equal(g.w(34003, 'filename_prefix').value, 'CineConIA/048_singularity_mi-receta_%date:yyyyMMdd%');
+  const fila3 = 40 + 18 + 2 * (30 + 8) + 15;
+  assert.equal(w.mouse({type: 'pointerdown'}, [460 - 10 - 10, fila3], n), true);
+  await new Promise(r => setImmediate(r));
+  assert.equal(pedidos.length, 1);
+  assert.match(avisos[0], /no controla nada/);
+});
+
+test('el clic derecho arma filas con los nodos seleccionados', () => {
+  const g = grafo();
+  const {n, fn} = nodoSelector(g);
+  n.properties.filas = [{nombre: 'NUEVA', clave: 'nueva', controles: [], opciones: []}];
+  const app = fn('app');
+  const w = n.widgets.find(x => x.name === '__selector');
+  // sin selección: no hay controles que ofrecer
+  let opciones = [];
+  n.getExtraMenuOptions(null, opciones);
+  let fila = opciones.find(o => o?.content === 'Fila · NUEVA').submenu.options;
+  assert.equal(fila.find(o => o.content === 'Añadir control').submenu.options[0].disabled, true);
+  assert.equal(fila[0].disabled, true);
+  // con el Optimizador seleccionado se ofrecen sus campos y su encendido
+  app.canvas.selected_nodes = {515: g.byId(515)};
+  w.draw(lienzo2, n, 460, 40);
+  opciones = [];
+  n.getExtraMenuOptions(null, opciones);
+  fila = opciones.find(o => o?.content === 'Fila · NUEVA').submenu.options;
+  const campos = fila.find(o => o.content === 'Añadir control').submenu.options[0];
+  assert.equal(campos.content, '05 · Memoria');
+  assert.deepEqual(plano(campos.submenu.options.map(o => o.content)),
+    ['modo', 'pasos_advanced', 'sampler_advanced', 'encendido / apagado del nodo']);
+  campos.submenu.options[1].callback();
+  assert.deepEqual(plano(n.properties.filas[0].controles), [{nodo: 515, widget: 'pasos_advanced'}]);
+  fn('guardarComoBoton')(g, n.properties.filas[0], '20');
+  opciones = [];
+  n.getExtraMenuOptions(null, opciones);
+  const boton = opciones.find(o => o?.content === 'Botón · NUEVA · 20').submenu.options;
+  boton.find(o => o.content === 'Color').submenu.options.find(o => o.content.includes('rojo')).callback();
+  assert.equal(n.properties.filas[0].opciones[0].color, 'rojo');
+  boton.find(o => o.content === 'Borrar botón').callback();
+  assert.equal(n.properties.filas[0].opciones.length, 0);
+});
