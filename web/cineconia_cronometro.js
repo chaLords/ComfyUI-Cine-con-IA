@@ -478,6 +478,7 @@ export function detalleCorrida(graph, config = null) {
     const encuadre = ["plano", "angulo", "movimiento", "intensidad", "lente", "profundidad_campo"]
       .map((x) => valorWidget(director, x))
       .filter((v) => v != null && v !== "" && v !== "sin especificar" && v !== "normal");
+    if (valorWidget(director, "camara_automatica") === true) encuadre.push("texto automático");
     if (encuadre.length) d.encuadre = encuadre.join(" / ");
   }
   const escrito = deClase("CineSimplePromptH3") || deClase("CineScenePromptH3");

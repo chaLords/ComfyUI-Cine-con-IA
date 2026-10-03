@@ -17,6 +17,7 @@ try:
         CineSimplePromptH3,
     )
     from .cineconia_h3.camera_recipes import prompt_recipe, public_registry
+    from .cineconia_h3.camera_director import auto_camera
     from .cineconia_h3.acc_pdd import OPTIMIZER_CONTRACT, apply_acc_pdd
 except ImportError:
     # Los tests cargan nodes.py directamente, fuera del paquete de ComfyUI.
@@ -28,6 +29,7 @@ except ImportError:
         CineSimplePromptH3,
     )
     from cineconia_h3.camera_recipes import prompt_recipe, public_registry
+    from cineconia_h3.camera_director import auto_camera
     from cineconia_h3.acc_pdd import OPTIMIZER_CONTRACT, apply_acc_pdd
 
 CATEGORY = "Cine con IA"
@@ -2560,6 +2562,21 @@ def _registrar_rutas():
     @rutas.get("/cineconia/aceleradores")
     async def _aceleradores(peticion):
         return web.json_response(contrato_aceleradores())
+
+    @rutas.post("/cineconia/camera_auto")
+    async def _camera_auto(peticion):
+        # El texto automático del Director se compone aquí, con la misma receta
+        # que usa el servidor: la interfaz solo lo pide y lo muestra en la caja.
+        try:
+            d = await peticion.json()
+            texto, aviso = auto_camera(
+                d.get("plano", "sin especificar"), d.get("angulo", "sin especificar"),
+                d.get("movimiento", "sin especificar"), d.get("intensidad", "normal"),
+                d.get("lente", "sin especificar"), d.get("profundidad_campo", "sin especificar"),
+                d.get("perfil_modelo"))
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=400)
+        return web.json_response({"texto": texto, "aviso": aviso})
 
     @rutas.get("/cineconia/camera_recipes")
     async def _camera_recipes(peticion):

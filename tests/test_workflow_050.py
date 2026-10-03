@@ -49,7 +49,11 @@ class Workflow050Tests(unittest.TestCase):
             spec = cls.INPUT_TYPES()
             fields = dict(spec.get("required", {}), **spec.get("optional", {}))
             widgets = [k for k, v in fields.items() if isinstance(v[0], list) or v[0] in ("STRING", "INT", "FLOAT", "BOOLEAN")]
-            self.assertEqual(list(named), widgets, n["type"])
+            # Un workflow guardado antes de un campo nuevo no lo trae: tiene que
+            # ser opcional y estar al final, y ComfyUI usa su valor por defecto.
+            self.assertEqual(list(named), widgets[:len(named)], n["type"])
+            for falta in widgets[len(named):]:
+                self.assertIn(falta, spec.get("optional", {}), (n["type"], falta))
 
     def test_single_reference_single_sampler_no_refine(self):
         types = [n["type"] for n in self.nodes.values()]

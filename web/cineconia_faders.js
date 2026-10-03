@@ -1015,6 +1015,125 @@ function addTarjetas(node, targetName, title, cards, shots) {
   node.widgets.push(widget);
 }
 
+// --- texto de cámara automático -------------------------------------------------
+//
+// La ley: el prompt de escena dice qué pasa y el Director decide cómo se ve.
+// Con «camara_automatica», cada botón pide al servidor el texto completo
+// (receta + frases de apoyo, de camera_recipes.json) y lo escribe en la caja de
+// instrucción: lo que se ve en la caja es lo que va al video. Si la caja se
+// editó a mano, los botones no la pisan; «Rehacer texto automático» la genera
+// de nuevo a pedido del usuario.
+
+const CONTROLES_CAMARA = ["plano", "angulo", "movimiento", "intensidad", "lente", "profundidad_campo", "perfil_modelo"];
+
+function ponerTexto(w, texto) {
+  w.value = texto;
+  if (w.inputEl) w.inputEl.value = texto;
+}
+
+/** apagado | al día | editada, según la caja y el último texto generado. */
+function estadoCamara(node) {
+  if (!findWidget(node, "camara_automatica")?.value) return "apagado";
+  const caja = String(findWidget(node, "instruccion_camara")?.value ?? "");
+  const auto = node.properties?.texto_auto ?? "";
+  return caja.trim() && caja !== auto ? "editada" : "al día";
+}
+
+const ETIQUETA_REHACER = {
+  "apagado": "Rehacer texto automático · actívalo arriba",
+  "al día": "Texto automático al día · pulsa para rehacer",
+  "editada": "Editaste la caja · pulsa para rehacer el texto",
+};
+
+function marcarCamara(node) {
+  const b = findWidget(node, "__rehacer_camara");
+  if (b) b.label = ETIQUETA_REHACER[estadoCamara(node)];
+  node.setDirtyCanvas(true, true);
+}
+
+/** Pide el texto al servidor y lo escribe en la caja. Devuelve true si la escribió. */
+async function rehacerTextoCamara(node, forzar = false) {
+  const caja = findWidget(node, "instruccion_camara");
+  const estado = estadoCamara(node);
+  if (!caja || estado === "apagado" || (estado === "editada" && !forzar)) { marcarCamara(node); return false; }
+  const cuerpo = JSON.stringify(Object.fromEntries(CONTROLES_CAMARA.map((n) => [n, findWidget(node, n)?.value])));
+  node.__camaraPedido = cuerpo;
+  let r = null;
+  try {
+    const resp = await api.fetchApi("/cineconia/camera_auto", {
+      method: "POST", headers: {"Content-Type": "application/json"}, body: cuerpo,
+    });
+    r = resp.ok ? await resp.json() : null;
+  } catch { r = null; }
+  if (node.__camaraPedido !== cuerpo) return false;   // otro clic llegó después
+  if (typeof r?.texto !== "string") {
+    app?.extensionManager?.toast?.add?.({severity: "warn", summary: "Director de cámara",
+      detail: "El servidor no devolvió el texto automático: reinicia ComfyUI tras actualizar Cine con IA.", life: 8000});
+    return false;
+  }
+  ponerTexto(caja, r.texto);
+  node.properties = node.properties || {};
+  node.properties.texto_auto = r.texto;
+  marcarCamara(node);
+  return true;
+}
+
+function montarCamaraAutomatica(node) {
+  const auto = findWidget(node, "camara_automatica");
+  if (!auto) return;   // Python anterior: sin modo automático
+  auto.label = "Texto de cámara automático";
+  for (const nombre of CONTROLES_CAMARA) {
+    const w = findWidget(node, nombre);
+    if (!w) continue;
+    const antes = w.callback;
+    w.callback = function () {
+      const r = antes?.apply(this, arguments);
+      rehacerTextoCamara(node);
+      return r;
+    };
+  }
+  const antesAuto = auto.callback;
+  auto.callback = function () {
+    const r = antesAuto?.apply(this, arguments);
+    const caja = findWidget(node, "instruccion_camara");
+    if (this.value) {
+      rehacerTextoCamara(node);
+    } else if (caja && node.properties?.texto_auto && caja.value === node.properties.texto_auto) {
+      // lo escribió el modo automático: se retira para que la cámara no salga dos veces
+      ponerTexto(caja, "");
+      node.properties.texto_auto = "";
+    }
+    marcarCamara(node);
+    return r;
+  };
+  const caja = findWidget(node, "instruccion_camara");
+  if (caja) {
+    const antesCaja = caja.callback;
+    caja.callback = function () {
+      const r = antesCaja?.apply(this, arguments);
+      marcarCamara(node);
+      return r;
+    };
+  }
+  const rehacer = node.addWidget("button", "__rehacer_camara", null, () => {
+    if (estadoCamara(node) === "apagado") {
+      app?.extensionManager?.toast?.add?.({severity: "info", summary: "Director de cámara",
+        detail: "Activa «Texto de cámara automático» para que los botones escriban la cámara.", life: 6000});
+      return;
+    }
+    rehacerTextoCamara(node, true);
+  }, {serialize: false});
+  rehacer.serialize = false;
+  rehacer.options = {...rehacer.options, serialize: false};
+  const antesConf = node.onConfigure;
+  node.onConfigure = function () {
+    const r = antesConf?.apply(this, arguments);
+    marcarCamara(this);
+    return r;
+  };
+  marcarCamara(node);
+}
+
 function montarDirector(node) {
   ocultar(findWidget(node, "plano"));
   addTarjetas(node, "plano", "01 · encuadre", ENCUADRES, true);
@@ -1022,7 +1141,7 @@ function montarDirector(node) {
   addTarjetas(node, "movimiento", "03 · movimientos frecuentes", CAMINOS, false);
   const labels = {movimiento: "Movimiento · lista completa", angulo: "Ángulo · lista completa", intensidad: "Intensidad / velocidad",
     lente: "Lente", profundidad_campo: "Fondo / profundidad", instruccion_camara: "Receta o instrucciones de cámara", reglas_continuidad: "Mantener continuidad",
-    perfil_modelo: "Perfil interno · no carga pesos"};
+    perfil_modelo: "Perfil interno · no carga pesos", camara_automatica: "Texto de cámara automático"};
   for (const w of node.widgets) if (labels[w.name]) w.label = labels[w.name];
   const recipe = node.addWidget("combo", "Recetas H3 · elegir", "libre", () => {},
     {values: TOMAS_H3.map(r => r[1]), serialize: false});
@@ -1058,6 +1177,7 @@ function montarDirector(node) {
         detail: aviso, life: 15000});
     }
   };
+  montarCamaraAutomatica(node);
 }
 
 // --- Render optimizado: que va a hacer y cuanto tardo -----------------------

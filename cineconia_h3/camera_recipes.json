@@ -141,6 +141,61 @@
           "movement": "The camera {movement}{intensity}.",
           "lens": "The image uses a {lens} lens.",
           "depth": "The shot has {depth}."
+        },
+        "refuerzos": {
+          "status": "experimental",
+          "evidence": "sin probar: describen el resultado visible de cada botón para que el prompt de escena no tenga cámara; falta la matriz en GPU",
+          "shots": {
+            "sin especificar": "",
+            "primerisimo primer plano": "The opening frame is filled by the subject's face, from forehead to chin.",
+            "primer plano": "The opening frame shows the subject's head and shoulders.",
+            "plano medio corto": "The opening frame shows the subject from the chest up.",
+            "plano medio": "The opening frame shows the subject from the waist up.",
+            "plano americano": "The opening frame shows the subject from the knees up.",
+            "plano general": "The opening frame shows the subject's whole body from head to feet, with space around it.",
+            "gran plano general": "The opening frame shows the subject small within the whole environment."
+          },
+          "angles": {
+            "sin especificar": "",
+            "frontal": "The subject's face and shoulders are square to the lens, with both eyes equally visible.",
+            "perfil": "Only one side of the subject's face is visible, the nose and chin in clean silhouette.",
+            "altura de los ojos": "",
+            "contrapicado": "The subject appears taller, seen from below.",
+            "picado": "The subject appears smaller, seen from above, with the floor around them visible.",
+            "cenital": "The top of the subject's head and shoulders face the lens from directly above.",
+            "tres cuartos": "The subject's face is turned partly away from the lens, with the far eye still visible.",
+            "sobre el hombro": "The back of the subject's shoulder fills one side of the foreground."
+          },
+          "movements": {
+            "sin especificar": "",
+            "fijo": "The framing stays the same from the first frame to the last.",
+            "acercarse": "The subject grows steadily larger in the frame as the camera travels closer.",
+            "alejarse": "More of the surroundings come into view as the camera travels away.",
+            "zoom in": "The subject grows larger in the frame while the camera position stays the same.",
+            "zoom out": "More of the surroundings come into view while the camera position stays the same.",
+            "panoramica izquierda": "The view sweeps to the left across the space while the camera stays in place.",
+            "panoramica derecha": "The view sweeps to the right across the space while the camera stays in place.",
+            "inclinar arriba": "The view tilts upward while the camera stays in place.",
+            "inclinar abajo": "The view tilts downward while the camera stays in place.",
+            "lateral izquierda": "The camera glides to the left and the background slides past behind the subject.",
+            "lateral derecha": "The camera glides to the right and the background slides past behind the subject.",
+            "grua arriba": "The viewpoint rises vertically and reveals more of the space from above.",
+            "grua abajo": "The viewpoint lowers vertically toward the ground.",
+            "orbita": "",
+            "seguimiento": "The subject keeps the same size in the frame while the background moves past.",
+            "punto de vista": "The frame shows what the subject sees, from the height of their eyes.",
+            "giro de horizonte": "The horizon line rotates within the frame.",
+            "giro antihorario": "The horizon line rotates within the frame.",
+            "camara en mano fuerte": "",
+            "camara en mano": ""
+          },
+          "depth": {
+            "sin especificar": "",
+            "profunda": "The subject and the background are both in sharp focus.",
+            "natural": "",
+            "reducida": "The background is softly out of focus behind the subject.",
+            "muy reducida": "The background melts into a smooth blur while the subject's eyes stay sharp."
+          }
         }
       }
     },

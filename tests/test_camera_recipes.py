@@ -192,3 +192,89 @@ class FramingWarningTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# Prompt universal: la escena no trae cámara (ley del texto automático).
+PROMPT_UNIVERSAL = """subject_definitions:
+<Subject 1> is the adult man in <Picture 1>, with his facial features, hairstyle and beard. He wears a brown leather jacket over a white shirt and a brown tie.
+
+summary:
+[reference generation] <Subject 1> stands calmly in a bright, spacious photography studio, breathing naturally and gradually forming a subtle, relaxed smile.
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - preserve his facial structure, hairstyle, beard and clothing from <Picture 1>.
+
+detailed_description:
+Naturalistic live-action photography with realistic skin texture and soft daylight. The studio has a wooden floor, tall windows along one wall and brick pillars.
+[Shot 1] <Subject 1> is the only person in the scene. He stands relaxed in one place and keeps his body orientation. His head and gaze stay aligned with his body, looking straight ahead. He breathes naturally, blinks occasionally and gradually forms a subtle smile.
+
+overall_soundscape:
+Quiet studio ambience and faint clothing rustle. No speech.
+
+non_diegetic_music:
+N/A"""
+
+
+class AutoCameraTests(unittest.TestCase):
+    """Texto automático: los botones escriben toda la cámara; la escena no la trae."""
+
+    def test_every_h3_button_has_a_supporting_phrase_without_negations(self):
+        director = resolve_recipe("MiniMax H3")[1]["director"]
+        refuerzos = director["refuerzos"]
+        self.assertEqual(refuerzos["status"], "experimental")
+        for grupo in ("shots", "angles", "movements", "depth"):
+            self.assertEqual(set(refuerzos[grupo]), set(director[grupo]), grupo)
+            for texto in refuerzos[grupo].values():
+                self.assertNotRegex(texto, r"(?i)\b(no|not|never|without|avoid)\b", texto)
+
+    def test_auto_text_adds_support_and_drops_speed_on_a_static_camera(self):
+        from cineconia_h3.camera_director import auto_camera
+        texto, aviso = auto_camera("primer plano", "frontal", "fijo", "suave", "85 mm", "reducida")
+        self.assertEqual(aviso, "")
+        self.assertTrue(texto.startswith(structured_camera(
+            "primer plano", "frontal", "fijo", "normal", "85 mm", "reducida")))
+        self.assertIn("square to the lens", texto)
+        self.assertIn("softly out of focus", texto)
+        self.assertNotIn("amplitude", texto)
+        # con movimiento la intensidad se conserva
+        movil, _ = auto_camera("plano medio", "perfil", "acercarse", "suave", "sin especificar", "natural")
+        self.assertIn("with small amplitude at slow speed", movil)
+        # una receta sin textos de apoyo lo dice
+        _, aviso_ltx = auto_camera("primer plano", "frontal", "fijo", "normal", "85 mm", "reducida", "LTX-2.5")
+        self.assertIn("textos de apoyo", aviso_ltx)
+
+    def test_auto_mode_uses_the_box_as_is_and_falls_back_when_empty(self):
+        from cineconia_h3.camera_director import auto_camera, build_prompt
+        scene = {"schema": "cineconia.h3.scene/v1", "raw_prompt": PROMPT_UNIVERSAL}
+        args = ("primer plano", "frontal", "fijo", "normal", "85 mm", "reducida")
+        caja = "The camera holds still on him. He looks into the lens."
+        prompt, camara = build_prompt(scene, *args, caja, False, "MiniMax H3", True)
+        self.assertEqual(camara, caja)
+        self.assertNotIn("The shot is framed as", prompt)
+        _, vacia = build_prompt(scene, *args, "", False, "MiniMax H3", True)
+        self.assertEqual(vacia, auto_camera(*args)[0])
+        # apagado: el comportamiento de siempre, caja + texto estructurado
+        _, clasico = build_prompt(scene, *args, caja, False, "MiniMax H3")
+        self.assertEqual(clasico, caja + "\n\n" + structured_camera(*args))
+
+    def test_the_law_warns_about_camera_in_the_scene_only_in_auto_mode(self):
+        def dirigir(texto, auto):
+            scene = {"schema": "cineconia.h3.scene/v1", "raw_prompt": texto}
+            return CineCameraDirectorH3().dirigir(scene, "primer plano", "frontal", "fijo", "normal",
+                                                  "85 mm", "reducida", "", True, "MiniMax H3", auto)
+        limpio = dirigir(PROMPT_UNIVERSAL, True)
+        self.assertEqual(limpio["ui"]["camara_avisos"], [])
+        self.assertIn("texto automático", limpio["result"][1])
+        sucio = PROMPT_UNIVERSAL.replace("looking straight ahead", "looking into the camera").replace(
+            "brick pillars.", "brick pillars, softly blurred.")
+        avisos = dirigir(sucio, True)["ui"]["camara_avisos"]
+        self.assertEqual(len(avisos), 1)
+        self.assertIn("«camera»", avisos[0])
+        self.assertIn("«blurred»", avisos[0])
+        # sin modo automático la escena puede traer cámara, como siempre
+        self.assertEqual(dirigir(sucio, False)["ui"]["camara_avisos"], [])
+
+    def test_auto_mode_is_the_last_optional_field_and_starts_off(self):
+        spec = CineCameraDirectorH3.INPUT_TYPES()
+        self.assertEqual(list(spec["optional"]), ["perfil_modelo", "camara_automatica"])
+        self.assertIs(spec["optional"]["camara_automatica"][1]["default"], False)

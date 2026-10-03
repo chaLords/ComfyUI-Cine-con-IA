@@ -18,6 +18,12 @@ Estas reglas aplican a todo el repositorio.
 - Mantener los mismos controles visibles de cámara entre modelos. La adaptación de vocabulario ocurre internamente.
 - No crear nodos visibles nuevos para una mejora que cabe de forma opcional en los nodos actuales.
 
+## Prompt de escena y cámara
+
+- Ley: el prompt de escena dice qué pasa; el Director de cámara decide cómo se ve. Ejemplos, skills y workflows nuevos no ponen encuadre, ángulo, lente, foco ni mirada «a cámara» o «fuera de cuadro» en la escena. Ver `docs/LEY_PROMPT_ESCENA_ES.md`.
+- Los textos de cámara, incluidos los automáticos (`refuerzos`), viven solo en `cineconia_h3/camera_recipes.json`. La interfaz los pide a `/cineconia/camera_auto`.
+- Al cambiar las skills de `skills/` o sus ejemplos, `tests/test_skills.py` tiene que seguir pasando: los ejemplos cumplen la ley con todos los planos.
+
 ## Evidencia
 
 - Etiquetar cada conclusión como `probada`, `sin probar` o `experimental/SUPUESTO`.

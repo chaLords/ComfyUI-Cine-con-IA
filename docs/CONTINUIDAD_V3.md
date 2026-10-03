@@ -212,3 +212,40 @@ Pedido de Gonzalo: que un usuario novato no pueda combinar lo que no funciona ju
 
 - Revisión visual (sección 10 del plan) del 046, 048 y 050 en ComfyUI: abrir sin tocar nada, probar Acc/PDD con TaoMate cargado, «Ajustar a Acc/PDD», «+ botón» y «+» del Selector, guardar y reabrir.
 - La prueba controlada D1–D5 del personaje duplicado.
+
+## 2026-10-03 (noche): cámara automática y la ley del prompt de escena
+
+Rama `feature/director-camara-automatica`, creada desde `d461f84`. La versión que daba buenos resultados quedó guardada en `feature/h3-ejecucion-7mas1` (`ecf57ed`, `d461f84`) y en la instalación `E:\ComfyUI`, que **no** se tocó en esta rama.
+
+### Qué se vio en los renders de las 13:19–13:34
+
+- El prompt nuevo (sin pies ni paneles) eliminó el personaje duplicado.
+- El frontal salía parecido a un tres cuartos porque la escena decía «looks toward a fixed point off-screen». El frontal de ayer (15:13, fondo gris) decía «looks into the camera». **Observado, sin prueba controlada.**
+- Con la misma semilla y los mismos ajustes, las corridas de las 13:21 y las 13:32 salieron idénticas fotograma a fotograma (PSNR infinito). Las comparaciones A/B con semilla fija son limpias.
+- Con «fijo» e intensidad «suave», el texto de siempre dice «holds a static shot … with small amplitude at slow speed». Se corrigió solo en el modo automático, para no alterar el texto histórico.
+
+### Qué cambió
+
+- **La ley** ([LEY_PROMPT_ESCENA_ES.md](LEY_PROMPT_ESCENA_ES.md)) y su regla en `AGENTS.md`.
+- **Director:** campo opcional nuevo `camara_automatica`, al final y apagado por defecto.
+  - Encendido, cada botón pide `/cineconia/camera_auto` y escribe en la caja el texto de siempre más los `refuerzos` de `camera_recipes.json` (experimentales).
+  - La caja se usa tal cual, sin sumarle el texto de siempre. Una edición manual no se pisa; «Rehacer texto automático» la regenera.
+  - Al apagarlo se retira el texto que escribió el modo automático.
+  - Avisa si la escena trae palabras de cámara.
+- **Cronómetro:** el encuadre registra «texto automático».
+- **Workflow 051:** el 050 con el prompt universal y el modo automático; solo cambia la cámara. Lo genera `tools/build_workflow051.py`.
+- **Skills:** `skills/cineconia-escena-h3` (Claude) y `skills/chatgpt` (GPT personalizado). Los paquetes están en Descargas.
+
+### Comprobado
+
+- Regresión: las 241.920 combinaciones H3 y las del Prompt 6 siguen idénticas.
+- Pruebas nuevas:
+  - `AutoCameraTests` en `test_camera_recipes.py`: refuerzos completos y sin negaciones, la caja usada tal cual, la ley solo en modo automático, campo opcional al final.
+  - `test_director_auto.cjs`: la interfaz.
+  - `test_workflow_051.py`: el 051 es el 050 salvo la cámara y su escena cumple la ley.
+  - `test_skills.py`: los ejemplos cumplen la ley con los 8 planos y el ejemplo 1 es el prompt del 051.
+- `test_workflow_050` acepta ahora campos opcionales nuevos al final, que es la regla de compatibilidad del proyecto.
+
+### Sin probar
+
+Los refuerzos y el prompt universal en GPU. Matriz pendiente en [LEY_PROMPT_ESCENA_ES.md](LEY_PROMPT_ESCENA_ES.md#pendiente-para-declararla-probada).
