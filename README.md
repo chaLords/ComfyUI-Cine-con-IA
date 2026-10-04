@@ -117,7 +117,7 @@ The nodes only use Python dependencies already supplied by ComfyUI; this package
 Open a terminal in `ComfyUI/custom_nodes` and run:
 
 ```bash
-git clone -b comfyui https://github.com/chaLords/ComfyUI-Cine-con-IA.git
+git clone -b comfyui --single-branch https://github.com/chaLords/ComfyUI-Cine-con-IA.git
 ```
 
 Restart ComfyUI and look for the **Cine con IA** category.

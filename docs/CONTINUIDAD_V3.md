@@ -316,7 +316,7 @@ Decisión de Gonzalo: al instalar desde GitHub, el usuario recibe solo lo que el
   - La primera corrida crea `comfyui`.
   - La segunda no hace nada.
   - Después de un commit añade otro encima, con su padre.
-  - Un clon `-b comfyui` trae solo el nodo y `git pull --ff-only` lo actualiza.
+  - Un clon `-b comfyui` trae solo el nodo y `git pull --ff-only` lo actualiza. En GitHub, tras el push del merge, el workflow creó `comfyui` (a1f4e29, 33 archivos). Con `--single-branch` el `.git` del usuario pesa 20 MB y solo conoce `comfyui`; sin esa opción, 23 MB y todas las ramas.
 - `tests/test_paquete.py`:
   - `NODO`, `.gitattributes` y `.comfyignore` coinciden, y el ZIP de GitHub es solo el nodo.
   - Los zips de skills llevan los archivos de `skills/` byte a byte y todos los archivos de `skills/` están empaquetados.
@@ -325,6 +325,6 @@ Decisión de Gonzalo: al instalar desde GitHub, el usuario recibe solo lo que el
 ### Pendiente
 
 - Los botones de skills funcionan desde la primera Release que adjunte los zips; la 1.6.0 no los trae.
-- La rama `comfyui` se crea con el primer push a `main` que pase por el workflow nuevo.
+- La rama `comfyui` ya existe en GitHub (creada por el workflow al subir `main`).
 - `[Sin publicar]` del CHANGELOG solo recoge este cambio y las skills. Faltan la cámara automática, los workflows 050 y 051, los avisos de encuadre y el cargador Acc/PDD antes de publicar.
 - `web/logo_placa.png` no lo usa ningún archivo; sigue en `web/`.
