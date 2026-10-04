@@ -259,3 +259,33 @@ Decisión de Gonzalo: los botones limitan cuando se sumen aceleradores nuevos. �
 - El bloqueo del Optimizador con Acc/PDD no cambia.
 
 Esto reemplaza lo dicho más arriba sobre «botones (sin acelerador · Acc/PDD · VDN/DMD)» en Cargar modelo.
+
+## 2026-10-03 (noche): skills con imágenes y acción
+
+Decisión de Gonzalo: el usuario adjunta las imágenes que necesite (personaje con toda su ropa, objetos, lugar) y escribe solo la acción. El prompt del 051, que funciona en sus renders con los botones del Director, es la plantilla canónica: la skill rellena sus huecos y no la reescribe.
+
+### Qué cambió
+
+- `SKILL.md` y `INSTRUCCIONES_GPT.md`:
+  - La plantilla canónica con huecos y la lista de frases fijas.
+  - La ropa completa de la cabeza a los pies; el gorro o sombrero también va en retention_analysis.
+  - El reparto de imágenes en referencia_1 a referencia_3, con la línea «Conexión en el nodo Escena» que entrega la skill.
+  - El lugar y lo que no cabe en tres entradas van solo como texto.
+  - La acción del usuario va dentro de la plantilla.
+  - Solo se pregunta lo imprescindible: sin palabras exactas, nadie habla, y sin lugar se usa el estudio de la plantilla.
+- `ejemplos.md`: cuatro ejemplos que rellenan la plantilla, con boina, gorra, objetos conectados, un lugar solo como texto, un lugar conectado, más imágenes que entradas y diálogo.
+- `formato-h3.md`: un sujeto sin imagen no lleva `from <Picture N>` ni línea de retention; el nodo se salta las entradas vacías.
+
+### Comprobado
+
+- `test_skills.py`, que ahora también comprueba:
+  - Los cuatro ejemplos y el prompt del 051 conservan las anclas de la plantilla.
+  - Las `<Picture N>` de cada ejemplo van seguidas, sin huecos y como mucho tres.
+- Revisión manual: en los ejemplos no hay background, behind, panel ni negaciones; el calzado aparece solo en subject_definitions.
+- El nodo Escena (`nodes.py`) numera solo las referencias conectadas; leído en el código, no en GPU.
+
+### Sin probar
+
+- Los ejemplos 2 a 4 en GPU.
+- La ropa de cintura para abajo en subject_definitions. Los avisos del Director no la leen, pero con un primer plano podría empujar a una figura de cuerpo entero. Si pasa, la primera variable es quitar pantalón y calzado, con la misma semilla.
+- El efecto del gorro en retention_analysis sobre su conservación.

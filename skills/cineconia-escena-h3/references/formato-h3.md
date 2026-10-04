@@ -7,9 +7,13 @@ Resumen de la guía que trae el pack (`INSTRUCCION_H3` en `web/cineconia.js`), s
 Una línea por etiqueta. `<Subject N>` es contenido visible reutilizable: personas, animales, objetos, escenarios, ropa o estilos. Cita la imagen dentro de la definición del sujeto; una imagen que solo define un personaje, objeto o lugar **no** lleva entrada `<Picture N>` propia. Una etiqueta significa lo mismo en todas las secciones.
 
 ```text
-<Subject 1> is the adult woman in <Picture 1>, with her facial features, curly shoulder-length hair and freckles. She wears a mustard knitted cardigan over a white blouse.
+<Subject 1> is the adult woman in <Picture 1>, with her facial features, curly shoulder-length hair and freckles. She wears a burgundy wool beret, a mustard knitted cardigan over a white blouse, a dark green pleated skirt and brown leather ankle boots.
 <Subject 2> is the vintage film camera from <Picture 2>: black leather body, silver dials and a worn brown strap.
+<Subject 3> is a brass pocket watch: a round polished case on a thin chain.
 ```
+
+- La ropa del personaje va completa y de la cabeza a los pies, con la prenda de cabeza primero. Solo aquí: en la acción no se nombran pies, piernas ni zapatos.
+- Un sujeto **sin imagen conectada** (como `<Subject 3>`) se define solo con texto, sin `from <Picture N>`, y no lleva línea en retention_analysis.
 
 ## summary
 
@@ -67,6 +71,6 @@ Carteles y letreros, entre comillas dobles inglesas y tal cual: `The wall letter
 
 ## Límites útiles
 
-- Ref2VA admite hasta 9 imágenes, pero el nodo Escena del pack usa hasta 3.
+- Ref2VA admite hasta 9 imágenes, pero el nodo Escena del pack usa hasta 3. El nodo numera solo las conectadas: si referencia_2 está vacía, referencia_3 pasa a ser `<Picture 2>`. Lo que no cabe se describe con texto.
 - MiniMax documenta clips de 4 a 15 s. Por debajo de unos 5,2 s el pack observó peores resultados.
 - Si hay dos imágenes del mismo personaje (lámina y rostro), di cuál manda en qué: el rostro manda en las proporciones de la cara y la lámina en el peinado y la ropa.
