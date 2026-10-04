@@ -10,15 +10,28 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 
 ## [Sin publicar]
 
+## [1.7.0] - 2026-10-03
+
 ### Añadido
 
-- Botones en el README para descargar las skills de Claude y ChatGPT que escriben el prompt de escena. Cada Release adjunta los dos paquetes (`cineconia-escena-h3.zip` y `cineconia-escena-h3-chatgpt.zip`), armados por `tools/paquete.py`.
-- Rama `comfyui`: solo los archivos del nodo, puesta al día en cada push a `main`. Se instala con `git clone -b comfyui` y se actualiza con `git pull`.
+- **Cargar modelo** aplica el checkpoint oficial Acc/PDD de Alibaba para MiniMax H3 con un cargador propio, sin los nodos de Deno. Admite modelos completos y pruned/INT8; para estos trae dos rejillas AdaLN de unos 11 MB con su procedencia. Rechaza aceleradores apilados, un shift distinto de 12/3, Ref2VA con FL2VA, GGUF y cualquier trayectoria que no sea de 8 pasos completos con Euler/Simple y CFG 1. **Experimental:** pasó las pruebas en CPU con el checkpoint oficial; la calidad, la velocidad y la VRAM están sin medir en GPU.
+- **Cargar modelo**, lista «Acelerador H3»: sin acelerador, Acc/PDD o VDN/DMD (VDN se aplica como LoRA a fuerza 1.0). Elegir uno incompatible vuelve a la opción anterior con un aviso del motivo, y la línea de estado dice qué aceleradores no están disponibles y por qué. Con Acc/PDD, el **Optimizador** fija 8 pasos, euler, simple, denoise 1 y sin segundo pase. Si el workflow ya traía otros valores, los marca en rojo, y el botón «Ajustar a Acc/PDD» los corrige.
+- **Director de cámara**, «Texto de cámara automático» (experimental): un campo opcional al final, apagado por defecto. Encendido, cada botón escribe la cámara completa en la caja de instrucción: el texto de siempre más frases que describen el resultado visible. Una edición manual no se pisa, y «Rehacer texto automático» la regenera. Avisa si el prompt de escena trae palabras de cámara. Apagado, el texto no cambia: las 241.920 combinaciones históricas siguen idénticas. La regla que lo acompaña está en [la ley del prompt de escena](docs/LEY_PROMPT_ESCENA_ES.md).
+- **Director de cámara**: avisa en la información del nodo, en el log y con un aviso emergente cuando el plano deja fuera los pies o las piernas que pide la acción, o cuando se pide «acercarse» desde un primerísimo primer plano. El prompt no cambia.
+- **Director de cámara**: los mismos botones sirven para MiniMax H3, LTX-2.5, Wan 2.2 y HunyuanVideo 1.5 con un perfil opcional. El vocabulario de cada modelo sale de `cineconia_h3/camera_recipes.json`. H3 conserva su texto palabra por palabra. LTX-2.5 y Hunyuan están sin probar en render, y Wan 2.2 usa la receta de H3 de forma provisional. Las instrucciones escritas a mano nunca se traducen.
+- **Interruptor**: «+ botón» crea un botón con los nodos seleccionados en el lienzo. Con clic derecho se renombra, se colorea, se ordena, se oculta o se borra. Tiene los modos «una siempre», «una o ninguna» y «varias», y apaga con bypass o silenciando. Un workflow que solo trae el prefijo, como el 046, se ve y funciona igual.
+- **Selector**: «+» guarda lo puesto en una fila como botón nuevo. Con clic derecho se crean filas con los controles de los nodos seleccionados, y cada botón se renombra, se actualiza, se colorea, se mueve o se borra. Si coinciden varios botones, gana el que fija más valores.
+- Workflow de ejemplo **050**: Ref2VA pruned INT8 con el Acc/PDD propio, 8 pasos Euler/Simple, 960×544 y sin refinado. Hay que elegir la imagen de referencia antes de ejecutarlo.
+- Workflow de ejemplo **051**: el 050 con un prompt de escena universal y el «Texto de cámara automático» encendido; solo cambia la cámara.
+- Skills para Claude y ChatGPT que escriben el prompt de escena. Adjuntas el personaje con toda su ropa (gorro o sombrero incluido), los objetos y el lugar, y escribes la acción. La skill rellena la plantilla del 051 y dice en qué referencia del nodo Escena va cada imagen. Cada Release adjunta los dos paquetes (`cineconia-escena-h3.zip` y `cineconia-escena-h3-chatgpt.zip`), y el README los ofrece con dos botones.
+- Rama `comfyui`: solo los archivos del nodo, puesta al día en cada push a `main`. Se instala con `git clone -b comfyui --single-branch` y se actualiza con `git pull`.
 
 ### Cambiado
 
+- **Cargar modelo**: TaoMate y otras LoRA destiladas de pocos pasos (lightx2v, lightning, distill, *N*step) cuentan como aceleradores y ya no se apilan con Acc/PDD ni con VDN/DMD. Si falta un archivo, el error nombra el campo.
+- **Cronómetro**: cada corrida registra también la tarea, cuántas referencias e imágenes guía lleva, el acelerador y su archivo, el shift, el perfil de cámara, el encuadre pedido (o «texto automático») y una huella del prompt. Así se sabe, sin abrir el video, si cambió la cámara o el texto.
 - El ZIP de GitHub («Source code» y «Download ZIP») y el paquete del Comfy Registry traen solo el nodo: el código, la interfaz, sus recursos, la licencia y el README. Los workflows de ejemplo, la documentación, las pruebas, las herramientas y las skills se quedan en `main`. La lista vive en `tools/paquete.py`, y `.gitattributes` y `.comfyignore` la siguen.
-- Las skills de prompt de escena trabajan con las imágenes que adjunte el usuario (personaje con toda su ropa, gorro o sombrero incluido, objetos y lugar) y con la acción que escriba. Rellenan la plantilla del workflow 051 y dicen en qué referencia del nodo Escena va cada imagen.
+- **README**: la instalación con Git usa la rama `comfyui`. Quien ya clonó `main` puede seguir con `git pull` o clonar de nuevo para quedarse solo con el nodo.
 
 ## [1.6.0] - 2026-09-27
 

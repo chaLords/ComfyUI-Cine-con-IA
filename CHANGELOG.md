@@ -10,15 +10,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-03
+
 ### Added
 
-- README buttons to download the Claude and ChatGPT skills that write the scene prompt. Each release attaches both packages (`cineconia-escena-h3.zip` and `cineconia-escena-h3-chatgpt.zip`), built by `tools/paquete.py`.
-- `comfyui` branch: only the node files, refreshed on every push to `main`. Install it with `git clone -b comfyui` and update it with `git pull`.
+- **Cargar modelo** applies Alibaba's official Acc/PDD checkpoint for MiniMax H3 with its own loader, without the Deno nodes. It supports full and pruned/INT8 models; for the latter it ships two AdaLN reference grids of about 11 MB with their provenance. It rejects stacked accelerators, a shift other than 12/3, Ref2VA with FL2VA, GGUF, and any trajectory other than 8 full steps with Euler/Simple and CFG 1. **Experimental:** it passed CPU checks with the official checkpoint; quality, speed and VRAM are not yet measured on GPU.
+- **Cargar modelo**, "Acelerador H3" list: no accelerator, Acc/PDD or VDN/DMD (VDN is applied as a LoRA at strength 1.0). Choosing an incompatible one goes back to the previous option with a warning that says why, and the status line says which accelerators are unavailable and why. With Acc/PDD, the **Optimizer** fixes 8 steps, euler, simple, denoise 1 and no second pass. If the workflow already had other values, it marks them in red, and the "Ajustar a Acc/PDD" button corrects them.
+- **Camera Director**, "Texto de cámara automático" (experimental): an optional field at the end, off by default. When on, each button writes the complete camera text into the instruction box: the usual text plus sentences that describe the visible result. A manual edit is not overwritten, and "Rehacer texto automático" regenerates it. It warns when the scene prompt carries camera words. When off, the text does not change: the 241,920 historical combinations stay identical. The rule that goes with it is in [the scene prompt law](docs/LEY_PROMPT_ESCENA_ES.md) (Spanish).
+- **Camera Director**: it warns in the node info, in the log and with a pop-up when the shot leaves out the feet or legs the action asks for, or when "acercarse" (push in) is requested from an extreme close-up. The prompt does not change.
+- **Camera Director**: the same buttons work for MiniMax H3, LTX-2.5, Wan 2.2 and HunyuanVideo 1.5 through an optional profile. Each model's vocabulary comes from `cineconia_h3/camera_recipes.json`. H3 keeps its text word for word. LTX-2.5 and Hunyuan are not yet tested in a render, and Wan 2.2 uses the H3 recipe provisionally. Hand-written instructions are never translated.
+- **Interruptor**: "+ botón" creates a button from the nodes selected on the canvas. Right-click renames, colours, reorders, hides or deletes it. It has "una siempre", "una o ninguna" and "varias" modes, and switches off with bypass or mute. A workflow that only has the prefix, like 046, looks and works the same.
+- **Selector**: "+" saves what a row is set to as a new button. Right-click creates rows with the controls of the selected nodes, and renames, updates, colours, moves or deletes each button. When several buttons match, the one that sets the most values wins.
+- Example workflow **050**: pruned INT8 Ref2VA with the pack's own Acc/PDD, 8 Euler/Simple steps, 960×544 and no refine pass. Choose the reference image before running it.
+- Example workflow **051**: the 050 with a universal scene prompt and "Texto de cámara automático" on; only the camera changes.
+- Claude and ChatGPT skills that write the scene prompt. Attach the character with all their clothing (hat included), the objects and the location, and write the action. The skill fills in the 051 template and says which Escena reference input each image goes into. Each release attaches both packages (`cineconia-escena-h3.zip` and `cineconia-escena-h3-chatgpt.zip`), and the README offers them with two buttons.
+- `comfyui` branch: only the node files, refreshed on every push to `main`. Install it with `git clone -b comfyui --single-branch` and update it with `git pull`.
 
 ### Changed
 
+- **Cargar modelo**: TaoMate and other few-step distilled LoRAs (lightx2v, lightning, distill, *N*step) count as accelerators and can no longer be stacked with Acc/PDD or VDN/DMD. When a file is missing, the error names the field.
+- **Cronómetro**: each run also records the task, how many references and guide images it uses, the accelerator and its file, the shift, the camera profile, the requested framing (or "texto automático") and a prompt fingerprint. That tells you, without opening the video, whether the camera or the text changed.
 - The GitHub ZIP ("Source code" and "Download ZIP") and the Comfy Registry package contain only the node: the code, the interface, its assets, the license, and the README. Example workflows, documentation, tests, tools, and skills stay on `main`. The list lives in `tools/paquete.py`; `.gitattributes` and `.comfyignore` follow it.
-- The scene prompt skills work from the images the user attaches (the character with all their clothing, hat included, objects, and the location) and the action they write. They fill in the workflow 051 template and say which Escena reference input each image goes into.
+- **README**: the Git install uses the `comfyui` branch. If you already cloned `main`, you can keep using `git pull` or clone again to keep only the node.
 
 ## [1.6.0] - 2026-09-27
 
