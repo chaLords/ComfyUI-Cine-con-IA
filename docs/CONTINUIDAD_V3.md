@@ -289,3 +289,42 @@ Decisión de Gonzalo: el usuario adjunta las imágenes que necesite (personaje c
 - Los ejemplos 2 a 4 en GPU.
 - La ropa de cintura para abajo en subject_definitions. Los avisos del Director no la leen, pero con un primer plano podría empujar a una figura de cuerpo entero. Si pasa, la primera variable es quitar pantalón y calzado, con la misma semilla.
 - El efecto del gorro en retention_analysis sobre su conservación.
+
+## 2026-10-03 (noche): el usuario recibe solo el nodo y descarga las skills
+
+Decisión de Gonzalo: al instalar desde GitHub, el usuario recibe solo lo que el nodo necesita para funcionar. Para Git eligió una rama limpia, `comfyui`. Pidió además botones en el README para bajar las skills.
+
+### Qué se vio
+
+- `git clone` y el «Install via Git URL» del Manager bajan siempre todo lo que hay en la rama; no se puede filtrar. Pixaroma, en el ComfyUI de Documentos, también trae sus `docs/`, `workflows/` y `scripts/`. Lo que hace es no guardar en Git lo de desarrollo (`tests/`, `CLAUDE.md`).
+- El `node.zip` 1.6.0 del Comfy Registry respeta `.comfyignore` (no trae docs, tests ni .github), pero traía `examples/`, `tools/` y los CHANGELOG. Sus versiones figuran como `NodeVersionStatusFlagged` en la API del registro. **Probado** con la descarga del zip.
+
+### Qué cambió
+
+- `tools/paquete.py`:
+  - `NODO` es la única lista de lo que recibe el usuario: `__init__.py`, `nodes.py`, `cineconia_h3/`, `web/`, `pyproject.toml`, `LICENSE`, `THIRD_PARTY_NOTICES.md` y los dos README.
+  - `skills dist` arma los dos zips de skills con fecha fija, así que el mismo contenido da el mismo zip.
+- `.gitattributes` (`export-ignore`): el «Source code» y el «Download ZIP» de GitHub traen solo el nodo. `.comfyignore` excluye lo mismo para el registro.
+- `.github/workflows/rama_comfyui.yml`: en cada push a `main`, arma con `git ls-tree` y `git mktree` un árbol con `NODO` y lo sube como commit nuevo encima de `comfyui`. Si el árbol no cambia, no hace nada.
+- `release.yml`: adjunta los dos zips de skills a cada Release.
+- README (ES y EN): la instalación con Git pasa a `git clone -b comfyui`, hay una sección de skills con dos botones a `releases/latest/download/…` y la sección de desarrollo explica que se trabaja sobre `main`.
+
+### Comprobado
+
+- `git archive --worktree-attributes HEAD` da exactamente las 9 entradas de `NODO` (33 archivos), lo mismo que el árbol de la rama.
+- Simulación local del workflow contra un remoto bare:
+  - La primera corrida crea `comfyui`.
+  - La segunda no hace nada.
+  - Después de un commit añade otro encima, con su padre.
+  - Un clon `-b comfyui` trae solo el nodo y `git pull --ff-only` lo actualiza.
+- `tests/test_paquete.py`:
+  - `NODO`, `.gitattributes` y `.comfyignore` coinciden, y el ZIP de GitHub es solo el nodo.
+  - Los zips de skills llevan los archivos de `skills/` byte a byte y todos los archivos de `skills/` están empaquetados.
+  - Los botones del README apuntan a los zips.
+
+### Pendiente
+
+- Los botones de skills funcionan desde la primera Release que adjunte los zips; la 1.6.0 no los trae.
+- La rama `comfyui` se crea con el primer push a `main` que pase por el workflow nuevo.
+- `[Sin publicar]` del CHANGELOG solo recoge este cambio y las skills. Faltan la cámara automática, los workflows 050 y 051, los avisos de encuadre y el cargador Acc/PDD antes de publicar.
+- `web/logo_placa.png` no lo usa ningún archivo; sigue en `web/`.

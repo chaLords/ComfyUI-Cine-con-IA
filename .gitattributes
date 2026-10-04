@@ -1,0 +1,16 @@
+# El ZIP de GitHub («Download ZIP» y «Source code» de cada Release) solo
+# trae el nodo. La lista de lo que sí va está en tools/paquete.py (NODO);
+# tests/test_paquete.py vigila que este archivo y .comfyignore coincidan.
+/.comfyignore export-ignore
+/.gitattributes export-ignore
+/.github export-ignore
+/.gitignore export-ignore
+/AGENTS.md export-ignore
+/CHANGELOG.md export-ignore
+/CHANGELOG_ES.md export-ignore
+/docs export-ignore
+/examples export-ignore
+/scripts export-ignore
+/skills export-ignore
+/tests export-ignore
+/tools export-ignore

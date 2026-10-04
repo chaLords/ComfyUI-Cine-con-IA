@@ -10,6 +10,16 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 
 ## [Sin publicar]
 
+### Añadido
+
+- Botones en el README para descargar las skills de Claude y ChatGPT que escriben el prompt de escena. Cada Release adjunta los dos paquetes (`cineconia-escena-h3.zip` y `cineconia-escena-h3-chatgpt.zip`), armados por `tools/paquete.py`.
+- Rama `comfyui`: solo los archivos del nodo, puesta al día en cada push a `main`. Se instala con `git clone -b comfyui` y se actualiza con `git pull`.
+
+### Cambiado
+
+- El ZIP de GitHub («Source code» y «Download ZIP») y el paquete del Comfy Registry traen solo el nodo: el código, la interfaz, sus recursos, la licencia y el README. Los workflows de ejemplo, la documentación, las pruebas, las herramientas y las skills se quedan en `main`. La lista vive en `tools/paquete.py`, y `.gitattributes` y `.comfyignore` la siguen.
+- Las skills de prompt de escena trabajan con las imágenes que adjunte el usuario (personaje con toda su ropa, gorro o sombrero incluido, objetos y lugar) y con la acción que escriba. Rellenan la plantilla del workflow 051 y dicen en qué referencia del nodo Escena va cada imagen.
+
 ## [1.6.0] - 2026-09-27
 
 ### Añadido

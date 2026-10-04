@@ -10,6 +10,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- README buttons to download the Claude and ChatGPT skills that write the scene prompt. Each release attaches both packages (`cineconia-escena-h3.zip` and `cineconia-escena-h3-chatgpt.zip`), built by `tools/paquete.py`.
+- `comfyui` branch: only the node files, refreshed on every push to `main`. Install it with `git clone -b comfyui` and update it with `git pull`.
+
+### Changed
+
+- The GitHub ZIP ("Source code" and "Download ZIP") and the Comfy Registry package contain only the node: the code, the interface, its assets, the license, and the README. Example workflows, documentation, tests, tools, and skills stay on `main`. The list lives in `tools/paquete.py`; `.gitattributes` and `.comfyignore` follow it.
+- The scene prompt skills work from the images the user attaches (the character with all their clothing, hat included, objects, and the location) and the action they write. They fill in the workflow 051 template and say which Escena reference input each image goes into.
+
 ## [1.6.0] - 2026-09-27
 
 ### Added

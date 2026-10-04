@@ -32,6 +32,8 @@ El nodo tiene tres entradas y numera solo las conectadas. Conéctalas en orden y
 | `cineconia-escena-h3/references/ejemplos.md` | Cuatro ejemplos llenos, con su conexión |
 | `chatgpt/INSTRUCCIONES_GPT.md` | Instrucciones para un GPT personalizado de ChatGPT |
 
+Los dos paquetes, `cineconia-escena-h3.zip` (Claude) y `cineconia-escena-h3-chatgpt.zip` (ChatGPT), vienen en cada [Release](https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest) y se bajan con los botones del README principal. Para armarlos a mano: `python tools/paquete.py skills dist`.
+
 ## Claude
 
 - **claude.ai:** Configuración → Capacidades → Skills → «Subir skill», y elige `cineconia-escena-h3.zip`. Es la carpeta `cineconia-escena-h3` comprimida, con `SKILL.md` en su raíz. Si ya tenías la versión anterior, bórrala antes de subir esta.

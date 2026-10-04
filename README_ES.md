@@ -26,6 +26,7 @@
 
 <p align="center">
   <a href="#instalación">📥 Instalar</a> ·
+  <a href="#skills-para-escribir-el-prompt">🧠 Skills</a> ·
   <a href="#qué-incluye">🎬 Los nodos</a> ·
   <a href="#flujo-recomendado">▶️ Cómo se usa</a> ·
   <a href="#uso-del-nodo-prompt">✍️ El nodo Prompt</a> ·
@@ -118,14 +119,16 @@ Las dependencias Python de los nodos son las que ya proporciona ComfyUI; este pa
 Abre una terminal en `ComfyUI/custom_nodes` y ejecuta:
 
 ```bash
-git clone https://github.com/chaLords/ComfyUI-Cine-con-IA.git
+git clone -b comfyui https://github.com/chaLords/ComfyUI-Cine-con-IA.git
 ```
 
 Reinicia ComfyUI y busca la categoría **Cine con IA**.
 
+La rama `comfyui` trae solo el nodo: el código, la interfaz y lo que necesita para funcionar. Los workflows de ejemplo, la documentación y las pruebas siguen en `main`, aquí en GitHub.
+
 ### Instalación manual
 
-1. Descarga el ZIP de la [última versión](https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest) (en *Assets*, **Source code (zip)**).
+1. Descarga el ZIP de la [última versión](https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest) (en *Assets*, **Source code (zip)**). Trae solo el nodo.
 2. Descomprime la carpeta dentro de `ComfyUI/custom_nodes`.
 3. Comprueba que el archivo `__init__.py` quede directamente dentro de esa carpeta, por ejemplo `ComfyUI/custom_nodes/ComfyUI-Cine-con-IA/__init__.py`.
 4. Reinicia ComfyUI y busca la categoría **Cine con IA**.
@@ -138,15 +141,33 @@ Si lo instalaste con Git, abre una terminal en `ComfyUI/custom_nodes/ComfyUI-Cin
 git pull
 ```
 
+Si lo clonaste antes sin `-b comfyui`, tienes el proyecto completo: `git pull` sigue funcionando, pero si quieres quedarte solo con el nodo, borra la carpeta y clónalo de nuevo con la orden de arriba.
+
 Si lo instalaste con el ZIP, borra la carpeta y descomprime la versión nueva. En los dos casos reinicia ComfyUI. Las novedades de cada versión están en [Releases](https://github.com/chaLords/ComfyUI-Cine-con-IA/releases) y en el [historial de cambios](CHANGELOG_ES.md).
 
 ### ComfyUI-Manager y Comfy Registry
 
-El paquete está registrado en Comfy Registry con el id `cine-con-ia`, pero sus versiones siguen pendientes de revisión, así que puede que el Manager no lo muestre al buscar **Cine con IA**. Mientras tanto, instálalo con Git o con el ZIP. Cuando el registro lo apruebe también se podrá instalar con:
+El paquete está registrado en Comfy Registry con el id `cine-con-ia`, pero sus versiones siguen pendientes de revisión, así que puede que el Manager no lo muestre al buscar **Cine con IA**. Mientras tanto, instálalo con Git o con el ZIP. El paquete del registro también trae solo el nodo. Cuando el registro lo apruebe también se podrá instalar con:
 
 ```bash
 comfy node install cine-con-ia
 ```
+
+## Skills para escribir el prompt
+
+Las skills escriben por ti el prompt de escena. Adjuntas la lámina de tu personaje, los objetos y el lugar, y escribes solo la acción. Te devuelven el prompt listo para pegar en el nodo **Prompt** y te dicen qué imagen va en cada referencia del nodo **Escena**. La cámara la ponen los botones del Director.
+
+<p align="center">
+  <a href="https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest/download/cineconia-escena-h3.zip"><img alt="Descargar la skill para Claude" src="https://img.shields.io/badge/Descargar-Skill%20para%20Claude-D97757?style=for-the-badge"></a>
+  &nbsp;
+  <a href="https://github.com/chaLords/ComfyUI-Cine-con-IA/releases/latest/download/cineconia-escena-h3-chatgpt.zip"><img alt="Descargar la skill para ChatGPT" src="https://img.shields.io/badge/Descargar-Skill%20para%20ChatGPT-10A37F?style=for-the-badge"></a>
+</p>
+
+1. **Claude:** en claude.ai, Configuración → Capacidades → Skills → «Subir skill», y elige `cineconia-escena-h3.zip` tal cual, sin descomprimir.
+2. **ChatGPT:** descomprime el zip. En Explorar GPTs → Crear → Configurar, pega `INSTRUCCIONES_GPT.md` en **Instrucciones** y sube los dos archivos de `conocimiento/` en **Conocimiento**.
+3. Pega el prompt en el nodo **Prompt** de tu workflow de Cine con IA y conecta las imágenes como te indique. El workflow 051 ya trae el Director con **Texto de cámara automático**.
+
+Más detalles en [skills/README_ES.md](skills/README_ES.md).
 
 ## Flujo recomendado
 
@@ -283,6 +304,8 @@ Para comprobar la sintaxis y las funciones independientes de ComfyUI:
 python -m compileall -q .
 python -m unittest discover -s tests -v
 ```
+
+Trabaja sobre `main`, que tiene las pruebas, la documentación y los workflows: `git clone https://github.com/chaLords/ComfyUI-Cine-con-IA.git`. Lo que recibe el usuario está en `tools/paquete.py` (`NODO`). Cada push a `main` copia esa lista a la rama `comfyui`, y cada Release adjunta los paquetes de skills.
 
 Los identificadores internos de los nodos (`CineCargarH3`, `CineEscenaH3`, etc.) deben mantenerse estables para no romper workflows guardados; no son los nombres que se muestran en ComfyUI.
 

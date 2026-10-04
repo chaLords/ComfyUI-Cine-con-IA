@@ -1,0 +1,60 @@
+name: Rama comfyui
+
+# La rama `comfyui` es la que clona el usuario (git clone -b comfyui): solo
+# los archivos del nodo, la lista NODO de tools/paquete.py. Cada push a main
+# la pone al día con un commit nuevo encima del anterior, así que `git pull`
+# sigue funcionando. Pruebas, docs, workflows y skills se quedan en main.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rama-comfyui
+  cancel-in-progress: false
+
+jobs:
+  rama:
+    name: Update comfyui branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Commit node files to comfyui
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t nodo < <(python3 tools/paquete.py nodo)
+          entradas="$(git ls-tree HEAD -- "${nodo[@]}")"
+          # Una entrada de NODO que ya no existe no se salta en silencio.
+          if [ "$(printf '%s\n' "$entradas" | wc -l)" -ne "${#nodo[@]}" ]; then
+            echo "::error::Falta en main alguna entrada de NODO: ${nodo[*]}"
+            exit 1
+          fi
+          tree="$(printf '%s\n' "$entradas" | git mktree)"
+
+          parent=""
+          if git fetch --depth=1 origin comfyui; then
+            parent="$(git rev-parse FETCH_HEAD)"
+            if [ "$(git rev-parse "$parent^{tree}")" = "$tree" ]; then
+              echo "La rama comfyui ya tiene estos archivos."
+              exit 0
+            fi
+          fi
+
+          version="$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          commit="$(git commit-tree "$tree" ${parent:+-p "$parent"} \
+            -m "Cine con IA $version (main ${GITHUB_SHA::7})")"
+          git push origin "$commit:refs/heads/comfyui"
+          {
+            echo "### Rama comfyui al día"
+            echo ""
+            echo "Cine con IA $version, desde main ${GITHUB_SHA::7}: ${#nodo[@]} entradas."
+          } >> "$GITHUB_STEP_SUMMARY"
