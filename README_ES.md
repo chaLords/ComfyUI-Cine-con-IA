@@ -119,7 +119,7 @@ Las dependencias Python de los nodos son las que ya proporciona ComfyUI; este pa
 Abre una terminal en `ComfyUI/custom_nodes` y ejecuta:
 
 ```bash
-git clone -b comfyui https://github.com/chaLords/ComfyUI-Cine-con-IA.git
+git clone -b comfyui --single-branch https://github.com/chaLords/ComfyUI-Cine-con-IA.git
 ```
 
 Reinicia ComfyUI y busca la categoría **Cine con IA**.
