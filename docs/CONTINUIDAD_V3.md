@@ -322,9 +322,17 @@ Decisión de Gonzalo: al instalar desde GitHub, el usuario recibe solo lo que el
   - Los zips de skills llevan los archivos de `skills/` byte a byte y todos los archivos de `skills/` están empaquetados.
   - Los botones del README apuntan a los zips.
 
+### Publicado: 1.7.0 (2026-10-03)
+
+Autorizado por Gonzalo. Merge fast-forward a `main`, etiqueta anotada `v1.7.0` y Release; los workflows Release, Rama comfyui y Publish to Comfy Registry terminaron bien. **Probado** después de publicar:
+
+- Los dos botones del README (`releases/latest/download/…`) responden 200 y bajan los zips con sus archivos.
+- El «Source code (zip)» de la 1.7.0 trae solo las 9 entradas de `NODO`.
+- `comfyui` está en 09c73ac («Cine con IA 1.7.0»), encima de 0bf209d.
+- El `node.zip` 1.7.0 del Comfy Registry trae solo `NODO` (33 archivos). La versión figura como `NodeVersionStatusPending`; las anteriores siguen `Flagged` sin motivo en la API.
+
 ### Pendiente
 
-- Los botones de skills funcionan desde la primera Release que adjunte los zips; la 1.6.0 no los trae.
-- La rama `comfyui` ya existe en GitHub (creada por el workflow al subir `main`).
-- `[Sin publicar]` del CHANGELOG solo recoge este cambio y las skills. Faltan la cámara automática, los workflows 050 y 051, los avisos de encuadre y el cargador Acc/PDD antes de publicar.
+- La revisión del registro. Mientras no apruebe la versión, el Manager no la ofrece.
 - `web/logo_placa.png` no lo usa ningún archivo; sigue en `web/`.
+- Las pruebas en GPU que ya figuran arriba: la matriz de la ley, Acc/PDD contra VDN y los ejemplos 2 a 4 de las skills.
