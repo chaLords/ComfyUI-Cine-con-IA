@@ -47,7 +47,7 @@ The interface is in Spanish and adds visual controls, memory warnings, render pr
 > [!IMPORTANT]
 > This repository contains the nodes and their interface. It does not include ComfyUI, models, LoRAs, VAEs or interpolation and upscaling weights. The **Models** node downloads them into the right folder with one button.
 
-### Experimental branch: native Acc/PDD loader
+### Experimental: native Acc/PDD loader
 
 The existing **Load Model** node can apply the original Alibaba H3 Acc/PDD checkpoint without Deno. Full and pruned/INT8 layouts are implemented; pruned uses two bundled ~11 MB AdaLN reference grids ([provenance](cineconia_h3/assets/NOTICE.md)). These auxiliary grids are the exception to the weights exclusion above; the model and Acc LoRA remain separate downloads.
 

@@ -47,7 +47,7 @@ La interfaz está en español y añade controles visuales, avisos de memoria, pr
 > [!IMPORTANT]
 > Este repositorio contiene los nodos y su interfaz. No incluye ComfyUI, modelos, LoRAs, VAEs ni pesos de interpolación o escalado. El nodo **Modelos** te los descarga a su carpeta con un botón.
 
-### Rama experimental: cargador Acc/PDD propio
+### Experimental: cargador Acc/PDD propio
 
 El nodo **Cargar modelo** aplica la LoRA Acc/PDD original de Alibaba sin instalar Deno. Se implementaron las rutas completo y pruned/INT8; la segunda usa dos grillas auxiliares AdaLN de ~11 MB incluidas en el paquete ([procedencia](cineconia_h3/assets/NOTICE.md)). Estas grillas son la excepción al aviso anterior: el modelo y la LoRA se descargan por separado.
 
